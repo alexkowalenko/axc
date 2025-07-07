@@ -1,4 +1,12 @@
 
+CPMAddPackage(
+        NAME GoogleTest
+        GITHUB_REPOSITORY google/googletest
+        GIT_TAG v1.16.0
+        OPTIONS
+        "INSTALL_GTEST OFF"
+        "BUILD_GMOCK OFF"
+)
 
 CPMAddPackage(
         NAME spdlog

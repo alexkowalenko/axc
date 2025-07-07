@@ -16,4 +16,9 @@ include(cmake/CPM.cmake)
 # Dependency management
 include(Dependencies.cmake)
 
+add_subdirectory(src)
 add_subdirectory(cmd)
+
+# Add the test directory
+enable_testing()
+add_subdirectory(test)
