@@ -8,7 +8,7 @@
 
 #include <memory>
 
-namespace ast {
+namespace {{namespace}} {
 {% for class, members in type_items %}
 class {{ class }}_;
 using {{ class }} = std::shared_ptr<{{ class }}_>;

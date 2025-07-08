@@ -16,7 +16,7 @@
 #include "{{ i }}.h"
 {% endfor %}
 
-namespace ast {
+namespace {{namespace}} {
 
 class {{ base_name }}_ : public Base, public std::enable_shared_from_this<{{ base_name }}_> {
   public:
