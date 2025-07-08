@@ -5,12 +5,12 @@ import sys
 
 import jinja2
 
-template_file = "ast_template.h"
-template_visit_file = "visitor_template.h"
+template_file = "at_template.h"
+template_visit_file = "at_visitor_template.h"
 includes_file = "includes.h"
 
 def define_ast(output_dir, types):
-    """Generate AST class definitions using specification and jinja2"""
+    """Generate AT class definitions using specification and jinja2"""
 
     # type_items = sorted(types.items(), key=lambda i: i[0])
 
@@ -52,9 +52,9 @@ if __name__ == "__main__":
         output_dir,
         {
            "Program": [("FunctionDef", "function", False)],
-           "FunctionDef": [("std::string", "name", False), ("Statement", "statement", False)],
-           "Statement": [("Return", "ret", False)],
-           "Return": [("Expr", "expr", False)],
-           "Expr": [("Constant", "constant", False)],
-           "Constant": [("std::int32_t", "value", False)],
+           "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False)],
+           "Mov": [("Operand", "src", False), ("Operand", "dst", False) ],
+           "Imm": [("std::int32_t", "value", False)],
+           "Register": [("std::string", "reg", False)],
+           "Ret": [],
          })

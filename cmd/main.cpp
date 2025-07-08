@@ -4,6 +4,7 @@
 // Copyright  © Alex Kowalenko 2025
 //
 
+#include "assemblyGen.h"
 #include "exception.h"
 
 #include <fstream>
@@ -15,6 +16,7 @@
 #include "option.h"
 #include "parser.h"
 #include "printerAST.h"
+#include "printerAT.h"
 
 void setup_logging( Option const& options ) {
     spdlog::set_pattern( "[%H:%M:%S.%f] %^[%l]%$ %v" );
@@ -96,11 +98,23 @@ int main( int argc, char** argv ) {
         auto       program = parser.parse();
         PrinterAST printer;
         auto       output = printer.print( program );
+        std::println("Parsing Output:");
+        std::println("--------------");
         std::println( "{:s}", output );
 
-        if ( options.stage & Stages::CodeGen ) {
-            spdlog::info( "Run codegen," );
+        if ( ( options.stage & Stages::CodeGen ) == 0 ) {
+            return EXIT_SUCCESS;
         }
+
+        spdlog::info( "Run codegen," );
+        AssemblyGen assembler;
+        auto        assembly = assembler.generate( program );
+        PrinterAT assemblerPrinter;
+        output = assemblerPrinter.print( assembly );
+        std::println("Assembly Output:");
+        std::println("---------------");
+        std::println( "{:s}", output );
+
         if ( options.stage & Stages::File ) {
             spdlog::info( "Output file." );
         }
