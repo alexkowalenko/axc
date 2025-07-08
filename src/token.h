@@ -68,6 +68,14 @@ constexpr auto to_string( const TokenType l ) {
     }
 }
 
+template <> struct std::formatter<TokenType> {
+    constexpr static auto parse( std::format_parse_context& ctx ) { return ctx.begin(); }
+
+    template <typename FormatContext> static auto format( TokenType const& obj, FormatContext& ctx ) {
+        return std::format_to( ctx.out(), "{}", to_string( obj ) );
+    }
+};
+
 class Location {
   public:
     constexpr Location( const size_t l, const size_t ch ) : line { l }, col { ch } {};
@@ -80,6 +88,14 @@ class Location {
 constexpr auto to_string( Location l ) {
     return std::format( "[{},{}]", l.line, l.col );
 }
+
+template <> struct std::formatter<Location> {
+    constexpr static auto parse( std::format_parse_context& ctx ) { return ctx.begin(); }
+
+    template <typename FormatContext> static auto format( Location const& obj, FormatContext& ctx ) {
+        return std::format_to( ctx.out(), "{}", to_string( obj ) );
+    }
+};
 
 class Token {
   public:
@@ -104,3 +120,12 @@ constexpr std::string to_string( Token const& t ) {
         return to_string( t.tok );
     }
 }
+
+template <> struct std::formatter<Token> {
+    constexpr static auto parse( std::format_parse_context& ctx ) { return ctx.begin(); }
+
+    template <typename FormatContext> static auto format( Token const& obj, FormatContext& ctx ) {
+        return std::format_to( ctx.out(), "{}", to_string( obj ) );
+    }
+};
+

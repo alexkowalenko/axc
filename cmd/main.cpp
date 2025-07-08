@@ -13,6 +13,8 @@
 
 #include "lexer.h"
 #include "option.h"
+#include "parser.h"
+#include "printerAST.h"
 
 void setup_logging( Option const& options ) {
     spdlog::set_pattern( "[%H:%M:%S.%f] %^[%l]%$ %v" );
@@ -77,19 +79,25 @@ int main( int argc, char** argv ) {
     spdlog::info( "AXC compiler 👾" );
 
     try {
-        if ( options.stage & Stages::Lex ) {
-            spdlog::info( "Run lexer," );
-            std::ifstream file { options.input_file };
-            Lexer         lexer { file };
+        spdlog::info( "Run lexer," );
+        std::ifstream file { options.input_file };
+        Lexer         lexer { file };
+
+        if ( ( options.stage & Stages::Parse ) == 0 ) {
             for ( Token token = lexer.get_token(); token.tok != TokenType::Eof; token = lexer.get_token() ) {
                 std::print( "{} ", to_string( token ) );
             }
             std::println();
             return EXIT_SUCCESS;
         }
-        if ( options.stage & Stages::Parse ) {
-            spdlog::info( "Run parser," );
-        }
+
+        spdlog::info( "Run parser," );
+        Parser     parser { lexer };
+        auto       program = parser.parse();
+        PrinterAST printer;
+        auto       output = printer.print( program );
+        std::println( "{:s}", output );
+
         if ( options.stage & Stages::CodeGen ) {
             spdlog::info( "Run codegen," );
         }
@@ -98,6 +106,9 @@ int main( int argc, char** argv ) {
         }
     } catch ( const LexicalException& e ) {
         std::println( "Lexical error: {}", e.get_message() );
+        return EXIT_FAILURE;
+    } catch ( const ParseException& e ) {
+        std::println( "Parse error: {}", e.get_message() );
         return EXIT_FAILURE;
     } catch ( const std::exception& err ) {
         std::println( "Exception: {}", err.what() );

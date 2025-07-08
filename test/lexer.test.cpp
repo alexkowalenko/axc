@@ -110,6 +110,15 @@ TEST( Lexer, Comments ) {
     test_Lexer( tests );
 }
 
+TEST (Lexer, Keywords) {
+    std::vector<TestLexer> const tests = {
+        { "int", TokenType::INT, "int" },
+        { "void", TokenType::VOID, "void" },
+        { "return", TokenType::RETURN, "return" }
+    };
+    test_Lexer( tests );
+}
+
 void test_Lexer( const std::vector<TestLexer>& tests ) {
     for ( const auto& test : tests ) {
         std::istringstream is( test.input );

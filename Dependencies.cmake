@@ -21,3 +21,5 @@ CPMAddPackage(
         NAME argparse
         GITHUB_REPOSITORY p-ranav/argparse
         GIT_TAG v3.2)
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)

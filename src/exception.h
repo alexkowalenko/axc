@@ -55,3 +55,15 @@ class LexicalException : public Exception {
     };
     ~LexicalException() override = default;
 };
+
+class ParseException : public Exception {
+  public:
+    explicit ParseException( std::string m ) : Exception( std::move( m ) ) {};
+    ParseException( Location const& l, std::string m ) : Exception( l, std::move( m ) ) {};
+
+    template <typename... Args>
+    ParseException( Location const& l, std::string fmt, const Args&... args ) : Exception( l ) {
+        msg = std::vformat( fmt, std::make_format_args( args... ) );
+    };
+    ~ParseException() override = default;
+};
