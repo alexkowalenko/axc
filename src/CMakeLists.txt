@@ -25,4 +25,6 @@ add_library(compiler STATIC
         printerAT.cpp
         ${AST_HEADER}
         ${AT_HEADER}
+        codeGen.cpp
+        machine/X86_64CodeGen.cpp
 )

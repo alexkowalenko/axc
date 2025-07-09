@@ -67,3 +67,15 @@ class ParseException : public Exception {
     };
     ~ParseException() override = default;
 };
+
+class CodeException : public Exception {
+public:
+    explicit CodeException( std::string m ) : Exception( std::move( m ) ) {};
+    CodeException( Location const& l, std::string m ) : Exception( l, std::move( m ) ) {};
+
+    template <typename... Args>
+    CodeException( Location const& l, std::string fmt, const Args&... args ) : Exception( l ) {
+        msg = std::vformat( fmt, std::make_format_args( args... ) );
+    };
+    ~CodeException() override = default;
+};

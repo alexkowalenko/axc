@@ -1,0 +1,33 @@
+//
+// AXC - C Compiler
+//
+// Copyright (c) 2025.
+//
+
+//
+// Created by Alex Kowalenko on 9/7/2025.
+//
+
+#pragma once
+
+#include "../at/base.h"
+#include "../codeGen.h"
+
+class X86_64CodeGen : public CodeGenerator, public at::Visitor<void> {
+  public:
+    X86_64CodeGen( Option const& option ) : CodeGenerator( option ) {}
+    ~X86_64CodeGen() override = default;
+
+    void generate( at::Program program ) override;
+
+    void visit_Program( const at::Program& ast ) override;
+    void visit_FunctionDef( const at::FunctionDef& ast ) override;
+    void visit_Mov( const at::Mov& ast ) override;
+    void visit_Imm( const at::Imm& ast ) override;
+    void visit_Register( const at::Register& ast ) override;
+    void visit_Ret( const at::Ret& ast ) override;
+
+  private:
+    std::string operand( const at::Operand& op );
+    std::string last_string;
+};

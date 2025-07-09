@@ -5,6 +5,7 @@
 //
 
 #include "assemblyGen.h"
+#include "codeGen.h"
 #include "exception.h"
 
 #include <fstream>
@@ -31,6 +32,10 @@ int do_args( int argc, char** argv, Option& options ) {
     argparse::ArgumentParser app { "axc", "0.1" };
 
     app.add_argument( "-s", "--silent" ).help( "silent operation (no logging)." ).flag().store_into( options.silent );
+    app.add_argument( "-m", "--machine" )
+        .help( "Machine architecture" )
+        .choices( "x86_64", "aarch64" )
+        .default_value( "x86_64" );
 
     bool lex { false };
     bool parse { false };
@@ -67,6 +72,14 @@ int do_args( int argc, char** argv, Option& options ) {
         options.stage = Stages::All;
     }
 
+    if ( app.get( "machine" ) == "x86_64" ) {
+        options.machine = Machine::X86_64;
+    } else if ( app.get( "machine" ) == "aarch64" ) {
+        options.machine = Machine::AArch64;
+    } else {
+        options.machine = Machine::X86_64;
+    }
+
     return EXIT_SUCCESS;
 }
 
@@ -98,8 +111,8 @@ int main( int argc, char** argv ) {
         auto       program = parser.parse();
         PrinterAST printer;
         auto       output = printer.print( program );
-        std::println("Parsing Output:");
-        std::println("--------------");
+        std::println( "Parsing Output:" );
+        std::println( "--------------" );
         std::println( "{:s}", output );
 
         if ( ( options.stage & Stages::CodeGen ) == 0 ) {
@@ -109,20 +122,28 @@ int main( int argc, char** argv ) {
         spdlog::info( "Run codegen," );
         AssemblyGen assembler;
         auto        assembly = assembler.generate( program );
-        PrinterAT assemblerPrinter;
+        PrinterAT   assemblerPrinter;
         output = assemblerPrinter.print( assembly );
-        std::println("Assembly Output:");
-        std::println("---------------");
+        std::println( "Assembly Output:" );
+        std::println( "---------------" );
         std::println( "{:s}", output );
 
-        if ( options.stage & Stages::File ) {
-            spdlog::info( "Output file." );
+        if ( ( options.stage & Stages::File ) == 0 ) {
+            return EXIT_SUCCESS;
         }
+
+        spdlog::info( "Generate output file for {}.", to_string( options.machine ) );
+        auto codeGenerator = make_CodeGen( options );
+        codeGenerator->generate( assembly );
+
     } catch ( const LexicalException& e ) {
         std::println( "Lexical error: {}", e.get_message() );
         return EXIT_FAILURE;
     } catch ( const ParseException& e ) {
         std::println( "Parse error: {}", e.get_message() );
+        return EXIT_FAILURE;
+    } catch ( const CodeException& e ) {
+        std::println( "Code Generation: {}", e.get_message() );
         return EXIT_FAILURE;
     } catch ( const std::exception& err ) {
         std::println( "Exception: {}", err.what() );

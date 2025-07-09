@@ -6,18 +6,37 @@
 
 #pragma once
 
-enum Stages {
-    None = 0,
-    Lex = 0x1,
-    Parse = 0x2,
-    CodeGen = 0x4,
-    File = 0x8,
-    All = Lex | Parse | CodeGen | File
+#include <string>
+
+enum Stages { None = 0, Lex = 0x1, Parse = 0x2, CodeGen = 0x4, File = 0x8, All = Lex | Parse | CodeGen | File };
+
+enum class Machine {
+    X86_64,
+    AArch64,
+};
+
+constexpr auto to_string( Machine m ) {
+    switch ( m ) {
+    case Machine::AArch64 :
+        return "aarch64";
+    case Machine::X86_64 :
+        return "x86_64";
+    default :
+        return "unknown";
+    }
+}
+
+enum class System {
+    Linux,
+    FreeBSD,
+    MacOS,
 };
 
 class Option {
-public:
-    bool silent{false};
-    Stages stage{Stages::All};
+  public:
+    bool        silent { false };
+    Stages      stage { Stages::All };
     std::string input_file;
+    Machine     machine { Machine::X86_64 };
+    System      system { System::MacOS };
 };
