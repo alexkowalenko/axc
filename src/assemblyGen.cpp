@@ -35,12 +35,12 @@ void AssemblyGen::ret( const ast::Return& ast, std::vector<at::Instruction> & in
 };
 
 void AssemblyGen::expr( const ast::Expr& ast,  std::vector<at::Instruction>& instructions ) {
-    auto mov = std::make_shared<at::Mov_>( ast->location );
-    mov->src = constant(ast->constant);
-    auto reg = std::make_shared<at::Register_>( ast->location );
-    reg->reg = "eax";
-    mov->dst = reg;
-    instructions.push_back( mov );
+    // auto mov = std::make_shared<at::Mov_>( ast->location );
+    // mov->src = constant(ast->constant);
+    // auto reg = std::make_shared<at::Register_>( ast->location );
+    // reg->reg = "eax";
+    // mov->dst = reg;
+    // instructions.push_back( mov );
 };
 
 at::Imm AssemblyGen::constant( const ast::Constant& ast ) {

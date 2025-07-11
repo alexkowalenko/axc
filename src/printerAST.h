@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "ast/base.h"
+
 #include <string>
 
 #include "ast/visitor.h"
@@ -24,8 +26,9 @@ class PrinterAST : public ast::Visitor<std::string> {
     std::string visit_Program( const ast::Program& ast ) override;
     std::string visit_FunctionDef( const ast::FunctionDef& ast ) override;
     std::string visit_Statement( const ast::Statement& ast ) override;
+    std::string expr( const ast::Expr& ast );
+    std::string visit_UnaryOp( const ast::UnaryOp& ast ) override;
     std::string visit_Return( const ast::Return& ast ) override;
-    std::string visit_Expr( const ast::Expr& ast ) override;
     std::string visit_Constant( const ast::Constant& ast ) override;
 
     std::string indent {"  "};

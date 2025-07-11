@@ -27,6 +27,7 @@ class Parser {
     ast::Statement   statement();
     ast::Return      ret();
     ast::Expr        expr();
+    ast::UnaryOp     unaryOp();
     ast::Constant    constant();
 
     Token expect_token( TokenType expected );

@@ -18,6 +18,6 @@ if __name__ == "__main__":
            "FunctionDef": [("std::string", "name", False), ("Statement", "statement", False)],
            "Statement": [("Return", "ret", False)],
            "Return": [("Expr", "expr", False)],
-           "Expr": [("Constant", "constant", False)],
+           "UnaryOp": [("TokenType", "op", False), ("Expr", "operand", False)],
            "Constant": [("std::int32_t", "value", False)],
          })

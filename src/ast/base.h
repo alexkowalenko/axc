@@ -14,6 +14,8 @@
 
 #include "../token.h"
 
+#include <variant>
+
 namespace ast {
 
 class Base {
@@ -23,5 +25,13 @@ class Base {
 
     Location location;
 };
+
+class Constant_;
+using Constant = std::shared_ptr<Constant_>;
+
+class UnaryOp_;
+using UnaryOp = std::shared_ptr<UnaryOp_>;
+
+using Expr = std::variant<Constant, UnaryOp>;
 
 } // namespace ast

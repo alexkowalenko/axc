@@ -59,9 +59,34 @@ ast::Return Parser::ret() {
 }
 
 ast::Expr Parser::expr() {
-    auto expr = make_AST<ast::Expr_>();
-    expr->constant = constant();
-    return expr;
+    auto token = lexer.peek_token();
+    switch ( token.tok ) {
+    case TokenType::CONSTANT : {
+        ast::Expr expr = constant();
+        return expr;
+    }
+    case TokenType::DASH :
+    case TokenType::TILDE : {
+        ast::Expr expr = unaryOp();
+        return expr;
+    }
+    case TokenType::L_PAREN : {
+        lexer.get_token();
+        auto e = expr();
+        expect_token( TokenType::R_PAREN );
+        return e;
+    }
+    default :
+        throw ParseException( token.location, "Unexpected token {}", token );
+    }
+}
+
+ast::UnaryOp Parser::unaryOp() {
+    auto token = lexer.get_token();
+    auto op = make_AST<ast::UnaryOp_>();
+    op->op = token.tok;
+    op->operand = expr();
+    return op;
 }
 
 ast::Constant Parser::constant() {

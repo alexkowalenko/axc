@@ -11,7 +11,7 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 
 ## Chapter 2 Unary Operators
 - [X] Lexer.
-- [ ] AST, Parser.
+- [X] AST, Parser.
 - [ ] TAC intermediate.
 - [ ] Code Generator.
 - [ ] Output.
