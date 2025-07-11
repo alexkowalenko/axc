@@ -34,8 +34,9 @@ TEST( Lexer, Null ) { // NOLINT
 
 TEST( Lexer, Basic ) { // NOLINT
     std::vector<TestLexer> const tests = {
-        { "(", TokenType::L_PAREN, "(" }, { ")", TokenType::R_PAREN, ")" },    { "{", TokenType::L_BRACE, "{" },
-        { "}", TokenType::R_BRACE, "}" }, { " ;", TokenType::SEMICOLON, ";" },
+        { "(", TokenType::L_PAREN, "(" },    { ")", TokenType::R_PAREN, ")" },    { "{", TokenType::L_BRACE, "{" },
+        { "}", TokenType::R_BRACE, "}" },    { " ;", TokenType::SEMICOLON, ";" }, { "-", TokenType::DASH, ";" },
+        { "--", TokenType::DECREMENT, ";" }, { "~", TokenType::TILDE, ";" },
 
         { "", TokenType::Eof, "" },
     };
@@ -110,12 +111,10 @@ TEST( Lexer, Comments ) {
     test_Lexer( tests );
 }
 
-TEST (Lexer, Keywords) {
-    std::vector<TestLexer> const tests = {
-        { "int", TokenType::INT, "int" },
-        { "void", TokenType::VOID, "void" },
-        { "return", TokenType::RETURN, "return" }
-    };
+TEST( Lexer, Keywords ) {
+    std::vector<TestLexer> const tests = { { "int", TokenType::INT, "int" },
+                                           { "void", TokenType::VOID, "void" },
+                                           { "return", TokenType::RETURN, "return" } };
     test_Lexer( tests );
 }
 

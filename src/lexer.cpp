@@ -68,7 +68,7 @@ char Lexer::get() {
                     c = *ptr;
                     if ( c == '*' && *( ptr + 1 ) == '/' ) {
                         ptr += 2;
-                        c = *( ptr  );
+                        c = *( ptr );
                         break;
                     }
                     ++ptr;
@@ -127,6 +127,14 @@ Token Lexer::make_token() {
         return { TokenType::R_BRACE, get_location() };
     case ';' :
         return { TokenType::SEMICOLON, get_location() };
+    case '-' :
+        if ( peek() == '-' ) {
+            get();
+            return { TokenType::DECREMENT, get_location() };
+        }
+        return { TokenType::DASH, get_location() };
+    case '~' :
+        return { TokenType::TILDE, get_location() };
     default :;
     };
     if ( std::isdigit( c ) ) {

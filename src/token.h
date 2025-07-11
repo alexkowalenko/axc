@@ -22,6 +22,9 @@ enum class TokenType : std::uint8_t {
     L_BRACE,
     R_BRACE,
     SEMICOLON,
+    DASH,
+    TILDE,
+    DECREMENT,
 
     IDENTIFIER,
     CONSTANT,
@@ -45,6 +48,12 @@ constexpr auto to_string( const TokenType l ) {
         return "}";
     case SEMICOLON :
         return ";";
+    case DASH :
+        return "-";
+    case TILDE :
+        return "~";
+    case DECREMENT :
+        return "--";
 
     case IDENTIFIER :
         return "<identifier>";
@@ -128,4 +137,3 @@ template <> struct std::formatter<Token> {
         return std::format_to( ctx.out(), "{}", to_string( obj ) );
     }
 };
-
