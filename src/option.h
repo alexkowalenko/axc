@@ -8,7 +8,15 @@
 
 #include <string>
 
-enum Stages { None = 0, Lex = 0x1, Parse = 0x2, CodeGen = 0x4, File = 0x8, All = Lex | Parse | CodeGen | File };
+enum Stages {
+    None = 0,
+    Lex = 0x1,
+    Parse = 0x2,
+    CodeGen = 0x4,
+    Tac = 0x8,
+    File = 0x10,
+    All = Lex | Parse | CodeGen | Tac | File
+};
 
 enum class Machine {
     X86_64,

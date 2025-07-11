@@ -18,6 +18,8 @@
 #include "parser.h"
 #include "printerAST.h"
 #include "printerAT.h"
+#include "printerTAC.h"
+#include "tacGen.h"
 
 void setup_logging( Option const& options ) {
     spdlog::set_pattern( "[%H:%M:%S.%f] %^[%l]%$ %v" );
@@ -40,12 +42,14 @@ int do_args( int argc, char** argv, Option& options ) {
     bool lex { false };
     bool parse { false };
     bool codegen { false };
+    bool tac { false };
 
     auto& group = app.add_mutually_exclusive_group();
     group.add_argument( "-l", "--lex" ).help( "run only lexer." ).flag().store_into( lex );
     group.add_argument( "-p", "--parse" ).help( "run lexer and parser." ).flag().store_into( parse );
+    group.add_argument( "-t", "--tacky" ).help( "run lexer, parser, tac generator." ).flag().store_into( tac );
     group.add_argument( "-c", "--codegen" )
-        .help( "run lex, parser and codegen, no output." )
+        .help( "run lex, parser, tac and codegen, no output." )
         .flag()
         .store_into( codegen );
 
@@ -66,8 +70,10 @@ int do_args( int argc, char** argv, Option& options ) {
         options.stage = Stages::Lex;
     } else if ( parse ) {
         options.stage = static_cast<Stages>( Stages::Lex | Stages::Parse );
+    } else if ( tac ) {
+        options.stage = static_cast<Stages>( Stages::Lex | Stages::Parse | Stages::Tac );
     } else if ( codegen ) {
-        options.stage = static_cast<Stages>( Stages::Lex | Stages::Parse | Stages::CodeGen );
+        options.stage = static_cast<Stages>( Stages::Lex | Stages::Parse | Stages::Tac | Stages::CodeGen );
     } else {
         options.stage = Stages::All;
     }
@@ -113,6 +119,19 @@ int main( int argc, char** argv ) {
         auto       output = printer.print( program );
         std::println( "Parsing Output:" );
         std::println( "--------------" );
+        std::println( "{:s}", output );
+
+        if ( ( options.stage & Stages::Tac ) == 0 ) {
+            return EXIT_SUCCESS;
+        }
+
+        spdlog::info( "Run tac generator," );
+        TacGen tac_generator;
+        auto   tac = tac_generator.generate( program );
+        PrinterTAC tac_printer;
+        output = tac_printer.print( tac );
+        std::println( "Tac Output:" );
+        std::println( "----------" );
         std::println( "{:s}", output );
 
         if ( ( options.stage & Stages::CodeGen ) == 0 ) {

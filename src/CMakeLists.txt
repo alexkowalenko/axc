@@ -1,21 +1,24 @@
 
+# Generate the various ASDL from definitions in the python files in the tool directory
+
 set(AST_HEADER ${PROJECT_SOURCE_DIR}/src/ast/includes.h)
 set(AT_HEADER ${PROJECT_SOURCE_DIR}/src/at/includes.h)
+set(TAC_HEADER ${PROJECT_SOURCE_DIR}/src/tac/includes.h)
 
-add_custom_command(
-        OUTPUT ${AST_HEADER}
-        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/generateAST.py ${PROJECT_SOURCE_DIR}/src/ast
-        DEPENDS ${CMAKE_SOURCE_DIR}/tools/generateAST.py
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tools
-        COMMENT "Generating AST header files if missing"
-)
-add_custom_command(
-        OUTPUT ${AT_HEADER}
-        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/generateAT.py ${PROJECT_SOURCE_DIR}/src/at
-        DEPENDS ${CMAKE_SOURCE_DIR}/tools/generateAT.py
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tools
-        COMMENT "Generating AT header files if missing"
-)
+macro(add_generator GEN HEADER)
+    string(TOLOWER "${GEN}" DIR)
+    add_custom_command(
+            OUTPUT ${HEADER}
+            COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/generate${GEN}.py ${PROJECT_SOURCE_DIR}/src/${DIR}
+            DEPENDS ${CMAKE_SOURCE_DIR}/tools/generate${GEN}.py
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tools
+            COMMENT "Generating ${GEN} header files if missing"
+    )
+endmacro()
+
+add_generator(AST ${AST_HEADER})
+add_generator(AT  ${AT_HEADER})
+add_generator(TAC ${TAC_HEADER})
 
 add_library(compiler STATIC
         lexer.cpp
@@ -23,8 +26,16 @@ add_library(compiler STATIC
         printerAST.cpp
         assemblyGen.cpp
         printerAT.cpp
+        printerTAC.cpp
         ${AST_HEADER}
         ${AT_HEADER}
+        ${TAC_HEADER}
+        tacGen.cpp
         codeGen.cpp
         machine/X86_64CodeGen.cpp
+)
+
+target_link_libraries(compiler
+        PRIVATE
+        spdlog::spdlog
 )

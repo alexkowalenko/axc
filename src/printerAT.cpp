@@ -11,10 +11,7 @@
 #include "printerAT.h"
 
 #include "at/includes.h"
-
-template <class... Ts> struct overloaded : Ts... {
-    using Ts::operator()...;
-};
+#include "common.h"
 
 std::string PrinterAT::print( const at::Program& ast ) {
     return ast->accept( this );

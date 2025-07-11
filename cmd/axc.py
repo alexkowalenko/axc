@@ -18,7 +18,8 @@ def main():
     app = argparse.ArgumentParser(description="AXC C Compiler")
     app.add_argument('-l', '--lex', help='run only the lexer.', action='store_true')
     app.add_argument('-p', '--parse', help='run the lexer and parser.', action='store_true')
-    app.add_argument('-c', '--codegen', help='run the lexer, parser and code generator, no output.',action='store_true')
+    app.add_argument('-t', '--tacky', help='run the lexer, parser and tac generator', action='store_true')
+    app.add_argument('-c', '--codegen', help='run the lexer, parser, tac and code generator, no output.',action='store_true')
     app.add_argument('-s', '--silent', help='silent operation (no logging)', action='store_true')
     app.add_argument('-m', '--machine', help='machine Architecture.', choices=['x86_64', 'aarch64'] )
     app.add_argument('filename', help='File to be compile.')
@@ -45,6 +46,8 @@ def main():
         options += " -l"
     if args.parse:
         options += " -p"
+    if args.tacky:
+        options += " -t"
     if args.codegen:
         options += " -c"
     if args.silent:
@@ -59,7 +62,7 @@ def main():
         sys.exit(result.returncode)
 
     # Exit not generating output
-    if(args.lex or args.parse or args.codegen):
+    if(args.lex or args.parse or args.tacky or args.codegen):
         sys.exit(0)
 
     # Assemble the file
