@@ -16,6 +16,9 @@ include(cmake/CPM.cmake)
 # Dependency management
 include(Dependencies.cmake)
 
+# install
+set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR})
+
 add_subdirectory(src)
 add_subdirectory(cmd)
 

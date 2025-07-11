@@ -7,4 +7,6 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 - [X] Lexer.
 - [X] AST, Parser.
 - [X] Assembler Tree (AT), Code Generator.
-- [ ] File output.
+- [X] File output.
+
+## Chapter 2 Unary Operators
