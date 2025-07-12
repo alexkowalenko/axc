@@ -140,7 +140,7 @@ int main( int argc, char** argv ) {
 
         spdlog::info( "Run codegen," );
         AssemblyGen assembler;
-        auto        assembly = assembler.generate( program );
+        auto        assembly = assembler.generate( tac );
         PrinterAT   assemblerPrinter;
         output = assemblerPrinter.print( assembly );
         std::println( "Assembly Output:" );

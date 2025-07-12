@@ -48,6 +48,8 @@ void X86_64CodeGen::visit_FunctionDef( const at::FunctionDef& ast ) {
     add_line( std::format( "{}:", name ) );
     for ( auto const& instr : ast->instructions ) {
         std::visit( overloaded { [ this ]( at::Mov v ) -> void { v->accept( this ); },
+                                 [ this ]( at::Unary u ) -> void { return u->accept( this ); },
+                                 [ this ]( at::AllocateStack a ) -> void { return a->accept( this ); },
                                  [ this ]( at::Ret r ) -> void { r->accept( this ); } },
                     instr );
     }
@@ -62,6 +64,14 @@ std::string X86_64CodeGen::operand( const at::Operand& op ) {
                                     [ this ]( at::Register r ) -> std::string {
                                         r->accept( this );
                                         return last_string;
+                                    },
+                                    [ this ]( at::Pseudo p ) -> std::string {
+                                        p->accept( this );
+                                        return last_string;
+                                    },
+                                    [ this ]( at::Stack s ) -> std::string {
+                                        s->accept( this );
+                                        return last_string;
                                     } },
                        op );
 }
@@ -71,6 +81,14 @@ void X86_64CodeGen::visit_Mov( const at::Mov& ast ) {
     add_line( buf );
 }
 
+void X86_64CodeGen::visit_Ret( const at::Ret& ast ) {
+    add_line( "\tret" );
+}
+
+void X86_64CodeGen::visit_Unary( const at::Unary& ast ) {}
+
+void X86_64CodeGen::visit_AllocateStack( const at::AllocateStack& ast ) {}
+
 void X86_64CodeGen::visit_Imm( const at::Imm& ast ) {
     last_string = std::format( "${}", ast->value );
 }
@@ -79,6 +97,6 @@ void X86_64CodeGen::visit_Register( const at::Register& ast ) {
     last_string = std::format( "%{}", ast->reg );
 }
 
-void X86_64CodeGen::visit_Ret( const at::Ret& ast ) {
-    add_line( "\tret" );
-}
+void X86_64CodeGen::visit_Pseudo( const at::Pseudo& ast ) {}
+
+void X86_64CodeGen::visit_Stack( const at::Stack& ast ) {}

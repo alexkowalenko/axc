@@ -14,4 +14,7 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 - [X] AST, Parser.
 - [X] TAC intermediate.
 - [ ] Code Generator.
+  - [X] Assembler Tree, Code generator
+  - [ ] Replacing pseudo registers.
+  - [ ] Fix instructions
 - [ ] Output.

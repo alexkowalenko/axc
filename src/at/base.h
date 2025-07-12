@@ -25,13 +25,24 @@ public:
     Location location;
 };
 
+enum class UnaryOpType {
+    NEG,
+    NOT
+};
+
 class Mov_;
 using Mov = std::shared_ptr<Mov_>;
+
+class Unary_;
+using Unary = std::shared_ptr<Unary_>;
+
+class AllocateStack_;
+using AllocateStack = std::shared_ptr<AllocateStack_>;
 
 class Ret_;
 using Ret = std::shared_ptr<Ret_>;
 
-using Instruction = std::variant<Mov, Ret>;
+using Instruction = std::variant<Mov, Unary, AllocateStack, Ret>;
 
 class Imm_;
 using Imm = std::shared_ptr<Imm_>;
@@ -39,7 +50,13 @@ using Imm = std::shared_ptr<Imm_>;
 class Register_;
 using Register = std::shared_ptr<Register_>;
 
-using Operand = std::variant<Imm, Register>;
+class Pseudo_;
+using Pseudo = std::shared_ptr<Pseudo_>;
+
+class Stack_;
+using Stack = std::shared_ptr<Stack_>;
+
+using Operand = std::variant<Imm, Register, Pseudo, Stack>;
 }
 
 

@@ -10,6 +10,7 @@
 
 #include "printerAT.h"
 
+#include "ast/base.h"
 #include "at/includes.h"
 #include "common.h"
 
@@ -26,6 +27,8 @@ std::string PrinterAT::visit_FunctionDef( const at::FunctionDef& ast ) {
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
         buf += std::visit( overloaded { [ this ]( at::Mov v ) -> std::string { return v->accept( this ); },
+                                        [ this ]( at::Unary u ) -> std::string { return u->accept( this ); },
+                                        [ this ]( at::AllocateStack a ) -> std::string { return a->accept( this ); },
                                         [ this ]( at::Ret r ) -> std::string { return r->accept( this ); } },
                            instr );
         buf += "\n";
@@ -34,8 +37,12 @@ std::string PrinterAT::visit_FunctionDef( const at::FunctionDef& ast ) {
 };
 
 std::string PrinterAT::operand( const at::Operand& op ) {
-    return std::visit( overloaded { [ this ]( at::Imm v ) -> std::string { return v->accept( this ); },
-                                    [ this ]( at::Register r ) -> std::string { return r->accept( this ); } },
+    return std::visit( overloaded {
+                           [ this ]( at::Imm v ) -> std::string { return v->accept( this ); },
+                           [ this ]( at::Register r ) -> std::string { return r->accept( this ); },
+                           [ this ]( at::Pseudo p ) -> std::string { return p->accept( this ); },
+                           [ this ]( at::Stack s ) -> std::string { return s->accept( this ); },
+                       },
                        op );
 }
 
@@ -47,9 +54,37 @@ std::string PrinterAT::visit_Imm( const at::Imm& ast ) {
     return std::format( "#{}", ast->value );
 };
 
+std::string PrinterAT::visit_Unary( const at::Unary& ast ) {
+    std::string buf = "Unary(";
+    switch ( ast->op ) {
+    case at::UnaryOpType::NEG :
+        buf += "NEG";
+        break;
+    case at::UnaryOpType::NOT :
+        buf += "NOT";
+        break;
+    default :
+        break;
+    }
+    buf += ", " + operand( ast->operand ) + ")";
+    return buf;
+};
+
+std::string PrinterAT::visit_AllocateStack( const at::AllocateStack& ast ) {
+    return std::format( "AllocateStack({})", ast->size );
+};
+
 std::string PrinterAT::visit_Register( const at::Register& ast ) {
     return std::format( "%{}", ast->reg );
 };
+
+std::string PrinterAT::visit_Pseudo( const at::Pseudo& ast ) {
+    return std::format( "Pseudo({})", ast->name );
+}
+
+std::string PrinterAT::visit_Stack( const at::Stack& ast ) {
+    return std::format( "Stack({})", ast->offset );
+}
 
 std::string PrinterAT::visit_Ret( const at::Ret& ast ) {
     return "RET";
