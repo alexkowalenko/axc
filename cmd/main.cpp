@@ -4,6 +4,7 @@
 // Copyright  © Alex Kowalenko 2025
 //
 
+#include "assemblyFilterPseudo.h"
 #include "assemblyGen.h"
 #include "codeGen.h"
 #include "exception.h"
@@ -13,6 +14,7 @@
 #include <argparse/argparse.hpp>
 #include <spdlog/spdlog.h>
 
+#include "assemblyFilterPseudo.h"
 #include "lexer.h"
 #include "option.h"
 #include "parser.h"
@@ -89,6 +91,58 @@ int do_args( int argc, char** argv, Option& options ) {
     return EXIT_SUCCESS;
 }
 
+Lexer run_lexer( Option const& options ) {
+    spdlog::info( "Run lexer," );
+    std::ifstream file { options.input_file };
+    Lexer         lexer { file };
+    return lexer;
+}
+
+ast::Program run_parser( Lexer& lexer ) {
+    spdlog::info( "Run parser," );
+    Parser     parser { lexer };
+    auto       program = parser.parse();
+
+    PrinterAST printer;
+    auto       output = printer.print( program );
+    std::println( "Parsing Output:" );
+    std::println( "--------------" );
+    std::println( "{:s}", output );
+    return program;
+}
+
+tac::Program run_tac( ast::Program program ) {
+    spdlog::info( "Run TAC generator," );
+    TacGen     tac_generator;
+    auto       tac = tac_generator.generate( program );
+
+    PrinterTAC tac_printer;
+    auto       output = tac_printer.print( tac );
+    std::println( "TAC Output:" );
+    std::println( "----------" );
+    std::println( "{:s}", output );
+    return tac;
+}
+
+at::Program run_codegen( tac::Program tac ) {
+    spdlog::info( "Run codegen," );
+    AssemblyGen assembler;
+    auto        assembly = assembler.generate( tac );
+    PrinterAT   assemblerPrinter;
+    auto output = assemblerPrinter.print( assembly );
+    std::println( "Assembly Output:" );
+    std::println( "---------------" );
+    std::println( "{:s}", output );
+
+    AssemblyFilterPseudo filter;
+    filter.filter( assembly );
+    output = assemblerPrinter.print( assembly );
+    std::println( "Filtered 1:" );
+    std::println( "----------" );
+    std::println( "{:s}", output );
+    return assembly;
+}
+
 int main( int argc, char** argv ) {
     Option options;
 
@@ -100,9 +154,8 @@ int main( int argc, char** argv ) {
     spdlog::info( "AXC compiler 👾" );
 
     try {
-        spdlog::info( "Run lexer," );
-        std::ifstream file { options.input_file };
-        Lexer         lexer { file };
+        // Run Lexer
+        Lexer lexer = run_lexer( options );
 
         if ( ( options.stage & Stages::Parse ) == 0 ) {
             for ( Token token = lexer.get_token(); token.tok != TokenType::Eof; token = lexer.get_token() ) {
@@ -112,40 +165,22 @@ int main( int argc, char** argv ) {
             return EXIT_SUCCESS;
         }
 
-        spdlog::info( "Run parser," );
-        Parser     parser { lexer };
-        auto       program = parser.parse();
-        PrinterAST printer;
-        auto       output = printer.print( program );
-        std::println( "Parsing Output:" );
-        std::println( "--------------" );
-        std::println( "{:s}", output );
+        // Run Parser
+        auto program = run_parser( lexer );
 
         if ( ( options.stage & Stages::Tac ) == 0 ) {
             return EXIT_SUCCESS;
         }
 
-        spdlog::info( "Run tac generator," );
-        TacGen tac_generator;
-        auto   tac = tac_generator.generate( program );
-        PrinterTAC tac_printer;
-        output = tac_printer.print( tac );
-        std::println( "Tac Output:" );
-        std::println( "----------" );
-        std::println( "{:s}", output );
+        // Run TAC Generator
+        auto tac = run_tac( program );
 
         if ( ( options.stage & Stages::CodeGen ) == 0 ) {
             return EXIT_SUCCESS;
         }
 
-        spdlog::info( "Run codegen," );
-        AssemblyGen assembler;
-        auto        assembly = assembler.generate( tac );
-        PrinterAT   assemblerPrinter;
-        output = assemblerPrinter.print( assembly );
-        std::println( "Assembly Output:" );
-        std::println( "---------------" );
-        std::println( "{:s}", output );
+       // Run Code Gen
+        auto assembly = run_codegen( tac );
 
         if ( ( options.stage & Stages::File ) == 0 ) {
             return EXIT_SUCCESS;

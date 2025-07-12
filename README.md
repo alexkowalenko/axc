@@ -15,6 +15,6 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 - [X] TAC intermediate.
 - [ ] Code Generator.
   - [X] Assembler Tree, Code generator
-  - [ ] Replacing pseudo registers.
+  - [X] Replacing pseudo registers.
   - [ ] Fix instructions
 - [ ] Output.
