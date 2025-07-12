@@ -34,7 +34,7 @@ add_library(compiler STATIC
         ${TAC_HEADER}
         tacGen.cpp
         codeGen.cpp
-        machine/X86_64CodeGen.cpp
+        machine/x86_64CodeGen.cpp
 )
 
 target_link_libraries(compiler

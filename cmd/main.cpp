@@ -181,7 +181,7 @@ int main( int argc, char** argv ) {
             for ( Token token = lexer.get_token(); token.tok != TokenType::Eof; token = lexer.get_token() ) {
                 std::println( "{} {} ", token.location, ( token ) );
             }
-            std::println();
+            std::println("");
             return EXIT_SUCCESS;
         }
 

@@ -6,6 +6,11 @@ project(axc
         DESCRIPTION "AXC C Compiler"
         LANGUAGES CXX)
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+    set(CMAKE_CXX_COMPILER "/usr/local/llvm20/bin/clang++" CACHE STRING "" FORCE)
+endif()
+message(STATUS "C++ compiler = ${CMAKE_CXX_COMPILER}")
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
