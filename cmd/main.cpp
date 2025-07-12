@@ -15,6 +15,7 @@
 #include <spdlog/spdlog.h>
 
 #include "assemblyFilterPseudo.h"
+#include "assemblyFixInstruct.h"
 #include "lexer.h"
 #include "option.h"
 #include "parser.h"
@@ -138,6 +139,14 @@ at::Program run_codegen( tac::Program tac ) {
     filter.filter( assembly );
     output = assemblerPrinter.print( assembly );
     std::println( "Filtered 1:" );
+    std::println( "----------" );
+    std::println( "{:s}", output );
+
+    AssemblyFixInstruct filter2;
+    filter2.set_number_stack_locations( filter.get_number_stack_locations() );
+    filter2.filter( assembly );
+    output = assemblerPrinter.print( assembly );
+    std::println( "Filtered 2:" );
     std::println( "----------" );
     std::println( "{:s}", output );
     return assembly;

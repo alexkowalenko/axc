@@ -26,6 +26,7 @@ add_library(compiler STATIC
         printerAST.cpp
         assemblyGen.cpp
         assemblyFilterPseudo.cpp
+        assemblyFixInstruct.cpp
         printerAT.cpp
         printerTAC.cpp
         ${AST_HEADER}
