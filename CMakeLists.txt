@@ -9,6 +9,9 @@ project(axc
 if(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     set(CMAKE_CXX_COMPILER "/usr/local/llvm20/bin/clang++" CACHE STRING "" FORCE)
 endif()
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++" CACHE STRING "" FORCE)
+endif()
 message(STATUS "C++ compiler = ${CMAKE_CXX_COMPILER}")
 
 set(CMAKE_CXX_STANDARD 23)
@@ -30,3 +33,5 @@ add_subdirectory(cmd)
 # Add the test directory
 enable_testing()
 add_subdirectory(test)
+
+message(STATUS "System is ${CMAKE_SYSTEM_NAME}")

@@ -33,7 +33,23 @@ void setup_logging( Option const& options ) {
     spdlog::set_level( spdlog::level::trace );
 }
 
+void get_os( Option& options ) {
+#if defined( _WIN32 )
+    std::cout << "Windows" << std::endl;
+#elif defined( __APPLE__ ) && defined( __MACH__ )
+    options.system = System::MacOS;
+#elif defined( __linux__ )
+    options.system = System::Linux;
+#elif defined( __FreeBSD__ )
+    options.system = System::FreeBSD;
+#elif defined( __unix__ )
+    options.system = System::Linux;
+#endif
+}
+
 int do_args( int argc, char** argv, Option& options ) {
+
+    get_os( options );
     argparse::ArgumentParser app { "axc", "0.1" };
 
     app.add_argument( "-s", "--silent" ).help( "silent operation (no logging)." ).flag().store_into( options.silent );
@@ -101,8 +117,8 @@ Lexer run_lexer( Option const& options ) {
 
 ast::Program run_parser( Lexer& lexer ) {
     spdlog::info( "Run parser," );
-    Parser     parser { lexer };
-    auto       program = parser.parse();
+    Parser parser { lexer };
+    auto   program = parser.parse();
 
     PrinterAST printer;
     auto       output = printer.print( program );
@@ -114,8 +130,8 @@ ast::Program run_parser( Lexer& lexer ) {
 
 tac::Program run_tac( ast::Program program ) {
     spdlog::info( "Run TAC generator," );
-    TacGen     tac_generator;
-    auto       tac = tac_generator.generate( program );
+    TacGen tac_generator;
+    auto   tac = tac_generator.generate( program );
 
     PrinterTAC tac_printer;
     auto       output = tac_printer.print( tac );
@@ -130,7 +146,7 @@ at::Program run_codegen( tac::Program tac ) {
     AssemblyGen assembler;
     auto        assembly = assembler.generate( tac );
     PrinterAT   assemblerPrinter;
-    auto output = assemblerPrinter.print( assembly );
+    auto        output = assemblerPrinter.print( assembly );
     std::println( "Assembly Output:" );
     std::println( "---------------" );
     std::println( "{:s}", output );
@@ -181,7 +197,7 @@ int main( int argc, char** argv ) {
             for ( Token token = lexer.get_token(); token.tok != TokenType::Eof; token = lexer.get_token() ) {
                 std::println( "{} {} ", token.location, ( token ) );
             }
-            std::println("");
+            std::println( "" );
             return EXIT_SUCCESS;
         }
 
@@ -199,14 +215,14 @@ int main( int argc, char** argv ) {
             return EXIT_SUCCESS;
         }
 
-       // Run Code Gen
+        // Run Code Gen
         auto assembly = run_codegen( tac );
 
         if ( ( options.stage & Stages::File ) == 0 ) {
             return EXIT_SUCCESS;
         }
 
-        generate_output_file(assembly, options);
+        generate_output_file( assembly, options );
 
     } catch ( const LexicalException& e ) {
         std::println( "Lexical error: {}", e.get_message() );
