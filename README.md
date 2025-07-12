@@ -17,4 +17,6 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
   - [X] Assembler Tree, Code generator
   - [X] Replacing pseudo registers.
   - [X] Fix instructions
-- [ ] Output.
+- [X] Output.
+
+## Chapter 3 Binary Operators

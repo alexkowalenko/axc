@@ -16,6 +16,7 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <sstream>
 #include <string>
 
 class CodeGenerator {
@@ -25,14 +26,18 @@ class CodeGenerator {
 
     virtual void generate( at::Program program ) = 0;
 
+    std::string get_output();
+
   protected:
     void make_output_file_name();
 
-    void add_line( std::string line );
+    void add_line( std::string line);
+    void add_line( std::string instruct, std::string operands, int line_number = 0);
 
-    Option const&               option;
+    Option const&         option;
     std::filesystem::path output;
     std::fstream          file;
+    std::stringstream     text;
 };
 
-std::unique_ptr<CodeGenerator> make_CodeGen( Option& option );
+std::unique_ptr<CodeGenerator> make_CodeGen( Option const& option );

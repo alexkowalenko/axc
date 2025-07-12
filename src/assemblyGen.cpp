@@ -39,9 +39,9 @@ at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef& atac ) {
 
 void AssemblyGen::ret( const tac::Return& atac, std::vector<at::Instruction>& instructions ) {
     auto mov = make_AT<at::Mov_>( atac );
-    mov->src = value(atac->value);
+    mov->src = value( atac->value );
     auto reg = make_AT<at::Register_>( atac );
-    reg->reg = "ax";
+    reg->reg = "eax";
     mov->dst = reg;
     instructions.push_back( mov );
     auto ret = make_AT<at::Ret_>( atac );
@@ -50,8 +50,8 @@ void AssemblyGen::ret( const tac::Return& atac, std::vector<at::Instruction>& in
 
 void AssemblyGen::unary( const tac::Unary& atac, std::vector<at::Instruction>& instructions ) {
     auto mov = make_AT<at::Mov_>( atac );
-    mov->src = value(atac->src);
-    mov->dst = value(atac->dst);
+    mov->src = value( atac->src );
+    mov->dst = value( atac->dst );
     instructions.push_back( mov );
     auto unary = make_AT<at::Unary_>( atac );
     switch ( atac->op ) {
@@ -64,7 +64,7 @@ void AssemblyGen::unary( const tac::Unary& atac, std::vector<at::Instruction>& i
     default :
         break;
     }
-    unary->operand = value(atac->dst);
+    unary->operand = value( atac->dst );
     instructions.push_back( unary );
 };
 

@@ -152,6 +152,17 @@ at::Program run_codegen( tac::Program tac ) {
     return assembly;
 }
 
+void generate_output_file( at::Program assembly, Option const& options ) {
+    spdlog::info( "Generate output file for {}.", to_string( options.machine ) );
+    auto codeGenerator = make_CodeGen( options );
+
+    // Generate Assembly code
+    codeGenerator->generate( assembly );
+    std::println( "X86_64 Assembly:" );
+    std::println( "---------------" );
+    std::println( "{:s}", codeGenerator->get_output() );
+}
+
 int main( int argc, char** argv ) {
     Option options;
 
@@ -168,7 +179,7 @@ int main( int argc, char** argv ) {
 
         if ( ( options.stage & Stages::Parse ) == 0 ) {
             for ( Token token = lexer.get_token(); token.tok != TokenType::Eof; token = lexer.get_token() ) {
-                std::print( "{} ", to_string( token ) );
+                std::println( "{} {} ", token.location, ( token ) );
             }
             std::println();
             return EXIT_SUCCESS;
@@ -195,9 +206,7 @@ int main( int argc, char** argv ) {
             return EXIT_SUCCESS;
         }
 
-        spdlog::info( "Generate output file for {}.", to_string( options.machine ) );
-        auto codeGenerator = make_CodeGen( options );
-        codeGenerator->generate( assembly );
+        generate_output_file(assembly, options);
 
     } catch ( const LexicalException& e ) {
         std::println( "Lexical error: {}", e.get_message() );
