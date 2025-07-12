@@ -10,6 +10,7 @@ import tempfile
 import os
 import subprocess
 import sys
+import platform
 
 clang_path = "clang"
 axc_path = "axc_comp"
@@ -66,7 +67,10 @@ def main():
         sys.exit(0)
 
     # Assemble the file
-    cmd = f"{clang_path} --target=x86_64-apple-darwin {temp_file.name}.s -o {file_name_base}"
+    if platform.system() == "Darwin":
+       cmd = f"{clang_path} --target=x86_64-apple-darwin {temp_file.name}.s -o {file_name_base}"
+    else:
+        cmd = f"{clang_path} {temp_file.name}.s -o {file_name_base}"
     print(cmd)
     result = subprocess.run(cmd, shell=True)
     if result.returncode != 0:
