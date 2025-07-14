@@ -25,6 +25,7 @@ public:
     std::string visit_FunctionDef( const tac::FunctionDef& ast ) override;
     std::string value(const tac::Value& ast);
     std::string visit_Return( const tac::Return& ast ) override;
+    std::string visit_Binary( const tac::Binary& ast ) override;
     std::string visit_Unary( const tac::Unary& ast ) override;
     std::string visit_Constant( const tac::Constant& ast ) override;
     std::string visit_Variable( const tac::Variable& ast ) override;

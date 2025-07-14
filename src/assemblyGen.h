@@ -22,6 +22,7 @@ class AssemblyGen {
     at::FunctionDef functionDef( const tac::FunctionDef& atac );
     void            ret( const tac::Return& atac, std::vector<at::Instruction>& instructions );
     void            unary( const tac::Unary& atac, std::vector<at::Instruction>& instructions );
+    void            binary( const tac::Binary& atac, std::vector<at::Instruction>& instructions );
 
     at::Operand value(const tac::Value& atac);
     at::Operand constant( const tac::Constant& atac );

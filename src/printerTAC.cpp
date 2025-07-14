@@ -9,15 +9,15 @@
 //
 
 #include "printerTAC.h"
-#include "tac/includes.h"
 #include "common.h"
+#include "tac/includes.h"
 
 std::string PrinterTAC::print( const tac::Program& ast ) {
-    return ast->accept(this);
+    return ast->accept( this );
 }
 
 std::string PrinterTAC::visit_Program( const tac::Program& ast ) {
-    return ast->function->accept(this);
+    return ast->function->accept( this );
 }
 
 std::string PrinterTAC::visit_FunctionDef( const tac::FunctionDef& ast ) {
@@ -25,25 +25,63 @@ std::string PrinterTAC::visit_FunctionDef( const tac::FunctionDef& ast ) {
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
         buf += std::visit( overloaded { [ this ]( tac::Return r ) -> std::string { return r->accept( this ); },
-                                        [ this ]( tac::Unary r ) -> std::string { return r->accept( this ); } },
+                                        [ this ]( tac::Unary r ) -> std::string { return r->accept( this ); },
+                                        [ this ]( tac::Binary r ) -> std::string { return r->accept( this ); } },
                            instr );
         buf += "\n";
     }
     return buf;
 }
 
-std::string PrinterTAC::value(const tac::Value& ast) {
+std::string PrinterTAC::value( const tac::Value& ast ) {
     return std::visit( overloaded { [ this ]( tac::Constant c ) -> std::string { return c->accept( this ); },
                                     [ this ]( tac::Variable v ) -> std::string { return v->accept( this ); } },
                        ast );
 }
 
 std::string PrinterTAC::visit_Return( const tac::Return& ast ) {
-    return std::format("Return({})", value(ast->value));
+    return std::format( "Return({})", value( ast->value ) );
 }
 
 std::string PrinterTAC::visit_Unary( const tac::Unary& ast ) {
-    return  std::format( "Unary({}, {}, {})", ast->op, value(ast->src), value(ast->dst) );
+    std::string buf = "Unary(";
+    switch ( ast->op ) {
+    case tac::UnaryOpType::Negate :
+        buf += "Negate ";
+        break;
+    case tac::UnaryOpType::Complement :
+        buf += "Complement ";
+        break;
+    default :
+        break;
+    }
+    buf += std::format( "{} {})", value( ast->src ), value( ast->dst ) );
+    return buf;
+}
+
+std::string PrinterTAC::visit_Binary( const tac::Binary& ast ) {
+    std::string buf = "Unary(";
+    switch ( ast->op ) {
+    case tac::BinaryOpType::Add :
+        buf += "Add ";
+        break;
+    case tac::BinaryOpType::Subtract :
+        buf += "Sub ";
+        break;
+    case tac::BinaryOpType::Multiply :
+        buf += "Mul ";
+        break;
+    case tac::BinaryOpType::Divide :
+        buf += "Div ";
+        break;
+    case tac::BinaryOpType::Modulo :
+        buf += "Mod ";
+        break;
+    default :
+        break;
+    }
+    buf += std::format( "{} {} {})", value( ast->src1 ), value( ast->src2 ), value( ast->dst ) );
+    return buf;
 }
 
 std::string PrinterTAC::visit_Constant( const tac::Constant& ast ) {
@@ -51,5 +89,5 @@ std::string PrinterTAC::visit_Constant( const tac::Constant& ast ) {
 }
 
 std::string PrinterTAC::visit_Variable( const tac::Variable& ast ) {
-    return std::format("Variable({})",ast->name);
+    return std::format( "Variable({})", ast->name );
 }

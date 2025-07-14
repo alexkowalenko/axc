@@ -30,9 +30,11 @@ at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef& atac ) {
     function->name = atac->name;
     function->instructions = {};
     for ( auto instr : atac->instructions ) {
-        std::visit( overloaded { [ &function, this ]( tac::Return r ) -> void { ret( r, function->instructions ); },
-                                 [ &function, this ]( tac::Unary r ) -> void { unary( r, function->instructions ); } },
-                    instr );
+        std::visit(
+            overloaded { [ &function, this ]( tac::Return r ) -> void { ret( r, function->instructions ); },
+                         [ &function, this ]( tac::Unary r ) -> void { unary( r, function->instructions ); },
+                         [ &function, this ]( tac::Binary r ) -> void { binary( r, function->instructions ); } },
+            instr );
     }
     return function;
 };
@@ -55,10 +57,10 @@ void AssemblyGen::unary( const tac::Unary& atac, std::vector<at::Instruction>& i
     instructions.push_back( mov );
     auto unary = make_AT<at::Unary_>( atac );
     switch ( atac->op ) {
-    case TokenType::TILDE :
+    case tac::UnaryOpType::Complement :
         unary->op = at::UnaryOpType::NOT;
         break;
-    case TokenType::DASH :
+    case tac::UnaryOpType::Negate :
         unary->op = at::UnaryOpType::NEG;
         break;
     default :
@@ -67,6 +69,8 @@ void AssemblyGen::unary( const tac::Unary& atac, std::vector<at::Instruction>& i
     unary->operand = value( atac->dst );
     instructions.push_back( unary );
 };
+
+void AssemblyGen::binary( const tac::Binary& atac, std::vector<at::Instruction>& instructions ) {}
 
 at::Operand AssemblyGen::value( const tac::Value& atac ) {
     return std::visit( overloaded { [ this ]( tac::Constant c ) -> at::Operand { return constant( c ); },

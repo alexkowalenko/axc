@@ -59,28 +59,68 @@ std::vector<tac::Instruction> TacGen::ret( ast::Return ast ) {
 
 tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::expr" );
-    tac::Value value;
-    std::visit( overloaded { [ &instructions, &value, this ]( ast::UnaryOp u ) -> void {
-                                auto unaryValue = unary( u, instructions );
-                                instructions.push_back( unaryValue );
-                                value = unaryValue->dst;
-                            },
-                             []( ast::BinaryOp ) -> void {
-                             },
-                             [ &value, this ]( ast::Constant c ) -> void { value = constant( c ); } },
-                ast );
-    return value;
+    return std::visit( overloaded { [ &instructions, this ]( ast::UnaryOp u ) -> tac::Value {
+                                       auto unaryValue = unary( u, instructions );
+                                       instructions.push_back( unaryValue );
+                                       return unaryValue->dst;
+                                   },
+                                    [ &instructions, this ]( ast::BinaryOp b ) -> tac::Value {
+                                        auto binaryValue = binary( b, instructions );
+                                        instructions.push_back( binaryValue );
+                                        return binaryValue->dst;
+                                    },
+                                    [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
+                       ast );
 }
 
 tac::Unary TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::unary: {}", to_string( ast->op ) );
     auto u = make_tac<tac::Unary_>( ast );
-    u->op = ast->op;
+    switch ( ast->op ) {
+    case TokenType::DASH :
+        u->op = tac::UnaryOpType::Negate;
+        break;
+    case TokenType::TILDE :
+        u->op = tac::UnaryOpType::Complement;
+        break;
+    default :
+        break;
+    }
     u->src = expr( ast->operand, instructions );
     auto dst = std::make_shared<tac::Variable_>( ast->location );
     dst->name = temp_name();
     u->dst = dst;
     return u;
+}
+
+tac::Binary TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::binary: {}", to_string( ast->op ) );
+    auto b = make_tac<tac::Binary_>( ast );
+    switch ( ast->op ) {
+    case TokenType::PLUS :
+        b->op = tac::BinaryOpType::Add;
+        break;
+    case TokenType::DASH :
+        b->op = tac::BinaryOpType::Subtract;
+        break;
+    case TokenType::ASTÉRIX :
+        b->op = tac::BinaryOpType::Multiply;
+        break;
+    case TokenType::SLASH :
+        b->op = tac::BinaryOpType::Divide;
+        break;
+    case TokenType::PERCENT :
+        b->op = tac::BinaryOpType::Modulo;
+        break;
+    default :
+        break;
+    }
+    b->src1 = expr( ast->left, instructions );
+    b->src2 = expr( ast->right, instructions );
+    auto dst = std::make_shared<tac::Variable_>( ast->location );
+    dst->name = temp_name();
+    b->dst = dst;
+    return b;
 }
 
 tac::Constant TacGen::constant( ast::Constant ast ) {

@@ -17,7 +17,8 @@ if __name__ == "__main__":
            "Program": [("FunctionDef", "function", False)],
            "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False)],
            "Return": [("Value", "value", False) ],
-           "Unary": [("TokenType", "op", False), ("Value", "src", False), ("Value", "dst", False)],
+           "Unary": [("UnaryOpType", "op", False), ("Value", "src", False), ("Value", "dst", False)],
+           "Binary": [("BinaryOpType", "op", False), ("Value", "src1", False), ("Value", "src2", False), ("Value", "dst", False)],
            "Constant": [("std::int32_t", "value", False)],
            "Variable": [("std::string", "name", False)],
          })

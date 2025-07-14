@@ -32,6 +32,6 @@ class PrinterAST : public ast::Visitor<std::string> {
     std::string visit_Return( const ast::Return& ast ) override;
     std::string visit_Constant( const ast::Constant& ast ) override;
 
-    std::string indent {"  "};
+    std::string indent { "  " };
     std::string new_line { "\n" };
 };

@@ -22,5 +22,5 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 ## Chapter 3 Binary Operators
 - [X] Lexer.
 - [X] Parser.
-- [ ] TAC intermediate.
+- [X] TAC intermediate.
 - [ ] Code Generator.

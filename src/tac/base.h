@@ -17,8 +17,22 @@
 #pragma once
 
 namespace tac {
+
+enum class UnaryOpType {
+    Negate,
+    Complement,
+};
+
+enum class BinaryOpType {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Modulo,
+};
+
 class Base {
-public:
+  public:
     explicit Base( Location loc ) : location( std::move( loc ) ) {}
     virtual ~Base() = default;
 
@@ -31,7 +45,10 @@ using Return = std::shared_ptr<Return_>;
 class Unary_;
 using Unary = std::shared_ptr<Unary_>;
 
-using Instruction = std::variant<Return, Unary>;
+class Binary_;
+using Binary = std::shared_ptr<Binary_>;
+
+using Instruction = std::variant<Return, Unary, Binary>;
 
 class Constant_;
 using Constant = std::shared_ptr<Constant_>;
@@ -40,4 +57,4 @@ class Variable_;
 using Variable = std::shared_ptr<Variable_>;
 
 using Value = std::variant<Constant, Variable>;
-}
+} // namespace tac
