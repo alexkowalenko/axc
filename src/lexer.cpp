@@ -76,6 +76,9 @@ char Lexer::get() {
                 c = *ptr;
                 continue;
             }
+            // otherwise return /
+            ++ptr;
+            return '/';
         }
         ++ptr;
         return c;
@@ -127,12 +130,20 @@ Token Lexer::make_token() {
         return { TokenType::R_BRACE, get_location() };
     case ';' :
         return { TokenType::SEMICOLON, get_location() };
+    case '+':
+        return { TokenType::PLUS, get_location() };
     case '-' :
         if ( peek() == '-' ) {
             get();
             return { TokenType::DECREMENT, get_location() };
         }
         return { TokenType::DASH, get_location() };
+    case '*':
+        return { TokenType::ASTÉRIX, get_location() };
+    case '%':
+        return { TokenType::PERCENT, get_location() };
+    case '/':
+        return { TokenType::SLASH, get_location() };
     case '~' :
         return { TokenType::TILDE, get_location() };
     default :;

@@ -34,9 +34,10 @@ TEST( Lexer, Null ) { // NOLINT
 
 TEST( Lexer, Basic ) { // NOLINT
     std::vector<TestLexer> const tests = {
-        { "(", TokenType::L_PAREN, "(" },    { ")", TokenType::R_PAREN, ")" },    { "{", TokenType::L_BRACE, "{" },
-        { "}", TokenType::R_BRACE, "}" },    { " ;", TokenType::SEMICOLON, ";" }, { "-", TokenType::DASH, ";" },
-        { "--", TokenType::DECREMENT, ";" }, { "~", TokenType::TILDE, ";" },
+        { "(", TokenType::L_PAREN, "(" },     { ")", TokenType::R_PAREN, ")" },    { "{", TokenType::L_BRACE, "{" },
+        { "}", TokenType::R_BRACE, "}" },     { " ;", TokenType::SEMICOLON, ";" }, { "-", TokenType::DASH, "-" },
+        { "--", TokenType::DECREMENT, "--" }, { "~", TokenType::TILDE, "~" },      { "+", TokenType::PLUS, "+" },
+        { "/", TokenType::SLASH, "/" },       { "%", TokenType::PERCENT, "%" },
 
         { "", TokenType::Eof, "" },
     };
@@ -103,11 +104,10 @@ TEST( Lexer, Identifier ) {
 }
 
 TEST( Lexer, Comments ) {
-    std::vector<TestLexer> const tests = { { "// Hello\n 1", TokenType::CONSTANT, "1" },
-                                           { "  // Hello\n 1", TokenType::CONSTANT, "1" },
-                                           { "/* Hello */ 1", TokenType::CONSTANT, "1" },
-                                           { "   /* Hello */1", TokenType::CONSTANT, "1" },
-                                           { "   /* Hello \n*/1", TokenType::CONSTANT, "1" } };
+    std::vector<TestLexer> const tests = {
+        { "// Hello\n 1", TokenType::CONSTANT, "1" },      { "  // Hello\n 1", TokenType::CONSTANT, "1" },
+        { "/* Hello */ 1", TokenType::CONSTANT, "1" },     { "   /* Hello */1", TokenType::CONSTANT, "1" },
+        { "   /* Hello \n*/1", TokenType::CONSTANT, "1" }, { "   / 1", TokenType::SLASH, "1" } };
     test_Lexer( tests );
 }
 
@@ -124,7 +124,7 @@ void test_Lexer( const std::vector<TestLexer>& tests ) {
         Lexer              lex( is );
         try {
             auto tok = lex.get_token();
-            // std::println("token {} wanted {}\n", test.input, to_string(test.tok));
+            std::println( "token {} wanted {}\n", test.input, to_string( test.tok ) );
             EXPECT_EQ( tok.tok, test.tok );
             if ( test.tok == TokenType::CONSTANT ) {
                 // std::println("     {} = {}->{}\n", test.input, test.atom, tok.value);

@@ -22,7 +22,12 @@ enum class TokenType : std::uint8_t {
     L_BRACE,
     R_BRACE,
     SEMICOLON,
+    PLUS,
     DASH,
+    ASTÉRIX,
+    SLASH,
+    PERCENT,
+    AND,
     TILDE,
     DECREMENT,
 
@@ -48,8 +53,14 @@ constexpr auto to_string( const TokenType l ) {
         return "}";
     case SEMICOLON :
         return ";";
+    case PLUS :
+        return "+";
     case DASH :
         return "-";
+    case ASTÉRIX:
+        return "*";
+    case SLASH :
+        return "/";
     case TILDE :
         return "~";
     case DECREMENT :
