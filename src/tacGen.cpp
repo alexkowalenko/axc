@@ -23,10 +23,8 @@ std::string  temp_name() {
     return std::format( "temp.{}", temp_counter++ );
 }
 
-template<typename T>
-constexpr
-std::shared_ptr<T> make_tac(const std::shared_ptr<ast::Base> b) {
-    return std::make_shared<T>(b->location);
+template <typename T> constexpr std::shared_ptr<T> make_tac( const std::shared_ptr<ast::Base> b ) {
+    return std::make_shared<T>( b->location );
 }
 
 } // namespace
@@ -63,10 +61,12 @@ tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructi
     spdlog::debug( "tac::expr" );
     tac::Value value;
     std::visit( overloaded { [ &instructions, &value, this ]( ast::UnaryOp u ) -> void {
-                                auto                   unaryValue = unary( u, instructions );
+                                auto unaryValue = unary( u, instructions );
                                 instructions.push_back( unaryValue );
                                 value = unaryValue->dst;
                             },
+                             []( ast::BinaryOp ) -> void {
+                             },
                              [ &value, this ]( ast::Constant c ) -> void { value = constant( c ); } },
                 ast );
     return value;

@@ -30,3 +30,4 @@ include_directories(${PROJECT_SOURCE_DIR}/extern/googletest/googletest/include)
 
 package_add_test(token.test token.test.cpp)
 package_add_test(lexer.test lexer.test.cpp)
+package_add_test(parser.test parser.test.cpp)

@@ -13,6 +13,20 @@
 #include "exception.h"
 
 #include <expected>
+#include <functional>
+#include <map>
+
+std::map<TokenType, Precedence> precedence_map = { { TokenType::PLUS, Precedence::Sum },
+                                                   { TokenType::DASH, Precedence::Sum },
+                                                   { TokenType::ASTÉRIX, Precedence::Product },
+                                                   { TokenType::SLASH, Precedence::Product } };
+
+constexpr Precedence get_precedence( const TokenType tok ) {
+    if ( precedence_map.contains( tok ) ) {
+        return precedence_map.at( tok );
+    }
+    return Precedence::Lowest;
+}
 
 ast::Program Parser::parse() {
     auto program = make_AST<ast::Program_>();
@@ -58,27 +72,23 @@ ast::Return Parser::ret() {
     return ret;
 }
 
-ast::Expr Parser::expr() {
+using PrefixParselet = std::function<ast::Expr( Parser* )>;
+const std::map<TokenType, PrefixParselet> prefix_map {
+    { TokenType::CONSTANT, []( Parser* p ) -> ast::Expr { return p->constant(); } },
+    { TokenType::DASH, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
+    { TokenType::TILDE, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
+    { TokenType::L_PAREN, []( Parser* p ) -> ast::Expr { return p->group(); } },
+};
+
+ast::Expr Parser::expr( Precedence precedence ) {
     auto token = lexer.peek_token();
-    switch ( token.tok ) {
-    case TokenType::CONSTANT : {
-        ast::Expr expr = constant();
-        return expr;
-    }
-    case TokenType::DASH :
-    case TokenType::TILDE : {
-        ast::Expr expr = unaryOp();
-        return expr;
-    }
-    case TokenType::L_PAREN : {
-        lexer.get_token();
-        auto e = expr();
-        expect_token( TokenType::R_PAREN );
-        return e;
-    }
-    default :
+    auto parselet = prefix_map.find( token.tok );
+    if ( parselet == prefix_map.end() ) {
         throw ParseException( token.location, "Unexpected token {}", token );
     }
+    auto left = parselet->second( this );
+
+    return left;
 }
 
 ast::UnaryOp Parser::unaryOp() {
@@ -87,6 +97,22 @@ ast::UnaryOp Parser::unaryOp() {
     op->op = token.tok;
     op->operand = expr();
     return op;
+}
+
+ast::BinaryOp Parser::binaryOp() {
+    auto token = lexer.get_token();
+    auto op = make_AST<ast::BinaryOp_>();
+    op->op = token.tok;
+    op->left = expr();
+    op->right = expr();
+    return op;
+}
+
+ast::Expr Parser::group() {
+    expect_token( TokenType::L_PAREN );
+    auto e = expr( Precedence::Lowest );
+    expect_token( TokenType::R_PAREN );
+    return e;
 }
 
 ast::Constant Parser::constant() {

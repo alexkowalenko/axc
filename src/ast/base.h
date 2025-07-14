@@ -32,6 +32,9 @@ using Constant = std::shared_ptr<Constant_>;
 class UnaryOp_;
 using UnaryOp = std::shared_ptr<UnaryOp_>;
 
-using Expr = std::variant<Constant, UnaryOp>;
+class BinaryOp_;
+using BinaryOp = std::shared_ptr<BinaryOp_>;
+
+using Expr = std::variant<Constant, UnaryOp, BinaryOp>;
 
 } // namespace ast

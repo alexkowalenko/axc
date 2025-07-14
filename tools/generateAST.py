@@ -19,5 +19,6 @@ if __name__ == "__main__":
            "Statement": [("Return", "ret", False)],
            "Return": [("Expr", "expr", False)],
            "UnaryOp": [("TokenType", "op", False), ("Expr", "operand", False)],
+           "BinaryOp": [("TokenType", "op", False), ("Expr", "left", False), ("Expr", "right", False)],
            "Constant": [("std::int32_t", "value", False)],
          })
