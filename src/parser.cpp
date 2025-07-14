@@ -11,6 +11,7 @@
 #include "parser.h"
 #include "ast/includes.h"
 #include "exception.h"
+#include "spdlog/spdlog.h"
 
 #include <expected>
 #include <functional>
@@ -80,35 +81,60 @@ const std::map<TokenType, PrefixParselet> prefix_map {
     { TokenType::L_PAREN, []( Parser* p ) -> ast::Expr { return p->group(); } },
 };
 
-ast::Expr Parser::expr( Precedence precedence ) {
+using InfixParselet = std::function<ast::Expr( Parser* p, ast::Expr left )>;
+const std::map<TokenType, InfixParselet> infix_map {
+    { TokenType::PLUS, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::DASH, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::ASTÉRIX, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::SLASH, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::PERCENT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+};
+
+ast::Expr Parser::expr( const Precedence precedence ) {
+    spdlog::debug( "expr( {} )", static_cast<int>( precedence ) );
+    auto left = factor();
+
+    // Get second expression
+    auto token = lexer.peek_token();
+    while ( infix_map.contains( token.tok ) && precedence <= get_precedence( token.tok ) ) {
+        left = infix_map.at( token.tok )( this, left );
+        token = lexer.peek_token();
+    }
+    return left;
+}
+
+ast::Expr Parser::factor() {
+    spdlog::debug( "factor()" );
     auto token = lexer.peek_token();
     auto parselet = prefix_map.find( token.tok );
     if ( parselet == prefix_map.end() ) {
         throw ParseException( token.location, "Unexpected token {}", token );
     }
-    auto left = parselet->second( this );
-
+    auto left = prefix_map.at( token.tok )( this );
     return left;
 }
 
 ast::UnaryOp Parser::unaryOp() {
+    spdlog::debug( "unaryOp()" );
     auto token = lexer.get_token();
     auto op = make_AST<ast::UnaryOp_>();
     op->op = token.tok;
-    op->operand = expr();
+    op->operand = factor();
     return op;
 }
 
-ast::BinaryOp Parser::binaryOp() {
+ast::BinaryOp Parser::binaryOp( ast::Expr left ) {
+    spdlog::debug( "binaryOp()" );
     auto token = lexer.get_token();
     auto op = make_AST<ast::BinaryOp_>();
+    op->left = std::move( left );
     op->op = token.tok;
-    op->left = expr();
-    op->right = expr();
+    op->right = expr( get_precedence( token.tok ) );
     return op;
 }
 
 ast::Expr Parser::group() {
+    spdlog::debug( "group()" );
     expect_token( TokenType::L_PAREN );
     auto e = expr( Precedence::Lowest );
     expect_token( TokenType::R_PAREN );
@@ -116,6 +142,7 @@ ast::Expr Parser::group() {
 }
 
 ast::Constant Parser::constant() {
+    spdlog::debug( "constant()" );
     auto constant = make_AST<ast::Constant_>();
     auto token = lexer.get_token();
     if ( token.tok == TokenType::CONSTANT ) {

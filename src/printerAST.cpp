@@ -26,7 +26,7 @@ std::string PrinterAST::visit_Program( const ast::Program& ast ) {
 std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef& ast ) {
     std::string buf = std::format( "{}({}) {{{}", ast->name, TokenType::VOID, new_line );
     buf += ast->statement->accept( this );
-    buf +=  new_line + "}" + new_line;
+    buf += new_line + "}" + new_line;
     return buf;
 }
 
@@ -36,10 +36,10 @@ std::string PrinterAST::visit_Statement( const ast::Statement& ast ) {
 
 std::string PrinterAST::expr( const ast::Expr& ast ) {
     return std::format(
-        "({})", std::visit( overloaded { [ this ]( ast::UnaryOp u ) -> std::string { return u->accept( this ); },
-                                         [ this ]( ast::BinaryOp b ) -> std::string { return b->accept( this ); },
-                                         [ this ]( ast::Constant c ) -> std::string { return c->accept( this ); } },
-                            ast ) );
+        "{}", std::visit( overloaded { [ this ]( ast::UnaryOp u ) -> std::string { return u->accept( this ); },
+                                       [ this ]( ast::BinaryOp b ) -> std::string { return b->accept( this ); },
+                                       [ this ]( ast::Constant c ) -> std::string { return c->accept( this ); } },
+                          ast ) );
 }
 
 std::string PrinterAST::visit_Return( const ast::Return& ast ) {

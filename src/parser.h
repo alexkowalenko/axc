@@ -14,9 +14,9 @@
 #include "lexer.h"
 
 enum class Precedence {
-    Lowest,
-    Sum,
-    Product,
+    Lowest = 0,
+    Sum = 45,
+    Product = 50,
 };
 
 class Parser {
@@ -27,8 +27,9 @@ class Parser {
     ast::Program parse();
 
     ast::Expr     expr( Precedence precedence = Precedence::Lowest );
+    ast::Expr factor();
     ast::UnaryOp  unaryOp();
-    ast::BinaryOp binaryOp();
+    ast::BinaryOp binaryOp(ast::Expr left);
     ast::Expr     group();
     ast::Constant constant();
 

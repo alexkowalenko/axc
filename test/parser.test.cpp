@@ -24,27 +24,53 @@ void do_parse_tests( std::vector<ParseTests> const& tests );
 
 TEST( Parser, Constant ) { // NOLINT
     std::vector<ParseTests> tests = {
-        { "int main(void) { return 2;}", "int main(void) {return (2);}", "" },
-        { "int main(void) { return 0;}", "int main(void) {return (0);}", "" },
-        { "int main(void) { return 123456789;}", "int main(void) {return (123456789);}", "" },
+        { "int main(void) { return 2;}", "int main(void) {return 2;}", "" },
+        { "int main(void) { return 0;}", "int main(void) {return 0;}", "" },
+        { "int main(void) { return 123456789;}", "int main(void) {return 123456789;}", "" },
     };
     do_parse_tests( tests );
 }
 
 TEST( Parser, Parens ) { // NOLINT
     std::vector<ParseTests> tests = {
-        { "int main(void) { return (2);}", "int main(void) {return (2);}", "" },
-        { "int main(void) { return ((2));}", "int main(void) {return ((2));}", "" },
+        { "int main(void) { return (2);}", "int main(void) {return 2;}", "" },
+        { "int main(void) { return ((2));}", "int main(void) {return 2;}", "" },
     };
     do_parse_tests( tests );
 }
 
 TEST( Parser, Unary ) { // NOLINT
     std::vector<ParseTests> tests = {
-        { "int main(void) { return -2;}", "int main(void) {return (-(2));}", "" },
-        { "int main(void) { return ~0;}", "int main(void) {return (~(0));}", "" },
-        { "int main(void) { return -~1;}", "int main(void) {return (-(~(1)));}", "" },
-        { "int main(void) { return ~-1;}", "int main(void) {return (~(-(1)));}", "" },
+        { "int main(void) { return -2;}", "int main(void) {return -2;}", "" },
+        { "int main(void) { return ~0;}", "int main(void) {return ~0;}", "" },
+        { "int main(void) { return -~1;}", "int main(void) {return -~1;}", "" },
+        { "int main(void) { return ~-1;}", "int main(void) {return ~-1;}", "" },
+        { "int main(void) { return ~-~1;}", "int main(void) {return ~-~1;}", "" },
+    };
+    do_parse_tests( tests );
+}
+
+TEST( Parser, Binary ) { // NOLINT
+    std::vector<ParseTests> tests = {
+        { "int main(void) { return 1+1;}", "int main(void) {return (1 + 1);}", "" },
+        { "int main(void) { return 2+3*4;}", "int main(void) {return (2 + (3 * 4));}", "" },
+        { "int main(void) { return 2*3+4;}", "int main(void) {return ((2 * 3) + 4);}", "" },
+        { "int main(void) { return 2*3+4*5;}", "int main(void) {return ((2 * 3) + (4 * 5));}", "" },
+        { "int main(void) { return 2*3+4*5/6;}", "int main(void) {return ((2 * 3) + (4 * (5 / 6)));}", "" },
+        { "int main(void) { return 2*3+4*5/6-7;}", "int main(void) {return ((2 * 3) + ((4 * (5 / 6)) - 7));}", "" },
+        { "int main(void) { return 2*3+4*5/6-7+8;}", "int main(void) {return ((2 * 3) + ((4 * (5 / 6)) - (7 + 8)));}",
+          "" },
+        { "int main(void) { return 2*3+4*5/6-7+8*9;}",
+          "int main(void) {return ((2 * 3) + ((4 * (5 / 6)) - (7 + (8 * 9))));}", "" },
+    };
+    do_parse_tests( tests );
+}
+
+TEST( Parser, Combined ) { // NOLINT
+    std::vector<ParseTests> tests = {
+        { "int main(void) { return ~(1+1);}", "int main(void) {return ~(1 + 1);}", "" },
+        { "int main(void) { return (-1)+1;}", "int main(void) {return (-1 + 1);}", "" },
+        { "int main(void) { return -1+1;}", "int main(void) {return (-1 + 1);}", "" },
     };
     do_parse_tests( tests );
 }
