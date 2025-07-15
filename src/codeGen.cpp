@@ -42,6 +42,16 @@ void CodeGenerator::add_line( std::string instruct, std::string operands, int li
     add_line( line );
 }
 
+void CodeGenerator::add_line( std::string instruct, std::string operand1, std::string operand2, int line_number) {
+    std::string line;
+    if ( line_number > 0 ) {
+        line = std::format( "\t{}\t{}, {}\t\t\t\t # line {}", instruct, operand1, operand2, line_number );
+    } else {
+        line = std::format( "\t{}\t{}, {}", instruct, operand1, operand2 );
+    }
+    add_line( line );
+}
+
 std::string CodeGenerator::get_output() {
     return text.str();
 }

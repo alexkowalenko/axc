@@ -84,8 +84,7 @@ std::string X86_64CodeGen::operand( const at::Operand& op ) {
 }
 
 void X86_64CodeGen::visit_Mov( const at::Mov ast ) {
-    std::string buf = std::format( "{}, {}", operand( ast->src ), operand( ast->dst ) );
-    add_line( "movl", buf );
+    add_line( "movl", operand( ast->src ), operand( ast->dst ) );
 }
 
 void X86_64CodeGen::visit_Ret( const at::Ret ast ) {
@@ -111,9 +110,26 @@ void X86_64CodeGen::visit_AllocateStack( const at::AllocateStack ast ) {
     add_line( "subq", std::format( "${}, %rsp", ast->size ) );
 }
 
-void X86_64CodeGen::visit_Binary( const at::Binary ast ) {}
-void X86_64CodeGen::visit_Idiv( const at::Idiv ast ) {}
-void X86_64CodeGen::visit_Cdq( const at::Cdq ast ) {}
+void X86_64CodeGen::visit_Binary( const at::Binary ast ) {
+    switch ( ast->op ) {
+    case at::BinaryOpType::ADD :
+        add_line( "addl", operand( ast->operand1 ), operand( ast->operand2 ) );
+        break;
+    case at::BinaryOpType::SUB :
+        add_line( "subl", operand( ast->operand1 ), operand( ast->operand2 ) );
+        break;
+    case at::BinaryOpType::MUL :
+        add_line( "imull", operand( ast->operand1 ), operand( ast->operand2 ) );
+    }
+}
+
+void X86_64CodeGen::visit_Idiv( const at::Idiv ast ) {
+    add_line( "idivl", operand( ast->src ) );
+}
+
+void X86_64CodeGen::visit_Cdq( const at::Cdq ast ) {
+    add_line( "ret", "" );
+}
 
 void X86_64CodeGen::visit_Imm( const at::Imm ast ) {
     last_string = std::format( "${}", ast->value );

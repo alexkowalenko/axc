@@ -33,6 +33,7 @@ class CodeGenerator {
 
     void add_line( std::string line);
     void add_line( std::string instruct, std::string operands, int line_number = 0);
+    void add_line( std::string instruct, std::string operand1, std::string operand2, int line_number = 0);
 
     Option const&         option;
     std::filesystem::path output;

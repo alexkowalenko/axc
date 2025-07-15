@@ -17,10 +17,11 @@
 #include <functional>
 #include <map>
 
-std::map<TokenType, Precedence> precedence_map = { { TokenType::PLUS, Precedence::Sum },
-                                                   { TokenType::DASH, Precedence::Sum },
-                                                   { TokenType::ASTÉRIX, Precedence::Product },
-                                                   { TokenType::SLASH, Precedence::Product } };
+std::map<TokenType, Precedence> precedence_map = {
+    { TokenType::PLUS, Precedence::Sum },        { TokenType::DASH, Precedence::Sum },
+    { TokenType::ASTÉRIX, Precedence::Product }, { TokenType::SLASH, Precedence::Product },
+    { TokenType::PERCENT, Precedence::Product },
+};
 
 constexpr Precedence get_precedence( const TokenType tok ) {
     if ( precedence_map.contains( tok ) ) {
@@ -96,7 +97,7 @@ ast::Expr Parser::expr( const Precedence precedence ) {
 
     // Get second expression
     auto token = lexer.peek_token();
-    while ( infix_map.contains( token.tok ) && precedence <= get_precedence( token.tok ) ) {
+    while ( infix_map.contains( token.tok ) && get_precedence( token.tok ) >= precedence ) {
         left = infix_map.at( token.tok )( this, left );
         token = lexer.peek_token();
     }
@@ -129,7 +130,7 @@ ast::BinaryOp Parser::binaryOp( ast::Expr left ) {
     auto op = make_AST<ast::BinaryOp_>();
     op->left = std::move( left );
     op->op = token.tok;
-    op->right = expr( get_precedence( token.tok ) );
+    op->right = expr( static_cast<Precedence>(static_cast<int>(get_precedence( token.tok )) + 1) );
     return op;
 }
 
