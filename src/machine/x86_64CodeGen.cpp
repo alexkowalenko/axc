@@ -120,6 +120,23 @@ void X86_64CodeGen::visit_Binary( const at::Binary ast ) {
         break;
     case at::BinaryOpType::MUL :
         add_line( "imull", operand( ast->operand1 ), operand( ast->operand2 ) );
+        break;
+    case at::BinaryOpType::AND :
+        add_line( "andl", operand( ast->operand1 ), operand( ast->operand2 ) );
+        break;
+    case at::BinaryOpType::OR :
+        add_line( "orl", operand( ast->operand1 ), operand( ast->operand2 ) );
+        break;
+    case at::BinaryOpType::XOR :
+        add_line( "xorl", operand( ast->operand1 ), operand( ast->operand2 ) );
+        break;
+    case at::BinaryOpType::SHL :
+        add_line( "shll", operand( ast->operand1 ), operand( ast->operand2 ) );
+        break;
+    case at::BinaryOpType::SHR :
+        add_line( "sarl", operand( ast->operand1 ), operand( ast->operand2 ) );
+        break;
+    default :
     }
 }
 

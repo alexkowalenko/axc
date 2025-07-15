@@ -34,6 +34,11 @@ enum class BinaryOpType {
     ADD,
     SUB,
     MUL,
+    AND,
+    OR,
+    XOR,
+    SHL,
+    SHR,
 };
 
 class Mov_;

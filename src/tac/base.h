@@ -29,6 +29,11 @@ enum class BinaryOpType {
     Multiply,
     Divide,
     Modulo,
+    BitwiseAnd,
+    BitwiseOr,
+    BitwiseXor,
+    ShiftLeft,
+    ShiftRight,
 };
 
 class Base {

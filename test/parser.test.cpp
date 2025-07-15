@@ -75,9 +75,21 @@ TEST( Parser, Combined ) {
     do_parse_tests( tests );
 }
 
-TEST (Parse, Associtivity) {
+TEST( Parse, Associtivity ) {
     std::vector<ParseTests> tests = {
         { "int main(void) { return 1 - 2 - 3;}", "int main(void) {return ((1 - 2) - 3);}", "" },
+    };
+    do_parse_tests( tests );
+}
+
+TEST( Parse, Bitwise ) {
+    std::vector<ParseTests> tests = {
+        { "int main(void) { return 1 << 8;}", "int main(void) {return (1 << 8);}", "" },
+        { "int main(void) { return 1 ^ 8 | 3 & 4;}", "int main(void) {return ((1 ^ 8) | (3 & 4));}", "" },
+        { "int main(void) { return 1 & 1 ^ 1;}", "int main(void) {return ((1 & 1) ^ 1));}", "" },
+        { "int main(void) { return 1 | 1 & 1;}", "int main(void) {return (1 | (1 & 1));}", "" },
+        { "int main(void) { return 1 << 1 ^ 1;}", "int main(void) {return ((1 << 1) ^ 1);}", "" },
+        { "int main(void) { return 1 & 1 >> 1;}", "int main(void) {return (1 & (1 >> 1));}", "" },
     };
     do_parse_tests( tests );
 }

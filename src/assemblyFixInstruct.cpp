@@ -54,6 +54,7 @@ void AssemblyFixInstruct::visit_FunctionDef( const at::FunctionDef ast ) {
 }
 
 void AssemblyFixInstruct::visit_Mov( const at::Mov ast ) {
+    // MOV instructions can't have stack locations in both operands
     if ( std::holds_alternative<at::Stack>( ast->src ) && std::holds_alternative<at::Stack>( ast->dst ) ) {
         auto src = ast->src;
         auto dst = ast->dst;
@@ -74,6 +75,7 @@ void AssemblyFixInstruct::visit_Mov( const at::Mov ast ) {
 }
 
 void AssemblyFixInstruct::visit_Idiv( const at::Idiv ast ) {
+    // Can't have an Immediate as a source
     if ( std::holds_alternative<at::Imm>( ast->src ) ) {
         auto reg = mk_reg( ast, "R10D" );
 
@@ -92,7 +94,9 @@ void AssemblyFixInstruct::visit_Idiv( const at::Idiv ast ) {
 }
 
 void AssemblyFixInstruct::visit_Binary( const at::Binary ast ) {
-    if ( ast->op == at::BinaryOpType::ADD || ast->op == at::BinaryOpType::SUB ) {
+    if ( ast->op == at::BinaryOpType::ADD || ast->op == at::BinaryOpType::SUB || ast->op == at::BinaryOpType::AND ||
+         ast->op == at::BinaryOpType::OR || ast->op == at::BinaryOpType::XOR ) {
+        // These instructions can't have stack locations in both operands
         if ( std::holds_alternative<at::Stack>( ast->operand1 ) &&
              std::holds_alternative<at::Stack>( ast->operand2 ) ) {
             auto reg = mk_reg( ast, "R10D" );
@@ -112,6 +116,7 @@ void AssemblyFixInstruct::visit_Binary( const at::Binary ast ) {
             current_instructions.push_back( ast );
         }
     } else if ( ast->op == at::BinaryOpType::MUL ) {
+        // This instruction can't have a stack location in the second argument
         if ( std::holds_alternative<at::Stack>( ast->operand2 ) ) {
             auto reg = mk_reg( ast, "R11D" );
 
@@ -134,6 +139,32 @@ void AssemblyFixInstruct::visit_Binary( const at::Binary ast ) {
             // Other Mul instructions
             current_instructions.push_back( ast );
         }
+    } else if ( ast->op == at::BinaryOpType::SHL || ast->op == at::BinaryOpType::SHR ) {
+        // These instruction encoding only allows a register shift count (cl) when the destination is a register.
+        auto ecx = mk_reg( ast, "ecx" );
+        auto eax = mk_reg( ast, "eax" );
+        auto cl = mk_reg( ast, "cl" );
+
+        auto mov1 = make_AT<at::Mov_>( ast );
+        mov1->src = ast->operand2;
+        mov1->dst = eax;
+        current_instructions.push_back( mov1 );
+
+        auto mov2 = make_AT<at::Mov_>( ast );
+        mov2->src = ast->operand1;
+        mov2->dst = ecx;
+        current_instructions.push_back( mov2 );
+
+        auto binary = make_AT<at::Binary_>( ast );
+        binary->op = ast->op;
+        binary->operand1 = cl;
+        binary->operand2 = eax;
+        current_instructions.push_back( binary );
+
+        mov2 = make_AT<at::Mov_>( ast );
+        mov2->src = eax;
+        mov2->dst = ast->operand2;
+        current_instructions.push_back( mov2 );
     } else {
         // Other Binary instructions
         current_instructions.push_back( ast );

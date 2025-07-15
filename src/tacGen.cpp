@@ -112,6 +112,21 @@ tac::Binary TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& in
     case TokenType::PERCENT :
         b->op = tac::BinaryOpType::Modulo;
         break;
+    case TokenType::AMPERSAND :
+        b->op = tac::BinaryOpType::BitwiseAnd;
+        break;
+    case TokenType::CARET :
+        b->op = tac::BinaryOpType::BitwiseXor;
+        break;
+    case TokenType::PIPE :
+        b->op = tac::BinaryOpType::BitwiseOr;
+        break;
+    case TokenType::LEFT_SHIFT :
+        b->op = tac::BinaryOpType::ShiftLeft;
+        break;
+    case TokenType::RIGHT_SHIFT :
+        b->op = tac::BinaryOpType::ShiftRight;
+        break;
     default :
         break;
     }

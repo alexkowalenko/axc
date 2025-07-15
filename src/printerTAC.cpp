@@ -77,6 +77,21 @@ std::string PrinterTAC::visit_Binary( const tac::Binary ast ) {
     case tac::BinaryOpType::Modulo :
         buf += "Mod ";
         break;
+    case tac::BinaryOpType::BitwiseAnd :
+        buf += "BitwiseAnd ";
+        break;
+    case tac::BinaryOpType::BitwiseOr :
+        buf += "BitwiseOr ";
+        break;
+    case tac::BinaryOpType::BitwiseXor :
+        buf += "BitwiseXor ";
+        break;
+    case tac::BinaryOpType::ShiftLeft :
+        buf += "ShiftLeft ";
+        break;
+    case tac::BinaryOpType::ShiftRight :
+        buf += "ShiftRight ";
+        break;
     default :
         break;
     }

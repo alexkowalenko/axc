@@ -146,6 +146,24 @@ Token Lexer::make_token() {
         return { TokenType::SLASH, get_location() };
     case '~' :
         return { TokenType::TILDE, get_location() };
+    case '&' :
+        return { TokenType::AMPERSAND, get_location() };
+    case '|' :
+        return { TokenType::PIPE, get_location() };
+    case '^' :
+        return { TokenType::CARET, get_location() };
+    case '<' :
+        if ( peek() == '<' ) {
+            get();
+            return { TokenType::LEFT_SHIFT, get_location() };
+        }
+        break;
+    case '>' :
+        if ( peek() == '>' ) {
+            get();
+            return { TokenType::RIGHT_SHIFT, get_location() };
+        }
+        break;
     default :;
     };
     if ( std::isdigit( c ) ) {

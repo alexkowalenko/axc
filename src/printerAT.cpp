@@ -39,7 +39,7 @@ std::string PrinterAT::visit_FunctionDef( const at::FunctionDef ast ) {
     return buf;
 };
 
-std::string PrinterAT::operand( const at::Operand &op ) {
+std::string PrinterAT::operand( const at::Operand& op ) {
     return std::visit( overloaded {
                            [ this ]( at::Imm v ) -> std::string { return v->accept( this ); },
                            [ this ]( at::Register r ) -> std::string { return r->accept( this ); },
@@ -85,13 +85,29 @@ std::string PrinterAT::visit_Binary( const at::Binary ast ) {
     case at::BinaryOpType::MUL :
         buf += "MUL";
         break;
+    case at::BinaryOpType::AND :
+        buf += "AND";
+        break;
+    case at::BinaryOpType::OR :
+        buf += "OR";
+        break;
+    case at::BinaryOpType::XOR :
+        buf += "XOR";
+        break;
+    case at::BinaryOpType::SHL :
+        buf += "SHL";
+        break;
+    case at::BinaryOpType::SHR :
+        buf += "SHR";
+        break;
+    default :
     }
     buf += ", " + operand( ast->operand1 ) + ", " + operand( ast->operand2 ) + ")";
     return buf;
 }
 
 std::string PrinterAT::visit_Idiv( const at::Idiv ast ) {
-    return std::format("Idiv({})", operand( ast->src ));
+    return std::format( "Idiv({})", operand( ast->src ) );
 }
 
 std::string PrinterAT::visit_Cdq( const at::Cdq ast ) {

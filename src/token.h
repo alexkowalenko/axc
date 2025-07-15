@@ -29,7 +29,13 @@ enum class TokenType : std::uint8_t {
     PERCENT,
     AND,
     TILDE,
+    AMPERSAND,
+    PIPE,
+    CARET,
+
     DECREMENT,
+    LEFT_SHIFT,
+    RIGHT_SHIFT,
 
     IDENTIFIER,
     CONSTANT,
@@ -65,8 +71,19 @@ constexpr auto to_string( const TokenType l ) {
         return "%";
     case TILDE :
         return "~";
+    case AMPERSAND :
+        return "&";
+    case PIPE :
+        return "|";
+    case CARET :
+        return "^";
+
     case DECREMENT :
         return "--";
+    case LEFT_SHIFT :
+        return "<<";
+    case RIGHT_SHIFT :
+        return ">>";
 
     case IDENTIFIER :
         return "<identifier>";

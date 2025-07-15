@@ -95,6 +95,22 @@ void AssemblyGen::binary( const tac::Binary atac, std::vector<at::Instruction>& 
     case tac::BinaryOpType::Multiply :
         binary->op = at::BinaryOpType::MUL;
         break;
+    case tac::BinaryOpType::BitwiseAnd :
+        binary->op = at::BinaryOpType::AND;
+        break;
+    case tac::BinaryOpType::BitwiseOr :
+        binary->op = at::BinaryOpType::OR;
+        break;
+    case tac::BinaryOpType::BitwiseXor :
+        binary->op = at::BinaryOpType::XOR;
+        break;
+    case tac::BinaryOpType::ShiftLeft :
+        binary->op = at::BinaryOpType::SHL;
+        break;
+    case tac::BinaryOpType::ShiftRight :
+        binary->op = at::BinaryOpType::SHR;
+        break;
+    default :
     }
     binary->operand1 = value( atac->src2 );
     binary->operand2 = value( atac->dst );

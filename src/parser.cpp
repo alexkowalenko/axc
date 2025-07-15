@@ -18,8 +18,15 @@
 #include <map>
 
 std::map<TokenType, Precedence> precedence_map = {
-    { TokenType::PLUS, Precedence::Sum },        { TokenType::DASH, Precedence::Sum },
-    { TokenType::ASTÉRIX, Precedence::Product }, { TokenType::SLASH, Precedence::Product },
+    { TokenType::PIPE, Precedence::BitwiseOr },
+    { TokenType::CARET, Precedence::BitwiseXor },
+    { TokenType::AMPERSAND, Precedence::BitwiseAnd },
+    { TokenType::LEFT_SHIFT, Precedence::Shift },
+    { TokenType::RIGHT_SHIFT, Precedence::Shift },
+    { TokenType::PLUS, Precedence::Sum },
+    { TokenType::DASH, Precedence::Sum },
+    { TokenType::ASTÉRIX, Precedence::Product },
+    { TokenType::SLASH, Precedence::Product },
     { TokenType::PERCENT, Precedence::Product },
 };
 
@@ -89,6 +96,11 @@ const std::map<TokenType, InfixParselet> infix_map {
     { TokenType::ASTÉRIX, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
     { TokenType::SLASH, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
     { TokenType::PERCENT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::AMPERSAND, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::CARET, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::PIPE, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::LEFT_SHIFT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::RIGHT_SHIFT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
 };
 
 ast::Expr Parser::expr( const Precedence precedence ) {
@@ -130,7 +142,7 @@ ast::BinaryOp Parser::binaryOp( ast::Expr left ) {
     auto op = make_AST<ast::BinaryOp_>();
     op->left = std::move( left );
     op->op = token.tok;
-    op->right = expr( static_cast<Precedence>(static_cast<int>(get_precedence( token.tok )) + 1) );
+    op->right = expr( static_cast<Precedence>( static_cast<int>( get_precedence( token.tok ) ) + 1 ) );
     return op;
 }
 

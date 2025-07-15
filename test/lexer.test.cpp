@@ -37,7 +37,9 @@ TEST( Lexer, Basic ) { // NOLINT
         { "(", TokenType::L_PAREN, "(" },     { ")", TokenType::R_PAREN, ")" },    { "{", TokenType::L_BRACE, "{" },
         { "}", TokenType::R_BRACE, "}" },     { " ;", TokenType::SEMICOLON, ";" }, { "-", TokenType::DASH, "-" },
         { "--", TokenType::DECREMENT, "--" }, { "~", TokenType::TILDE, "~" },      { "+", TokenType::PLUS, "+" },
-        { "/", TokenType::SLASH, "/" },       { "%", TokenType::PERCENT, "%" },
+        { "/", TokenType::SLASH, "/" },       { "%", TokenType::PERCENT, "%" },    { "&", TokenType::AMPERSAND, "&" },
+        { "|", TokenType::PIPE, "|" },     { "^", TokenType::CARET, "^" },    { "<<", TokenType::LEFT_SHIFT, "<<" },
+        { ">>", TokenType::RIGHT_SHIFT, ">>" },
 
         { "", TokenType::Eof, "" },
     };
