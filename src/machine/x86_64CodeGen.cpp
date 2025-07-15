@@ -128,7 +128,7 @@ void X86_64CodeGen::visit_Idiv( const at::Idiv ast ) {
 }
 
 void X86_64CodeGen::visit_Cdq( const at::Cdq ast ) {
-    add_line( "ret", "" );
+    add_line( "cdq", "" );
 }
 
 void X86_64CodeGen::visit_Imm( const at::Imm ast ) {
