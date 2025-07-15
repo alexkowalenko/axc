@@ -20,17 +20,17 @@ class X86_64CodeGen : public CodeGenerator, public at::Visitor<void> {
 
     void generate( at::Program program ) override;
 
-    void visit_Program( const at::Program& ast ) override;
-    void visit_FunctionDef( const at::FunctionDef& ast ) override;
-    void visit_Mov( const at::Mov& ast ) override;
-    void visit_Unary( const at::Unary& ast ) override;
-    void visit_AllocateStack( const at::AllocateStack& ast ) override;
-    void visit_Ret( const at::Ret& ast ) override;
+    void visit_Program( const at::Program ast ) override;
+    void visit_FunctionDef( const at::FunctionDef ast ) override;
+    void visit_Mov( const at::Mov ast ) override;
+    void visit_Unary( const at::Unary ast ) override;
+    void visit_AllocateStack( const at::AllocateStack ast ) override;
+    void visit_Ret( const at::Ret ast ) override;
 
-    void visit_Imm( const at::Imm& ast ) override;
-    void visit_Register( const at::Register& ast ) override;
-    void visit_Pseudo( const at::Pseudo& ast ) override;
-    void visit_Stack( const at::Stack& ast ) override;
+    void visit_Imm( const at::Imm ast ) override;
+    void visit_Register( const at::Register ast ) override;
+    void visit_Pseudo( const at::Pseudo ast ) override;
+    void visit_Stack( const at::Stack ast ) override;
 
   private:
     std::string operand( const at::Operand& op );

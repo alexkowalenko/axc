@@ -17,11 +17,11 @@ void AssemblyFixInstruct::filter( at::Program program ) {
     program->accept( this );
 }
 
-void AssemblyFixInstruct::visit_Program( const at::Program& ast ) {
+void AssemblyFixInstruct::visit_Program( const at::Program ast ) {
     ast->function->accept( this );
 }
 
-void AssemblyFixInstruct::visit_FunctionDef( const at::FunctionDef& ast ) {
+void AssemblyFixInstruct::visit_FunctionDef( const at::FunctionDef ast ) {
     std::vector<at::Instruction> instructions;
     instructions.reserve( ast->instructions.size() + 1 );
 

@@ -33,12 +33,12 @@ void X86_64CodeGen::generate( at::Program program ) {
     file.close();
 }
 
-void X86_64CodeGen::visit_Program( const at::Program& ast ) {
+void X86_64CodeGen::visit_Program( const at::Program ast ) {
     add_line( std::format( "# file: {}", option.input_file ) );
     ast->function->accept( this );
 }
 
-void X86_64CodeGen::visit_FunctionDef( const at::FunctionDef& ast ) {
+void X86_64CodeGen::visit_FunctionDef( const at::FunctionDef ast ) {
     std::string name = ast->name;
     if ( option.system == System::MacOS ) {
         name = "_" + name;
@@ -80,18 +80,18 @@ std::string X86_64CodeGen::operand( const at::Operand& op ) {
                        op );
 }
 
-void X86_64CodeGen::visit_Mov( const at::Mov& ast ) {
+void X86_64CodeGen::visit_Mov( const at::Mov ast ) {
     std::string buf = std::format( "{}, {}", operand( ast->src ), operand( ast->dst ) );
     add_line( "movl", buf );
 }
 
-void X86_64CodeGen::visit_Ret( const at::Ret& ast ) {
+void X86_64CodeGen::visit_Ret( const at::Ret ast ) {
     add_line( "movq", "%rbp, %rsp", ast->location.line );
     add_line( "popq", "%rbp" );
     add_line( "ret", "" );
 }
 
-void X86_64CodeGen::visit_Unary( const at::Unary& ast ) {
+void X86_64CodeGen::visit_Unary( const at::Unary ast ) {
     switch ( ast->op ) {
     case at::UnaryOpType::NEG :
         add_line( "negl", operand( ast->operand ) );
@@ -104,22 +104,22 @@ void X86_64CodeGen::visit_Unary( const at::Unary& ast ) {
     }
 }
 
-void X86_64CodeGen::visit_AllocateStack( const at::AllocateStack& ast ) {
+void X86_64CodeGen::visit_AllocateStack( const at::AllocateStack ast ) {
     add_line( "subq", std::format( "${}, %rsp", ast->size ) );
 }
 
-void X86_64CodeGen::visit_Imm( const at::Imm& ast ) {
+void X86_64CodeGen::visit_Imm( const at::Imm ast ) {
     last_string = std::format( "${}", ast->value );
 }
 
-void X86_64CodeGen::visit_Register( const at::Register& ast ) {
+void X86_64CodeGen::visit_Register( const at::Register ast ) {
     last_string = std::format( "%{}", ast->reg );
 }
 
-void X86_64CodeGen::visit_Pseudo( const at::Pseudo& ast ) {
+void X86_64CodeGen::visit_Pseudo( const at::Pseudo ast ) {
     throw CodeException( ast->location, "Pseudo should not be in final code generation" );
 }
 
-void X86_64CodeGen::visit_Stack( const at::Stack& ast ) {
+void X86_64CodeGen::visit_Stack( const at::Stack ast ) {
     last_string = std::format( "{}(%rbp)", ast->offset );
 }

@@ -12,15 +12,15 @@
 #include "common.h"
 #include "tac/includes.h"
 
-std::string PrinterTAC::print( const tac::Program& ast ) {
+std::string PrinterTAC::print( const tac::Program ast ) {
     return ast->accept( this );
 }
 
-std::string PrinterTAC::visit_Program( const tac::Program& ast ) {
+std::string PrinterTAC::visit_Program( const tac::Program ast ) {
     return ast->function->accept( this );
 }
 
-std::string PrinterTAC::visit_FunctionDef( const tac::FunctionDef& ast ) {
+std::string PrinterTAC::visit_FunctionDef( const tac::FunctionDef ast ) {
     std::string buf = std::format( "Function({})\n", ast->name );
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
@@ -33,17 +33,17 @@ std::string PrinterTAC::visit_FunctionDef( const tac::FunctionDef& ast ) {
     return buf;
 }
 
-std::string PrinterTAC::value( const tac::Value& ast ) {
+std::string PrinterTAC::value( const tac::Value ast ) {
     return std::visit( overloaded { [ this ]( tac::Constant c ) -> std::string { return c->accept( this ); },
                                     [ this ]( tac::Variable v ) -> std::string { return v->accept( this ); } },
                        ast );
 }
 
-std::string PrinterTAC::visit_Return( const tac::Return& ast ) {
+std::string PrinterTAC::visit_Return( const tac::Return ast ) {
     return std::format( "Return({})", value( ast->value ) );
 }
 
-std::string PrinterTAC::visit_Unary( const tac::Unary& ast ) {
+std::string PrinterTAC::visit_Unary( const tac::Unary ast ) {
     std::string buf = "Unary(";
     switch ( ast->op ) {
     case tac::UnaryOpType::Negate :
@@ -59,7 +59,7 @@ std::string PrinterTAC::visit_Unary( const tac::Unary& ast ) {
     return buf;
 }
 
-std::string PrinterTAC::visit_Binary( const tac::Binary& ast ) {
+std::string PrinterTAC::visit_Binary( const tac::Binary ast ) {
     std::string buf = "Unary(";
     switch ( ast->op ) {
     case tac::BinaryOpType::Add :
@@ -84,10 +84,10 @@ std::string PrinterTAC::visit_Binary( const tac::Binary& ast ) {
     return buf;
 }
 
-std::string PrinterTAC::visit_Constant( const tac::Constant& ast ) {
+std::string PrinterTAC::visit_Constant( const tac::Constant ast ) {
     return std::format( "Constant({:d})", ast->value );
 }
 
-std::string PrinterTAC::visit_Variable( const tac::Variable& ast ) {
+std::string PrinterTAC::visit_Variable( const tac::Variable ast ) {
     return std::format( "Variable({})", ast->name );
 }

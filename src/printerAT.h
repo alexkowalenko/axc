@@ -20,19 +20,19 @@ class PrinterAT : public at::Visitor<std::string> {
     PrinterAT() = default;
     ~PrinterAT() override = default;
 
-    std::string print( const at::Program& ast );
+    std::string print( const at::Program ast );
 
-    std::string visit_Program( const at::Program& ast ) override;
-    std::string visit_FunctionDef( const at::FunctionDef& ast ) override;
-    std::string visit_Mov( const at::Mov& ast ) override;
-    std::string visit_Imm( const at::Imm& ast ) override;
-    std::string visit_Unary( const at::Unary& ast ) override;
-    std::string visit_AllocateStack( const at::AllocateStack& ast ) override;
+    std::string visit_Program( const at::Program ast ) override;
+    std::string visit_FunctionDef( const at::FunctionDef ast ) override;
+    std::string visit_Mov( const at::Mov ast ) override;
+    std::string visit_Imm( const at::Imm ast ) override;
+    std::string visit_Unary( const at::Unary ast ) override;
+    std::string visit_AllocateStack( const at::AllocateStack ast ) override;
 
-    std::string visit_Register( const at::Register& ast ) override;
-    std::string visit_Ret( const at::Ret& ast ) override;
-    std::string visit_Pseudo( const at::Pseudo& ast ) override;
-    std::string visit_Stack( const at::Stack& ast ) override;
+    std::string visit_Register( const at::Register ast ) override;
+    std::string visit_Ret( const at::Ret ast ) override;
+    std::string visit_Pseudo( const at::Pseudo ast ) override;
+    std::string visit_Stack( const at::Stack ast ) override;
 
     std::string indent { "  " };
 

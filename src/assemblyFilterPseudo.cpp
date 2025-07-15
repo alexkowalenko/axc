@@ -17,11 +17,11 @@ void AssemblyFilterPseudo::filter( at::Program program ) {
     program->accept( this );
 }
 
-void AssemblyFilterPseudo::visit_Program( const at::Program& ast ) {
+void AssemblyFilterPseudo::visit_Program( const at::Program ast ) {
     ast->function->accept( this );
 }
 
-void AssemblyFilterPseudo::visit_FunctionDef( const at::FunctionDef& ast ) {
+void AssemblyFilterPseudo::visit_FunctionDef( const at::FunctionDef ast ) {
     for ( auto const& instr : ast->instructions ) {
         std::visit( overloaded { [ this ]( at::Mov v ) -> void { v->accept( this ); },
                                  [ this ]( at::Unary u ) -> void { return u->accept( this ); },
@@ -31,12 +31,12 @@ void AssemblyFilterPseudo::visit_FunctionDef( const at::FunctionDef& ast ) {
     }
 }
 
-void AssemblyFilterPseudo::visit_Mov( const at::Mov& ast ) {
+void AssemblyFilterPseudo::visit_Mov( const at::Mov ast ) {
     ast->src = operand( ast->src );
     ast->dst = operand( ast->dst );
 }
 
-void AssemblyFilterPseudo::visit_Unary( const at::Unary& ast ) {
+void AssemblyFilterPseudo::visit_Unary( const at::Unary ast ) {
     ast->operand = operand( ast->operand );
 }
 

@@ -19,7 +19,7 @@ template <typename T> class Visitor {
     virtual ~Visitor() = default;
     
     {% for class, members in type_items %}
-    virtual T visit_{{ class }}({{ class }} const & ast) = 0;
+    virtual T visit_{{ class }}({{ class }} const ast) = 0;
     {% endfor %}
 };
 }
