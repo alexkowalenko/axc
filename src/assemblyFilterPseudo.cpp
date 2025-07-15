@@ -24,8 +24,11 @@ void AssemblyFilterPseudo::visit_Program( const at::Program ast ) {
 void AssemblyFilterPseudo::visit_FunctionDef( const at::FunctionDef ast ) {
     for ( auto const& instr : ast->instructions ) {
         std::visit( overloaded { [ this ]( at::Mov v ) -> void { v->accept( this ); },
-                                 [ this ]( at::Unary u ) -> void { return u->accept( this ); },
-                                 [ this ]( at::AllocateStack a ) -> void { return a->accept( this ); },
+                                 [ this ]( at::Unary u ) -> void { u->accept( this ); },
+                                 [ this ]( at::Binary b ) -> void { b->accept( this ); },
+                                 [ this ]( at::AllocateStack a ) -> void { a->accept( this ); },
+                                 [ this ]( at::Idiv i ) -> void { i->accept( this ); },
+                                 [ this ]( at::Cdq c ) -> void { c->accept( this ); },
                                  [ this ]( at::Ret r ) -> void { r->accept( this ); } },
                     instr );
     }
@@ -38,6 +41,15 @@ void AssemblyFilterPseudo::visit_Mov( const at::Mov ast ) {
 
 void AssemblyFilterPseudo::visit_Unary( const at::Unary ast ) {
     ast->operand = operand( ast->operand );
+}
+
+void AssemblyFilterPseudo::visit_Binary( const at::Binary ast ) {
+    ast->operand1 = operand( ast->operand1 );
+    ast->operand2 = operand( ast->operand2 );
+}
+
+void AssemblyFilterPseudo::visit_Idiv( const at::Idiv ast ) {
+    ast->src = operand( ast->src );
 }
 
 at::Operand AssemblyFilterPseudo::operand( const at::Operand& op ) {

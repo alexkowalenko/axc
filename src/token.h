@@ -61,6 +61,8 @@ constexpr auto to_string( const TokenType l ) {
         return "*";
     case SLASH :
         return "/";
+    case PERCENT :
+        return "%";
     case TILDE :
         return "~";
     case DECREMENT :

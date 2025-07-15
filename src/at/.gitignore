@@ -1,5 +1,8 @@
 allocatestack.h
+binary.h
+cdq.h
 functiondef.h
+idiv.h
 imm.h
 includes.h
 mov.h

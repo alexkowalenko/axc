@@ -30,11 +30,26 @@ enum class UnaryOpType {
     NOT
 };
 
+enum class BinaryOpType {
+    ADD,
+    SUB,
+    MUL,
+};
+
 class Mov_;
 using Mov = std::shared_ptr<Mov_>;
 
 class Unary_;
 using Unary = std::shared_ptr<Unary_>;
+
+class Binary_;
+using Binary = std::shared_ptr<Binary_>;
+
+class Idiv_;
+using Idiv = std::shared_ptr<Idiv_>;
+
+class Cdq_;
+using Cdq = std::shared_ptr<Cdq_>;
 
 class AllocateStack_;
 using AllocateStack = std::shared_ptr<AllocateStack_>;
@@ -42,7 +57,7 @@ using AllocateStack = std::shared_ptr<AllocateStack_>;
 class Ret_;
 using Ret = std::shared_ptr<Ret_>;
 
-using Instruction = std::variant<Mov, Unary, AllocateStack, Ret>;
+using Instruction = std::variant<Mov, Unary, Binary, Idiv, Cdq, AllocateStack, Ret>;
 
 class Imm_;
 using Imm = std::shared_ptr<Imm_>;

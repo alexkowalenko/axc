@@ -16,9 +16,12 @@ if __name__ == "__main__":
         {
            "Program": [("FunctionDef", "function", False)],
            "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False)],
-            # 4 Operations for Instruction
+            # Operations for Instructions
            "Mov": [("Operand", "src", False), ("Operand", "dst", False) ],
            "Unary": [("UnaryOpType", "op", False), ("Operand", "operand", False) ],
+           "Binary": [("BinaryOpType", "op", False), ("Operand", "operand1", False), ("Operand", "operand2", False) ],
+           "Idiv": [("Operand", "src", False) ],
+           "Cdq": [],
            "AllocateStack": [("std::int32_t", "size", False)],
            "Ret": [],
             # 4 Operand types for Operand

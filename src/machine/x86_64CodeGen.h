@@ -26,6 +26,9 @@ class X86_64CodeGen : public CodeGenerator, public at::Visitor<void> {
     void visit_Unary( const at::Unary ast ) override;
     void visit_AllocateStack( const at::AllocateStack ast ) override;
     void visit_Ret( const at::Ret ast ) override;
+    void visit_Binary( const at::Binary ast ) override;
+    void visit_Idiv( const at::Idiv ast ) override;
+    void visit_Cdq( const at::Cdq ast ) override;
 
     void visit_Imm( const at::Imm ast ) override;
     void visit_Register( const at::Register ast ) override;

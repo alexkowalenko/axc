@@ -17,15 +17,21 @@ template <typename T> constexpr std::shared_ptr<T> make_AT( const std::shared_pt
     return std::make_shared<T>( b->location );
 }
 
+constexpr at::Register mk_reg( const std::shared_ptr<tac::Base> b, const std::string_view name ) {
+    auto reg = make_AT<at::Register_>( b );
+    reg->reg = name;
+    return reg;
+}
+
 } // namespace
 
-at::Program AssemblyGen::generate( const tac::Program& atac ) {
+at::Program AssemblyGen::generate( const tac::Program atac ) {
     auto program = make_AT<at::Program_>( atac );
     program->function = functionDef( atac->function );
     return program;
 }
 
-at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef& atac ) {
+at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
     auto function = make_AT<at::FunctionDef_>( atac );
     function->name = atac->name;
     function->instructions = {};
@@ -39,18 +45,16 @@ at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef& atac ) {
     return function;
 };
 
-void AssemblyGen::ret( const tac::Return& atac, std::vector<at::Instruction>& instructions ) {
+void AssemblyGen::ret( const tac::Return atac, std::vector<at::Instruction>& instructions ) {
     auto mov = make_AT<at::Mov_>( atac );
     mov->src = value( atac->value );
-    auto reg = make_AT<at::Register_>( atac );
-    reg->reg = "eax";
-    mov->dst = reg;
+    mov->dst = mk_reg( atac, "eax" );
     instructions.push_back( mov );
     auto ret = make_AT<at::Ret_>( atac );
     instructions.push_back( ret );
 };
 
-void AssemblyGen::unary( const tac::Unary& atac, std::vector<at::Instruction>& instructions ) {
+void AssemblyGen::unary( const tac::Unary atac, std::vector<at::Instruction>& instructions ) {
     auto mov = make_AT<at::Mov_>( atac );
     mov->src = value( atac->src );
     mov->dst = value( atac->dst );
@@ -70,7 +74,63 @@ void AssemblyGen::unary( const tac::Unary& atac, std::vector<at::Instruction>& i
     instructions.push_back( unary );
 };
 
-void AssemblyGen::binary( const tac::Binary& atac, std::vector<at::Instruction>& instructions ) {}
+void AssemblyGen::binary( const tac::Binary atac, std::vector<at::Instruction>& instructions ) {
+    if ( atac->op == tac::BinaryOpType::Divide || atac->op == tac::BinaryOpType::Modulo ) {
+        idiv( atac, instructions );
+        return;
+    }
+
+    auto mov = make_AT<at::Mov_>( atac );
+    mov->src = value( atac->src1 );
+    mov->dst = value( atac->dst );
+    instructions.push_back( mov );
+    auto binary = make_AT<at::Binary_>( atac );
+    switch ( atac->op ) {
+    case tac::BinaryOpType::Add :
+        binary->op = at::BinaryOpType::ADD;
+        break;
+    case tac::BinaryOpType::Subtract :
+        binary->op = at::BinaryOpType::SUB;
+        break;
+    case tac::BinaryOpType::Multiply :
+        binary->op = at::BinaryOpType::MUL;
+        break;
+    }
+    binary->operand1 = value( atac->src2 );
+    binary->operand2 = value( atac->dst );
+    instructions.push_back( binary );
+}
+
+void AssemblyGen::idiv( const tac::Binary atac, std::vector<at::Instruction>& instructions ) {
+
+    auto ax = mk_reg( atac, "eax" );
+    auto dx = mk_reg( atac, "edx" );
+
+    // Mov(src1, Reg(AX))
+    auto mov = make_AT<at::Mov_>( atac );
+    mov->src = value( atac->src1 );
+    mov->dst = ax;
+    instructions.push_back( mov );
+
+    // Cdq
+    instructions.push_back( make_AT<at::Cdq_>( atac ) );
+
+    // Idiv(src2)
+    auto idiv = make_AT<at::Idiv_>( atac );
+    idiv->src = value( atac->src2 );
+    instructions.push_back( idiv );
+
+    // Mov(Reg(AX), dst)
+    mov = make_AT<at::Mov_>( atac );
+    if ( atac->op == tac::BinaryOpType::Divide ) {
+        mov->src = ax;
+    } else {
+        // Modulo
+        mov->src = dx;
+    }
+    mov->dst = value( atac->dst );
+    instructions.push_back( mov );
+}
 
 at::Operand AssemblyGen::value( const tac::Value& atac ) {
     return std::visit( overloaded { [ this ]( tac::Constant c ) -> at::Operand { return constant( c ); },

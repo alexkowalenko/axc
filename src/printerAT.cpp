@@ -28,7 +28,10 @@ std::string PrinterAT::visit_FunctionDef( const at::FunctionDef ast ) {
         buf += indent;
         buf += std::visit( overloaded { [ this ]( at::Mov v ) -> std::string { return v->accept( this ); },
                                         [ this ]( at::Unary u ) -> std::string { return u->accept( this ); },
+                                        [ this ]( at::Binary b ) -> std::string { return b->accept( this ); },
                                         [ this ]( at::AllocateStack a ) -> std::string { return a->accept( this ); },
+                                        [ this ]( at::Idiv i ) -> std::string { return i->accept( this ); },
+                                        [ this ]( at::Cdq c ) -> std::string { return c->accept( this ); },
                                         [ this ]( at::Ret r ) -> std::string { return r->accept( this ); } },
                            instr );
         buf += "\n";
@@ -70,6 +73,31 @@ std::string PrinterAT::visit_Unary( const at::Unary ast ) {
     return buf;
 };
 
+std::string PrinterAT::visit_Binary( const at::Binary ast ) {
+    std::string buf = "Binary(";
+    switch ( ast->op ) {
+    case at::BinaryOpType::ADD :
+        buf += "ADD";
+        break;
+    case at::BinaryOpType::SUB :
+        buf += "SUB";
+        break;
+    case at::BinaryOpType::MUL :
+        buf += "MUL";
+        break;
+    }
+    buf += ", " + operand( ast->operand1 ) + ", " + operand( ast->operand2 ) + ")";
+    return buf;
+}
+
+std::string PrinterAT::visit_Idiv( const at::Idiv ast ) {
+    return std::format("Idiv({})", operand( ast->src ));
+}
+
+std::string PrinterAT::visit_Cdq( const at::Cdq ast ) {
+    return "Cdq";
+}
+
 std::string PrinterAT::visit_AllocateStack( const at::AllocateStack ast ) {
     return std::format( "AllocateStack({})", ast->size );
 };
@@ -87,5 +115,5 @@ std::string PrinterAT::visit_Stack( const at::Stack ast ) {
 }
 
 std::string PrinterAT::visit_Ret( const at::Ret ast ) {
-    return "RET";
+    return "Ret";
 };

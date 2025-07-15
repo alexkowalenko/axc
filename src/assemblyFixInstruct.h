@@ -26,11 +26,15 @@ class AssemblyFixInstruct : public at::Visitor<void> {
     void visit_Program( const at::Program ast ) override;
     void visit_FunctionDef( const at::FunctionDef ast ) override;
 
-    void visit_Mov( const at::Mov ast ) override {};
+    void visit_Mov( const at::Mov ast ) override;
     void visit_Unary( const at::Unary ast ) override {};
     void visit_AllocateStack( const at::AllocateStack ast ) override {};
     void visit_Ret( const at::Ret ast ) override {};
     void visit_Imm( const at::Imm ast ) override {};
+    void visit_Binary( const at::Binary ast ) override;
+    void visit_Idiv( const at::Idiv ast ) override;
+    void visit_Cdq( const at::Cdq ast ) override {};
+
     void visit_Register( const at::Register ast ) override {};
     void visit_Pseudo( const at::Pseudo ast ) override {};
     void visit_Stack( const at::Stack ast ) override {};
@@ -38,4 +42,5 @@ class AssemblyFixInstruct : public at::Visitor<void> {
   private:
     int                  number_stack_locations { 0 };
     static constexpr int stack_increment { 4 };
+    std::vector<at::Instruction> current_instructions;
 };

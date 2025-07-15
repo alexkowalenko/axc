@@ -23,4 +23,5 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 - [X] Lexer.
 - [X] Parser.
 - [X] TAC intermediate.
-- [ ] Code Generator.
+- [X] Code Generator.
+- [ ] Output.

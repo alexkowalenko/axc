@@ -52,8 +52,11 @@ void X86_64CodeGen::visit_FunctionDef( const at::FunctionDef ast ) {
 
     for ( auto const& instr : ast->instructions ) {
         std::visit( overloaded { [ this ]( at::Mov v ) -> void { v->accept( this ); },
-                                 [ this ]( at::Unary u ) -> void { return u->accept( this ); },
-                                 [ this ]( at::AllocateStack a ) -> void { return a->accept( this ); },
+                                 [ this ]( at::Unary u ) -> void { u->accept( this ); },
+                                 [ this ]( at::Binary b ) -> void { b->accept( this ); },
+                                 [ this ]( at::AllocateStack a ) -> void { a->accept( this ); },
+                                 [ this ]( at::Idiv i ) -> void { i->accept( this ); },
+                                 [ this ]( at::Cdq c ) -> void { c->accept( this ); },
                                  [ this ]( at::Ret r ) -> void { r->accept( this ); } },
                     instr );
     }
@@ -107,6 +110,10 @@ void X86_64CodeGen::visit_Unary( const at::Unary ast ) {
 void X86_64CodeGen::visit_AllocateStack( const at::AllocateStack ast ) {
     add_line( "subq", std::format( "${}, %rsp", ast->size ) );
 }
+
+void X86_64CodeGen::visit_Binary( const at::Binary ast ) {}
+void X86_64CodeGen::visit_Idiv( const at::Idiv ast ) {}
+void X86_64CodeGen::visit_Cdq( const at::Cdq ast ) {}
 
 void X86_64CodeGen::visit_Imm( const at::Imm ast ) {
     last_string = std::format( "${}", ast->value );
