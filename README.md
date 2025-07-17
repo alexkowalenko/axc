@@ -28,7 +28,7 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 - [X] Extra: Bitwise Operators &,|,ˆ,<<,>>
 
 ## Chapter 4 Logical and Relational Operators
-- [ ] Lexer.
+- [X] Lexer.
 - [ ] Parser.
 - [ ] TAC intermediate.
 - [ ] Code Generator.

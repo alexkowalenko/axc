@@ -130,7 +130,7 @@ Token Lexer::make_token() {
         return { TokenType::R_BRACE, get_location() };
     case ';' :
         return { TokenType::SEMICOLON, get_location() };
-    case '+':
+    case '+' :
         return { TokenType::PLUS, get_location() };
     case '-' :
         if ( peek() == '-' ) {
@@ -138,32 +138,61 @@ Token Lexer::make_token() {
             return { TokenType::DECREMENT, get_location() };
         }
         return { TokenType::DASH, get_location() };
-    case '*':
+    case '*' :
         return { TokenType::ASTÉRIX, get_location() };
-    case '%':
+    case '%' :
         return { TokenType::PERCENT, get_location() };
-    case '/':
+    case '/' :
         return { TokenType::SLASH, get_location() };
     case '~' :
         return { TokenType::TILDE, get_location() };
     case '&' :
+        if ( peek() == '&' ) {
+            get();
+            return { TokenType::LOGICAL_AND, get_location() };
+        }
         return { TokenType::AMPERSAND, get_location() };
     case '|' :
+        if ( peek() == '|' ) {
+            get();
+            return { TokenType::LOGICAL_OR, get_location() };
+        }
         return { TokenType::PIPE, get_location() };
     case '^' :
         return { TokenType::CARET, get_location() };
+    case '!' :
+        if ( peek() == '=' ) {
+            get();
+            return { TokenType::COMPARISON_NOT, get_location() };
+        }
+        return { TokenType::EXCLAMATION, get_location() };
     case '<' :
         if ( peek() == '<' ) {
             get();
             return { TokenType::LEFT_SHIFT, get_location() };
         }
-        break;
+        if ( peek() == '=' ) {
+            get();
+            return { TokenType::LESS_EQUALS, get_location() };
+        }
+        return { TokenType::LESS, get_location() };
     case '>' :
         if ( peek() == '>' ) {
             get();
             return { TokenType::RIGHT_SHIFT, get_location() };
         }
-        break;
+        if ( peek() == '=' ) {
+            get();
+            return { TokenType::GREATER_EQUALS, get_location() };
+        }
+        return { TokenType::GREATER, get_location() };
+    case '=' : {
+        if ( peek() == '=' ) {
+            get();
+            return { TokenType::COMPARISON_EQUALS, get_location() };
+        }
+        return { TokenType::EQUALS, get_location() };
+    }
     default :;
     };
     if ( std::isdigit( c ) ) {

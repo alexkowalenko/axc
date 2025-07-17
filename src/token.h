@@ -32,10 +32,20 @@ enum class TokenType : std::uint8_t {
     AMPERSAND,
     PIPE,
     CARET,
+    EXCLAMATION,
+    EQUALS,
+    LESS,
+    GREATER,
 
     DECREMENT,
     LEFT_SHIFT,
     RIGHT_SHIFT,
+    LOGICAL_AND,
+    LOGICAL_OR,
+    COMPARISON_EQUALS,
+    COMPARISON_NOT,
+    LESS_EQUALS,
+    GREATER_EQUALS,
 
     IDENTIFIER,
     CONSTANT,
@@ -63,7 +73,7 @@ constexpr auto to_string( const TokenType l ) {
         return "+";
     case DASH :
         return "-";
-    case ASTÉRIX:
+    case ASTÉRIX :
         return "*";
     case SLASH :
         return "/";
@@ -77,6 +87,14 @@ constexpr auto to_string( const TokenType l ) {
         return "|";
     case CARET :
         return "^";
+    case EXCLAMATION :
+        return "!";
+    case EQUALS :
+        return "=";
+    case GREATER :
+        return ">";
+    case LESS :
+        return "<";
 
     case DECREMENT :
         return "--";
@@ -84,6 +102,18 @@ constexpr auto to_string( const TokenType l ) {
         return "<<";
     case RIGHT_SHIFT :
         return ">>";
+    case GREATER_EQUALS :
+        return ">=";
+    case LESS_EQUALS :
+        return "<=";
+    case COMPARISON_EQUALS :
+        return "==";
+    case COMPARISON_NOT :
+        return "!=";
+    case LOGICAL_AND :
+        return "&&";
+    case LOGICAL_OR :
+        return "||";
 
     case IDENTIFIER :
         return "<identifier>";
