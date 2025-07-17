@@ -10,9 +10,18 @@
 
 #include "printerAT.h"
 
+#include <algorithm>
+
 #include "../ast/base.h"
 #include "../at/includes.h"
 #include "../common.h"
+#include "x86_common.h"
+
+std::string to_upper( const std::string& s ) {
+    std::string buf = "  ";
+    std::transform( s.begin(), s.end(), buf.begin(), []( unsigned char c ) { return std::toupper( c ); } );
+    return buf;
+}
 
 std::string PrinterAT::print( const at::Program ast ) {
     return ast->accept( this );
@@ -29,9 +38,14 @@ std::string PrinterAT::visit_FunctionDef( const at::FunctionDef ast ) {
         buf += std::visit( overloaded { [ this ]( at::Mov v ) -> std::string { return v->accept( this ); },
                                         [ this ]( at::Unary u ) -> std::string { return u->accept( this ); },
                                         [ this ]( at::Binary b ) -> std::string { return b->accept( this ); },
+                                        [ this ]( at::Cmp b ) -> std::string { return b->accept( this ); },
                                         [ this ]( at::AllocateStack a ) -> std::string { return a->accept( this ); },
                                         [ this ]( at::Idiv i ) -> std::string { return i->accept( this ); },
                                         [ this ]( at::Cdq c ) -> std::string { return c->accept( this ); },
+                                        [ this ]( at::Jump c ) -> std::string { return c->accept( this ); },
+                                        [ this ]( at::JumpCC c ) -> std::string { return c->accept( this ); },
+                                        [ this ]( at::SetCC c ) -> std::string { return c->accept( this ); },
+                                        [ this ]( at::Label c ) -> std::string { return c->accept( this ); },
                                         [ this ]( at::Ret r ) -> std::string { return r->accept( this ); } },
                            instr );
         buf += "\n";
@@ -112,6 +126,26 @@ std::string PrinterAT::visit_Idiv( const at::Idiv ast ) {
 
 std::string PrinterAT::visit_Cdq( const at::Cdq ast ) {
     return "Cdq";
+}
+
+std::string PrinterAT::visit_Cmp( const at::Cmp ast ) {
+    return std::format( "Cmp({}, {})", operand( ast->operand1 ), operand( ast->operand2 ) );
+}
+
+std::string PrinterAT::visit_Jump( const at::Jump ast ) {
+    return std::format( "Jump({})", ast->target );
+}
+
+std::string PrinterAT::visit_JumpCC( const at::JumpCC ast ) {
+    return std::format( "JumpCC({} -> {})", to_upper(cond_code( ast->cond )), ast->target );
+}
+
+std::string PrinterAT::visit_SetCC( const at::SetCC ast ) {
+    return std::format( "SetCC({} -> {})", to_upper(cond_code( ast->cond )), operand( ast->operand ) );
+}
+
+std::string PrinterAT::visit_Label( const at::Label ast ) {
+    return std::format( "Label({})", ast->name );
 }
 
 std::string PrinterAT::visit_AllocateStack( const at::AllocateStack ast ) {

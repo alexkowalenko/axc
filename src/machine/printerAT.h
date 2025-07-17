@@ -31,7 +31,11 @@ class PrinterAT : public at::Visitor<std::string> {
     std::string visit_Binary( const at::Binary ast ) override;
     std::string visit_Idiv( const at::Idiv ast ) override;
     std::string visit_Cdq( const at::Cdq ast ) override;
-
+    std::string visit_Cmp( const at::Cmp ast ) override;
+    std::string visit_Jump( const at::Jump ast ) override;
+    std::string visit_JumpCC( const at::JumpCC ast ) override;
+    std::string visit_SetCC( const at::SetCC ast ) override;
+    std::string visit_Label( const at::Label ast ) override;
 
     std::string visit_Register( const at::Register ast ) override;
     std::string visit_Ret( const at::Ret ast ) override;

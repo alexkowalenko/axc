@@ -23,21 +23,22 @@ std::string  temp_name() {
     return std::format( "temp.{}", temp_counter++ );
 }
 
-template <typename T> constexpr std::shared_ptr<T> make_tac( const std::shared_ptr<ast::Base> b ) {
-    return std::make_shared<T>( b->location );
+template <typename T, typename... Args>
+constexpr std::shared_ptr<T> mk_TAC( const std::shared_ptr<ast::Base> b, Args... args ) {
+    return std::make_shared<T>( b->location, args... );
 }
 
 } // namespace
 
 tac::Program TacGen::generate( ast::Program ast ) {
-    auto program = make_tac<tac::Program_>( ast );
+    auto program = mk_TAC<tac::Program_>( ast );
     program->function = functionDef( ast->function );
     return program;
 }
 
 tac::FunctionDef TacGen::functionDef( ast::FunctionDef ast ) {
     spdlog::debug( "tac::functionDef: {}", ast->name );
-    auto function = make_tac<tac::FunctionDef_>( ast );
+    auto function = mk_TAC<tac::FunctionDef_>( ast );
     function->name = ast->name;
     function->instructions = ret( ast->statement->ret );
     return function;
@@ -51,7 +52,7 @@ std::vector<tac::Instruction> TacGen::ret( ast::Return ast ) {
     auto value = expr( ast->expr, instructions );
 
     // Do Return
-    auto ret = make_tac<tac::Return_>( ast );
+    auto ret = mk_TAC<tac::Return_>( ast );
     ret->value = value;
     instructions.push_back( ret );
     return instructions;
@@ -59,23 +60,16 @@ std::vector<tac::Instruction> TacGen::ret( ast::Return ast ) {
 
 tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::expr" );
-    return std::visit( overloaded { [ &instructions, this ]( ast::UnaryOp u ) -> tac::Value {
-                                       auto unaryValue = unary( u, instructions );
-                                       instructions.push_back( unaryValue );
-                                       return unaryValue->dst;
-                                   },
-                                    [ &instructions, this ]( ast::BinaryOp b ) -> tac::Value {
-                                        auto binaryValue = binary( b, instructions );
-                                        instructions.push_back( binaryValue );
-                                        return binaryValue->dst;
-                                    },
-                                    [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
-                       ast );
+    return std::visit(
+        overloaded { [ &instructions, this ]( ast::UnaryOp u ) -> tac::Value { return unary( u, instructions ); },
+                     [ &instructions, this ]( ast::BinaryOp b ) -> tac::Value { return binary( b, instructions ); },
+                     [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
+        ast );
 }
 
-tac::Unary TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions ) {
+tac::Value TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::unary: {}", to_string( ast->op ) );
-    auto u = make_tac<tac::Unary_>( ast );
+    auto u = mk_TAC<tac::Unary_>( ast );
     switch ( ast->op ) {
     case TokenType::DASH :
         u->op = tac::UnaryOpType::Negate;
@@ -87,15 +81,15 @@ tac::Unary TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instr
         break;
     }
     u->src = expr( ast->operand, instructions );
-    auto dst = std::make_shared<tac::Variable_>( ast->location );
-    dst->name = temp_name();
+    auto dst = mk_TAC<tac::Variable_>( ast, temp_name() );
     u->dst = dst;
-    return u;
+    instructions.push_back( u );
+    return u->dst;
 }
 
-tac::Binary TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions ) {
+tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::binary: {}", to_string( ast->op ) );
-    auto b = make_tac<tac::Binary_>( ast );
+    auto b = mk_TAC<tac::Binary_>( ast );
     switch ( ast->op ) {
     case TokenType::PLUS :
         b->op = tac::BinaryOpType::Add;
@@ -127,6 +121,9 @@ tac::Binary TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& in
     case TokenType::RIGHT_SHIFT :
         b->op = tac::BinaryOpType::ShiftRight;
         break;
+    case TokenType::LOGICAL_AND :
+    case TokenType::LOGICAL_OR :
+        return logical( ast, instructions );
     default :
         break;
     }
@@ -135,12 +132,53 @@ tac::Binary TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& in
     auto dst = std::make_shared<tac::Variable_>( ast->location );
     dst->name = temp_name();
     b->dst = dst;
-    return b;
+    instructions.push_back( b );
+    return b->dst;
+}
+
+tac::Value TacGen::logical( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::logical: {}", to_string( ast->op ) );
+    auto false_label = generate_label( ast, "logicalfalse" );
+    auto end_label = generate_label( ast, "logicalend" );
+
+    // v1
+    auto v = expr( ast->left, instructions );
+    auto jump = mk_TAC<tac::JumpIfZero_>( ast, v, false_label->name );
+    instructions.emplace_back( jump );
+
+    // v2
+    v = expr( ast->right, instructions );
+    jump = mk_TAC<tac::JumpIfZero_>( ast, v, false_label->name );
+    instructions.emplace_back( jump );
+
+    // result = 1
+    auto one = mk_TAC<tac::Constant_>( ast, 1 );
+    auto result = mk_TAC<tac::Variable_>( ast, temp_name() );
+    auto copy = mk_TAC<tac::Copy_>( ast, one, result );
+    instructions.emplace_back( copy );
+    // jump end
+    auto jump2 = mk_TAC<tac::Jump_>( ast, end_label->name );
+    instructions.emplace_back( jump2 );
+
+    // label false:
+    instructions.emplace_back( false_label );
+
+    // result = 0
+    auto zero = mk_TAC<tac::Constant_>( ast, 0 );
+    copy = mk_TAC<tac::Copy_>( ast, zero, result );
+    instructions.emplace_back( copy );
+    // label end:
+    instructions.emplace_back( end_label );
+    return result;
+}
+
+tac::Label TacGen::generate_label( const std::shared_ptr<ast::Base> b, std::string_view name ) {
+    return mk_TAC<tac::Label_>( b, std::format( "{:s}.{:d}", name, label_count++ ) );
 }
 
 tac::Constant TacGen::constant( ast::Constant ast ) {
     spdlog::debug( "tac::constant: {}", ast->value );
-    auto c = make_tac<tac::Constant_>( ast );
+    auto c = mk_TAC<tac::Constant_>( ast );
     c->value = ast->value;
     return c;
 }

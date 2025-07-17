@@ -37,11 +37,17 @@ at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
     auto function = mk_AT_TAC<at::FunctionDef_>( atac );
     function->name = atac->name;
     for ( auto instr : atac->instructions ) {
-        std::visit(
-            overloaded { [ &function, this ]( tac::Return r ) -> void { ret( r, function->instructions ); },
-                         [ &function, this ]( tac::Unary r ) -> void { unary( r, function->instructions ); },
-                         [ &function, this ]( tac::Binary r ) -> void { binary( r, function->instructions ); } },
-            instr );
+        std::visit( overloaded {
+                        [ &function, this ]( tac::Return r ) -> void { ret( r, function->instructions ); },
+                        [ &function, this ]( tac::Unary r ) -> void { unary( r, function->instructions ); },
+                        [ &function, this ]( tac::Binary r ) -> void { binary( r, function->instructions ); },
+                        [ &function, this ]( tac::Copy r ) -> void { copy( r, function->instructions ); },
+                        [ &function, this ]( tac::Jump r ) -> void { jump( r, function->instructions ); },
+                        [ &function, this ]( tac::JumpIfZero r ) -> void { jumpIfZero<tac::JumpIfZero>( r, true, function->instructions ); },
+                        [ &function, this ]( tac::JumpIfNotZero r ) -> void { jumpIfZero<tac::JumpIfNotZero>( r, false, function->instructions ); },
+                        [ &function, this ]( tac::Label r ) -> void { label( r, function->instructions ); },
+                    },
+                    instr );
     }
     return function;
 };
@@ -138,6 +144,21 @@ void AssemblyGen::idiv( const tac::Binary atac, std::vector<at::Instruction>& in
     }
     mov->dst = value( atac->dst );
     instructions.push_back( mov );
+}
+
+void AssemblyGen::jump( const tac::Jump atac, std::vector<at::Instruction>& instructions ) {
+    auto j = mk_AT_TAC<at::Jump_>( atac, atac->target );
+    instructions.push_back( j );
+}
+
+void AssemblyGen::copy( const tac::Copy atac, std::vector<at::Instruction>& instructions ) {
+    auto mov = mk_AT_TAC<at::Mov_>( atac, value( atac->src ), value( atac->dst ) );
+    instructions.push_back( mov );
+}
+
+void AssemblyGen::label( const tac::Label atac, std::vector<at::Instruction>& instructions ) {
+    auto label = mk_AT_TAC<at::Label_>( atac, atac->name );
+    instructions.push_back( label );
 }
 
 at::Operand AssemblyGen::value( const tac::Value& atac ) {

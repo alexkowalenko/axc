@@ -25,7 +25,12 @@ class TacGen {
     std::vector<tac::Instruction> ret( ast::Return ast );
     tac::Value                    expr( ast::Expr ast, std::vector<tac::Instruction>& instructions );
 
-    tac::Unary    unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions );
-    tac::Binary   binary( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions );
+    tac::Value    unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions );
+    tac::Value    binary( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions );
+    tac::Value    logical( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions );
     tac::Constant constant( ast::Constant ast );
+
+    tac::Label generate_label( std::shared_ptr<ast::Base> b, std::string_view name );
+
+    size_t label_count {};
 };

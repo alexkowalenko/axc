@@ -18,17 +18,14 @@
 
 namespace at {
 class Base {
-public:
+  public:
     explicit Base( Location loc ) : location( std::move( loc ) ) {}
     virtual ~Base() = default;
 
     Location location;
 };
 
-enum class UnaryOpType {
-    NEG,
-    NOT
-};
+enum class UnaryOpType { NEG, NOT };
 
 enum class BinaryOpType {
     ADD,
@@ -41,6 +38,8 @@ enum class BinaryOpType {
     SHR,
 };
 
+enum class CondCode { E, NE, G, GE, L, LE };
+
 class Mov_;
 using Mov = std::shared_ptr<Mov_>;
 
@@ -50,11 +49,26 @@ using Unary = std::shared_ptr<Unary_>;
 class Binary_;
 using Binary = std::shared_ptr<Binary_>;
 
+class Cmp_;
+using Cmp = std::shared_ptr<Cmp_>;
+
 class Idiv_;
 using Idiv = std::shared_ptr<Idiv_>;
 
 class Cdq_;
 using Cdq = std::shared_ptr<Cdq_>;
+
+class Jump_;
+using Jump = std::shared_ptr<Jump_>;
+
+class JumpCC_;
+using JumpCC = std::shared_ptr<JumpCC_>;
+
+class SetCC_;
+using SetCC = std::shared_ptr<SetCC_>;
+
+class Label_;
+using Label = std::shared_ptr<Label_>;
 
 class AllocateStack_;
 using AllocateStack = std::shared_ptr<AllocateStack_>;
@@ -62,7 +76,7 @@ using AllocateStack = std::shared_ptr<AllocateStack_>;
 class Ret_;
 using Ret = std::shared_ptr<Ret_>;
 
-using Instruction = std::variant<Mov, Unary, Binary, Idiv, Cdq, AllocateStack, Ret>;
+using Instruction = std::variant<Mov, Unary, Binary, Cmp, Idiv, Cdq, Jump, JumpCC, SetCC, Label, AllocateStack, Ret>;
 
 class Imm_;
 using Imm = std::shared_ptr<Imm_>;
@@ -77,6 +91,4 @@ class Stack_;
 using Stack = std::shared_ptr<Stack_>;
 
 using Operand = std::variant<Imm, Register, Pseudo, Stack>;
-}
-
-
+} // namespace at

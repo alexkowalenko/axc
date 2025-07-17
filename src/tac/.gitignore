@@ -1,7 +1,12 @@
 binary.h
 constant.h
+copy.h
 functiondef.h
 includes.h
+jump.h
+jumpifnotzero.h
+jumpifzero.h
+label.h
 program.h
 return.h
 unary.h

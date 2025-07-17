@@ -35,9 +35,14 @@ void AssemblyFixInstruct::visit_FunctionDef( const at::FunctionDef ast ) {
         std::visit( overloaded { [ this ]( at::Mov v ) -> void { v->accept( this ); },
                                  [ this ]( at::Unary u ) -> void { current_instructions.push_back( u ); },
                                  [ this ]( at::Binary b ) -> void { b->accept( this ); },
+                                 [ this ]( at::Cmp b ) -> void { b->accept( this ); },
                                  [ this ]( at::AllocateStack a ) -> void { current_instructions.push_back( a ); },
                                  [ this ]( at::Idiv i ) -> void { i->accept( this ); },
                                  [ this ]( at::Cdq c ) -> void { current_instructions.push_back( c ); },
+                                 [ this ]( at::Jump c ) -> void { current_instructions.push_back( c ); },
+                                 [ this ]( at::JumpCC c ) -> void { current_instructions.push_back( c ); },
+                                 [ this ]( at::SetCC c ) -> void { c->accept( this ); },
+                                 [ this ]( at::Label c ) -> void { current_instructions.push_back( c ); },
                                  [ this ]( at::Ret r ) -> void { current_instructions.push_back( r ); } },
                     instr );
     }
@@ -90,6 +95,9 @@ void AssemblyFixInstruct::visit_Binary( const at::Binary ast ) {
 
             auto binary = make_AT<at::Binary_>( ast, ast->op, reg, ast->operand2 );
             current_instructions.push_back( binary );
+
+            // There is any extra rule that the second operand can't be a constant (pg. 88),
+            // not implemented here.
         } else {
             // Other Add/Sub instructions
             current_instructions.push_back( ast );
@@ -133,3 +141,32 @@ void AssemblyFixInstruct::visit_Binary( const at::Binary ast ) {
         current_instructions.push_back( ast );
     }
 }
+
+void AssemblyFixInstruct::visit_Cmp( const at::Cmp ast ) {
+    // CMP instructions can't have stack locations in both operands
+    if ( std::holds_alternative<at::Stack>( ast->operand1 ) && std::holds_alternative<at::Stack>( ast->operand2 ) ) {
+        auto src = ast->operand1;
+        auto dst = ast->operand2;
+        auto reg = mk_reg( ast, "R10D" );
+
+        auto c1 = make_AT<at::Cmp_>( ast, src, reg );
+        current_instructions.push_back( c1 );
+        auto c2 = make_AT<at::Cmp_>( ast, reg, dst );
+        current_instructions.push_back( c2 );
+    } if ( std::holds_alternative<at::Imm>( ast->operand2 ) ) {
+        // Second operand can't be a constant
+        auto reg = mk_reg( ast, "R11D" );
+
+        // movl operand2, %r11d
+        auto mov1 = make_AT<at::Mov_>( ast, ast->operand2, reg );
+        current_instructions.push_back( mov1 );
+        // cmpl operand1, %r11d
+        auto mov2 = make_AT<at::Cmp_>( ast, ast->operand1, reg );
+        current_instructions.push_back( mov2 );
+    }else {
+        // Other MOV instructions
+        current_instructions.push_back( ast );
+    }
+}
+
+

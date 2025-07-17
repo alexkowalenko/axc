@@ -30,6 +30,11 @@ public:
     void visit_Binary( const at::Binary ast ) override;
     void visit_Idiv( const at::Idiv ast ) override;
     void visit_Cdq( const at::Cdq ast ) override {};
+    void visit_Cmp( const at::Cmp ast ) override ;
+    void visit_Jump( const at::Jump ast ) override {};
+    void visit_JumpCC( const at::JumpCC ast ) override {};
+    void visit_SetCC( const at::SetCC ast ) override ;
+    void visit_Label( const at::Label ast ) override {};
     void visit_AllocateStack( const at::AllocateStack ast ) override {};
     void visit_Ret( const at::Ret ast ) override {};
     // Operands

@@ -34,13 +34,18 @@ class AssemblyFixInstruct : public at::Visitor<void> {
     void visit_Binary( const at::Binary ast ) override;
     void visit_Idiv( const at::Idiv ast ) override;
     void visit_Cdq( const at::Cdq ast ) override {};
+    void visit_Cmp( const at::Cmp ast ) override ;
+    void visit_Jump( const at::Jump ast ) override {};
+    void visit_JumpCC( const at::JumpCC ast ) override {};
+    void visit_SetCC( const at::SetCC ast ) override {};
+    void visit_Label( const at::Label ast ) override {};
 
     void visit_Register( const at::Register ast ) override {};
     void visit_Pseudo( const at::Pseudo ast ) override {};
     void visit_Stack( const at::Stack ast ) override {};
 
   private:
-    int                  number_stack_locations { 0 };
-    static constexpr int stack_increment { 4 };
+    int                          number_stack_locations { 0 };
+    static constexpr int         stack_increment { 4 };
     std::vector<at::Instruction> current_instructions;
 };

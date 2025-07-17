@@ -18,10 +18,7 @@
 
 namespace tac {
 
-enum class UnaryOpType {
-    Negate,
-    Complement,
-};
+enum class UnaryOpType { Negate, Complement, Not };
 
 enum class BinaryOpType {
     Add,
@@ -34,6 +31,14 @@ enum class BinaryOpType {
     BitwiseXor,
     ShiftLeft,
     ShiftRight,
+    Equal,
+    NotEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+    And,
+    Or
 };
 
 class Base {
@@ -53,7 +58,22 @@ using Unary = std::shared_ptr<Unary_>;
 class Binary_;
 using Binary = std::shared_ptr<Binary_>;
 
-using Instruction = std::variant<Return, Unary, Binary>;
+class Copy_;
+using Copy = std::shared_ptr<Copy_>;
+
+class Jump_;
+using Jump = std::shared_ptr<Jump_>;
+
+class JumpIfZero_;
+using JumpIfZero = std::shared_ptr<JumpIfZero_>;
+
+class JumpIfNotZero_;
+using JumpIfNotZero = std::shared_ptr<JumpIfNotZero_>;
+
+class Label_;
+using Label = std::shared_ptr<Label_>;
+
+using Instruction = std::variant<Return, Unary, Binary, Copy, Jump, JumpIfZero, JumpIfNotZero, Label>;
 
 class Constant_;
 using Constant = std::shared_ptr<Constant_>;

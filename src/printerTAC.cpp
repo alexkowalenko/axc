@@ -24,9 +24,17 @@ std::string PrinterTAC::visit_FunctionDef( const tac::FunctionDef ast ) {
     std::string buf = std::format( "Function({})\n", ast->name );
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
-        buf += std::visit( overloaded { [ this ]( tac::Return r ) -> std::string { return r->accept( this ); },
-                                        [ this ]( tac::Unary r ) -> std::string { return r->accept( this ); },
-                                        [ this ]( tac::Binary r ) -> std::string { return r->accept( this ); } },
+        buf += std::visit( overloaded {
+                               [ this ]( tac::Return r ) -> std::string { return r->accept( this ); },
+                               [ this ]( tac::Unary r ) -> std::string { return r->accept( this ); },
+                               [ this ]( tac::Binary r ) -> std::string { return r->accept( this ); },
+                               [ this ]( tac::Copy r ) -> std::string { return r->accept( this ); },
+                               [ this ]( tac::Jump r ) -> std::string { return r->accept( this ); },
+                               [ this ]( tac::JumpIfZero r ) -> std::string { return r->accept( this ); },
+                               [ this ]( tac::JumpIfNotZero r ) -> std::string { return r->accept( this ); },
+                               [ this ]( tac::Label r ) -> std::string { return r->accept( this ); },
+
+                           },
                            instr );
         buf += "\n";
     }
@@ -52,6 +60,9 @@ std::string PrinterTAC::visit_Unary( const tac::Unary ast ) {
     case tac::UnaryOpType::Complement :
         buf += "Complement ";
         break;
+    case tac::UnaryOpType::Not :
+        buf += "Not ";
+        break;
     default :
         break;
     }
@@ -60,7 +71,7 @@ std::string PrinterTAC::visit_Unary( const tac::Unary ast ) {
 }
 
 std::string PrinterTAC::visit_Binary( const tac::Binary ast ) {
-    std::string buf = "Unary(";
+    std::string buf = "Binary(";
     switch ( ast->op ) {
     case tac::BinaryOpType::Add :
         buf += "Add ";
@@ -92,11 +103,55 @@ std::string PrinterTAC::visit_Binary( const tac::Binary ast ) {
     case tac::BinaryOpType::ShiftRight :
         buf += "ShiftRight ";
         break;
+    case tac::BinaryOpType::Equal :
+        buf += "Equal ";
+        break;
+    case tac::BinaryOpType::NotEqual :
+        buf += "NotEqual ";
+        break;
+    case tac::BinaryOpType::Less :
+        buf += "Less ";
+        break;
+    case tac::BinaryOpType::LessEqual :
+        buf += "LessEqual ";
+        break;
+    case tac::BinaryOpType::Greater :
+        buf += "Greater ";
+        break;
+    case tac::BinaryOpType::GreaterEqual :
+        buf += "GreaterEqual ";
+        break;
+    case tac::BinaryOpType::And :
+        buf += "And ";
+        break;
+    case tac::BinaryOpType::Or :
+        buf += "Or ";
+        break;
     default :
         break;
     }
     buf += std::format( "{} {} {})", value( ast->src1 ), value( ast->src2 ), value( ast->dst ) );
     return buf;
+}
+
+std::string PrinterTAC::visit_Copy( const tac::Copy ast ) {
+    return std::format( "Copy({:s}, {:s})", value( ast->src ), value( ast->dst ) );
+}
+
+std::string PrinterTAC::visit_Jump( const tac::Jump ast ) {
+    return std::format( "Jump({:s})", ast->target );
+}
+
+std::string PrinterTAC::visit_JumpIfZero( const tac::JumpIfZero ast ) {
+    return std::format( "JumpIfZero({:s} -> {:s})", value( ast->condition ), ast->target );
+}
+
+std::string PrinterTAC::visit_JumpIfNotZero( const tac::JumpIfNotZero ast ) {
+    return std::format( "JumpIfNotZero({:s} -> {:s})", value( ast->condition ), ast->target );
+}
+
+std::string PrinterTAC::visit_Label( const tac::Label ast ) {
+    return std::format( "Label({:s})", ast->name );
 }
 
 std::string PrinterTAC::visit_Constant( const tac::Constant ast ) {

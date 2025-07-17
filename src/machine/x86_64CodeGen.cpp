@@ -12,10 +12,19 @@
 
 #include "../at/includes.h"
 #include "../exception.h"
+#include "x86_common.h"
 
 template <class... Ts> struct overloaded : Ts... {
     using Ts::operator()...;
 };
+
+X86_64CodeGen::X86_64CodeGen( Option const& option ) : CodeGenerator( option ) {
+    if ( option.system == System::Linux  || option.system == System::FreeBSD) {
+        local_prefix = ".L";
+    } else if ( option.system == System::MacOS ) {
+        local_prefix = "L";
+    }
+}
 
 void X86_64CodeGen::generate( at::Program program ) {
     make_output_file_name();
@@ -54,9 +63,14 @@ void X86_64CodeGen::visit_FunctionDef( const at::FunctionDef ast ) {
         std::visit( overloaded { [ this ]( at::Mov v ) -> void { v->accept( this ); },
                                  [ this ]( at::Unary u ) -> void { u->accept( this ); },
                                  [ this ]( at::Binary b ) -> void { b->accept( this ); },
+                                     [ this ]( at::Cmp b ) -> void { b->accept( this ); },
                                  [ this ]( at::AllocateStack a ) -> void { a->accept( this ); },
                                  [ this ]( at::Idiv i ) -> void { i->accept( this ); },
                                  [ this ]( at::Cdq c ) -> void { c->accept( this ); },
+                                     [ this ]( at::Jump c ) -> void { c->accept( this ); },
+                              [ this ]( at::JumpCC c ) -> void { c->accept( this ); },
+                              [ this ]( at::SetCC c ) -> void { c->accept( this ); },
+                              [ this ]( at::Label c ) -> void { c->accept( this ); },
                                  [ this ]( at::Ret r ) -> void { r->accept( this ); } },
                     instr );
     }
@@ -142,6 +156,26 @@ void X86_64CodeGen::visit_Binary( const at::Binary ast ) {
 
 void X86_64CodeGen::visit_Idiv( const at::Idiv ast ) {
     add_line( "idivl", operand( ast->src ) );
+}
+
+void X86_64CodeGen::visit_Cmp( const at::Cmp ast ) {
+    add_line( "cmpl", operand( ast->operand1 ), operand( ast->operand2 ) );
+}
+
+void X86_64CodeGen::visit_Jump( const at::Jump ast ) {
+    add_line( "jmp", local_prefix + ast->target );
+}
+
+void X86_64CodeGen::visit_JumpCC( const at::JumpCC ast ) {
+    add_line( std::format("j{}", cond_code(ast->cond)), local_prefix + ast->target );
+}
+
+void X86_64CodeGen::visit_SetCC( const at::SetCC ast ) {
+    add_line( std::format("set{}", cond_code(ast->cond)), operand( ast->operand ) );
+}
+
+void X86_64CodeGen::visit_Label( const at::Label ast ) {
+    add_line(local_prefix + ast->name + ":");
 }
 
 void X86_64CodeGen::visit_Cdq( const at::Cdq ast ) {

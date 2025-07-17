@@ -15,7 +15,7 @@
 
 class X86_64CodeGen : public CodeGenerator, public at::Visitor<void> {
   public:
-    X86_64CodeGen( Option const& option ) : CodeGenerator( option ) {}
+    X86_64CodeGen( Option const& option );
     ~X86_64CodeGen() override = default;
 
     void generate( at::Program program ) override;
@@ -28,7 +28,12 @@ class X86_64CodeGen : public CodeGenerator, public at::Visitor<void> {
     void visit_Ret( const at::Ret ast ) override;
     void visit_Binary( const at::Binary ast ) override;
     void visit_Idiv( const at::Idiv ast ) override;
+    void visit_Cmp( const at::Cmp ast ) override;
     void visit_Cdq( const at::Cdq ast ) override;
+    void visit_Jump( const at::Jump ast ) override;
+    void visit_JumpCC( const at::JumpCC ast ) override;
+    void visit_SetCC( const at::SetCC ast ) override;
+    void visit_Label( const at::Label ast ) override;
 
     void visit_Imm( const at::Imm ast ) override;
     void visit_Register( const at::Register ast ) override;
@@ -37,5 +42,7 @@ class X86_64CodeGen : public CodeGenerator, public at::Visitor<void> {
 
   private:
     std::string operand( const at::Operand& op );
+
+    std::string local_prefix;
     std::string last_string;
 };

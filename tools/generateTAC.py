@@ -19,6 +19,11 @@ if __name__ == "__main__":
            "Return": [("Value", "value", False) ],
            "Unary": [("UnaryOpType", "op", False), ("Value", "src", False), ("Value", "dst", False)],
            "Binary": [("BinaryOpType", "op", False), ("Value", "src1", False), ("Value", "src2", False), ("Value", "dst", False)],
+           "Copy" : [("Value", "src", False), ("Value", "dst", False)],
+           "Jump": [("std::string", "target", False)],
+           "JumpIfZero": [("Value", "condition", False), ("std::string", "target", False)],
+           "JumpIfNotZero": [("Value", "condition", False), ("std::string", "target", False)],
+           "Label": [("std::string", "name", False)],
            "Constant": [("std::int32_t", "value", False)],
            "Variable": [("std::string", "name", False)],
          })

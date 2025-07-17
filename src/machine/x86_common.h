@@ -22,3 +22,22 @@ constexpr at::Register mk_reg( const std::shared_ptr<at::Base> b, const std::str
     reg->reg = name;
     return reg;
 }
+
+inline std::string cond_code( at::CondCode code ) {
+    switch ( code ) {
+    case at::CondCode::E :
+        return "e";
+    case at::CondCode::NE :
+        return "ne";
+    case at::CondCode::G :
+        return "g";
+    case at::CondCode::GE :
+        return "ge";
+    case at::CondCode::L :
+        return "l";
+    case at::CondCode::LE :
+        return "le";
+    default :
+        return "?";
+    }
+}
