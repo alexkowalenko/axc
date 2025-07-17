@@ -28,6 +28,14 @@ std::map<TokenType, Precedence> precedence_map = {
     { TokenType::ASTÉRIX, Precedence::Product },
     { TokenType::SLASH, Precedence::Product },
     { TokenType::PERCENT, Precedence::Product },
+    { TokenType::LESS, Precedence::Comparison },
+    { TokenType::LESS_EQUALS, Precedence::Comparison },
+    { TokenType::GREATER, Precedence::Comparison },
+    { TokenType::GREATER_EQUALS, Precedence::Comparison },
+    { TokenType::COMPARISON_EQUALS, Precedence::Comparison },
+    { TokenType::COMPARISON_NOT, Precedence::Comparison },
+    { TokenType::LOGICAL_AND, Precedence::And },
+    { TokenType::LOGICAL_OR, Precedence::Or },
 };
 
 constexpr Precedence get_precedence( const TokenType tok ) {
@@ -86,6 +94,7 @@ const std::map<TokenType, PrefixParselet> prefix_map {
     { TokenType::CONSTANT, []( Parser* p ) -> ast::Expr { return p->constant(); } },
     { TokenType::DASH, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
     { TokenType::TILDE, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
+    { TokenType::EXCLAMATION, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
     { TokenType::L_PAREN, []( Parser* p ) -> ast::Expr { return p->group(); } },
 };
 
@@ -101,6 +110,14 @@ const std::map<TokenType, InfixParselet> infix_map {
     { TokenType::PIPE, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
     { TokenType::LEFT_SHIFT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
     { TokenType::RIGHT_SHIFT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::LOGICAL_AND, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::LOGICAL_OR, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::COMPARISON_EQUALS, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::COMPARISON_NOT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::LESS, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::LESS_EQUALS, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::GREATER, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::GREATER_EQUALS, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
 };
 
 ast::Expr Parser::expr( const Precedence precedence ) {

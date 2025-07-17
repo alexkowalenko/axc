@@ -15,6 +15,10 @@
 
 enum class Precedence {
     Lowest = 0,
+    Or = 5,
+    And = 10,
+    Equals = 28,
+    Comparison = 30,
     BitwiseOr = 31,
     BitwiseXor = 33,
     BitwiseAnd = 35,
