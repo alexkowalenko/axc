@@ -4,23 +4,21 @@
 // Copyright  © Alex Kowalenko 2025
 //
 
-#include "assemblyFilterPseudo.h"
-#include "assemblyGen.h"
-#include "codeGen.h"
-#include "exception.h"
-
 #include <fstream>
 
 #include <argparse/argparse.hpp>
 #include <spdlog/spdlog.h>
 
-#include "assemblyFilterPseudo.h"
-#include "assemblyFixInstruct.h"
+#include "codeGen.h"
+#include "exception.h"
 #include "lexer.h"
+#include "machine/assemblyFilterPseudo.h"
+#include "machine/assemblyFixInstruct.h"
+#include "machine/assemblyGen.h"
+#include "machine/printerAT.h"
 #include "option.h"
 #include "parser.h"
 #include "printerAST.h"
-#include "printerAT.h"
 #include "printerTAC.h"
 #include "tacGen.h"
 

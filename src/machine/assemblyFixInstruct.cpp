@@ -10,18 +10,9 @@
 
 #include "assemblyFixInstruct.h"
 
-#include "at/includes.h"
-#include "common.h"
-
-template <typename T> constexpr std::shared_ptr<T> make_AT( const std::shared_ptr<at::Base> b ) {
-    return std::make_shared<T>( b->location );
-}
-
-constexpr at::Register mk_reg( const std::shared_ptr<at::Base> b, const std::string_view name ) {
-    auto reg = make_AT<at::Register_>( b );
-    reg->reg = name;
-    return reg;
-}
+#include "../at/includes.h"
+#include "../common.h"
+#include "x86_common.h"
 
 void AssemblyFixInstruct::filter( at::Program program ) {
     program->accept( this );
@@ -60,13 +51,9 @@ void AssemblyFixInstruct::visit_Mov( const at::Mov ast ) {
         auto dst = ast->dst;
         auto reg = mk_reg( ast, "R10D" );
 
-        auto mov1 = make_AT<at::Mov_>( ast );
-        mov1->src = src;
-        mov1->dst = reg;
+        auto mov1 = make_AT<at::Mov_>( ast, src, reg );
         current_instructions.push_back( mov1 );
-        auto mov2 = make_AT<at::Mov_>( ast );
-        mov2->src = reg;
-        mov2->dst = dst;
+        auto mov2 = make_AT<at::Mov_>( ast, reg, dst );
         current_instructions.push_back( mov2 );
     } else {
         // Other MOV instructions
@@ -79,13 +66,10 @@ void AssemblyFixInstruct::visit_Idiv( const at::Idiv ast ) {
     if ( std::holds_alternative<at::Imm>( ast->src ) ) {
         auto reg = mk_reg( ast, "R10D" );
 
-        auto mov1 = make_AT<at::Mov_>( ast );
-        mov1->src = ast->src;
-        mov1->dst = reg;
+        auto mov1 = make_AT<at::Mov_>( ast, ast->src, reg );
         current_instructions.push_back( mov1 );
 
-        auto idiv = make_AT<at::Idiv_>( ast );
-        idiv->src = reg;
+        auto idiv = make_AT<at::Idiv_>( ast, reg );
         current_instructions.push_back( idiv );
     } else {
         // Other Idiv instructions
@@ -101,15 +85,10 @@ void AssemblyFixInstruct::visit_Binary( const at::Binary ast ) {
              std::holds_alternative<at::Stack>( ast->operand2 ) ) {
             auto reg = mk_reg( ast, "R10D" );
 
-            auto mov1 = make_AT<at::Mov_>( ast );
-            mov1->src = ast->operand1;
-            mov1->dst = reg;
+            auto mov1 = make_AT<at::Mov_>( ast, ast->operand1, reg );
             current_instructions.push_back( mov1 );
 
-            auto binary = make_AT<at::Binary_>( ast );
-            binary->op = ast->op;
-            binary->operand1 = reg;
-            binary->operand2 = ast->operand2;
+            auto binary = make_AT<at::Binary_>( ast, ast->op, reg, ast->operand2 );
             current_instructions.push_back( binary );
         } else {
             // Other Add/Sub instructions
@@ -120,20 +99,13 @@ void AssemblyFixInstruct::visit_Binary( const at::Binary ast ) {
         if ( std::holds_alternative<at::Stack>( ast->operand2 ) ) {
             auto reg = mk_reg( ast, "R11D" );
 
-            auto mov1 = make_AT<at::Mov_>( ast );
-            mov1->src = ast->operand2;
-            mov1->dst = reg;
+            auto mov1 = make_AT<at::Mov_>( ast, ast->operand2, reg );
             current_instructions.push_back( mov1 );
 
-            auto binary = make_AT<at::Binary_>( ast );
-            binary->op = ast->op;
-            binary->operand1 = ast->operand1;
-            binary->operand2 = reg;
+            auto binary = make_AT<at::Binary_>( ast, ast->op, ast->operand1, reg );
             current_instructions.push_back( binary );
 
-            auto mov2 = make_AT<at::Mov_>( ast );
-            mov2->src = reg;
-            mov2->dst = ast->operand2;
+            auto mov2 = make_AT<at::Mov_>( ast, reg, ast->operand2 );
             current_instructions.push_back( mov2 );
         } else {
             // Other Mul instructions
@@ -145,25 +117,16 @@ void AssemblyFixInstruct::visit_Binary( const at::Binary ast ) {
         auto eax = mk_reg( ast, "eax" );
         auto cl = mk_reg( ast, "cl" );
 
-        auto mov1 = make_AT<at::Mov_>( ast );
-        mov1->src = ast->operand2;
-        mov1->dst = eax;
+        auto mov1 = make_AT<at::Mov_>( ast, ast->operand2, eax );
         current_instructions.push_back( mov1 );
 
-        auto mov2 = make_AT<at::Mov_>( ast );
-        mov2->src = ast->operand1;
-        mov2->dst = ecx;
+        auto mov2 = make_AT<at::Mov_>( ast, ast->operand1, ecx );
         current_instructions.push_back( mov2 );
 
-        auto binary = make_AT<at::Binary_>( ast );
-        binary->op = ast->op;
-        binary->operand1 = cl;
-        binary->operand2 = eax;
+        auto binary = make_AT<at::Binary_>( ast, ast->op, cl, eax );
         current_instructions.push_back( binary );
 
-        mov2 = make_AT<at::Mov_>( ast );
-        mov2->src = eax;
-        mov2->dst = ast->operand2;
+        mov2 = make_AT<at::Mov_>( ast, eax, ast->operand2 );
         current_instructions.push_back( mov2 );
     } else {
         // Other Binary instructions

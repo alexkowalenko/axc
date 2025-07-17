@@ -86,7 +86,7 @@ TEST( Parse, Bitwise ) {
     std::vector<ParseTests> tests = {
         { "int main(void) { return 1 << 8;}", "int main(void) {return (1 << 8);}", "" },
         { "int main(void) { return 1 ^ 8 | 3 & 4;}", "int main(void) {return ((1 ^ 8) | (3 & 4));}", "" },
-        { "int main(void) { return 1 & 1 ^ 1;}", "int main(void) {return ((1 & 1) ^ 1));}", "" },
+        { "int main(void) { return 1 & 1 ^ 1;}", "int main(void) {return ((1 & 1) ^ 1);}", "" },
         { "int main(void) { return 1 | 1 & 1;}", "int main(void) {return (1 | (1 & 1));}", "" },
         { "int main(void) { return 1 << 1 ^ 1;}", "int main(void) {return ((1 << 1) ^ 1);}", "" },
         { "int main(void) { return 1 & 1 >> 1;}", "int main(void) {return (1 & (1 >> 1));}", "" },

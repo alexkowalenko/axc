@@ -24,17 +24,20 @@ add_library(compiler STATIC
         lexer.cpp
         parser.cpp
         printerAST.cpp
-        assemblyGen.cpp
-        assemblyFilterPseudo.cpp
-        assemblyFixInstruct.cpp
-        printerAT.cpp
+        # TAC Generation
+        tacGen.cpp
         printerTAC.cpp
+        # Code Gen
+        codeGen.cpp
+        # Machine code
+        machine/assemblyGen.cpp
+        machine/assemblyFilterPseudo.cpp
+        machine/assemblyFixInstruct.cpp
+        machine/x86_64CodeGen.cpp
+        machine/printerAT.cpp
         ${AST_HEADER}
         ${AT_HEADER}
         ${TAC_HEADER}
-        tacGen.cpp
-        codeGen.cpp
-        machine/x86_64CodeGen.cpp
 )
 
 target_link_libraries(compiler

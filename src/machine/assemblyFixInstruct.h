@@ -8,8 +8,8 @@
 // Created by Alex Kowalenko on 12/7/2025.
 //
 
-#include "at/base.h"
-#include "at/visitor.h"
+#include "../at/base.h"
+#include "../at/visitor.h"
 
 class AssemblyFixInstruct : public at::Visitor<void> {
   public:

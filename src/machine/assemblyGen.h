@@ -8,8 +8,8 @@
 // Created by Alex Kowalenko on 8/7/2025.
 //
 
-#include "at/includes.h"
-#include "tac/includes.h"
+#include "../at/includes.h"
+#include "../tac/includes.h"
 
 /// Convert TAC Abstract tree to AT Assembly tree
 class AssemblyGen {

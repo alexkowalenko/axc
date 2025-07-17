@@ -21,6 +21,10 @@ namespace {{namespace}} {
 class {{ base_name }}_ : public Base, public std::enable_shared_from_this<{{ base_name }}_> {
   public:
     explicit {{ base_name }}_(Location const & loc) : Base(loc){};
+    {% if members.__len__() is gt(0) %}
+    {{ base_name }}_(Location const & loc  {% for field in members %}, {{ field[0] }} {{ field[1] }} {% endfor %})
+      : Base(loc)  {% for field in members %}, {{ field[1] }}({{ field[1] }}) {% endfor %}{};
+    {% endif %}
     ~{{ base_name }}_() override = default;
 
     {% for field in members %}

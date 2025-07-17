@@ -10,8 +10,8 @@
 
 #include "assemblyFilterPseudo.h"
 
-#include "at/includes.h"
-#include "common.h"
+#include "../at/includes.h"
+#include "../common.h"
 
 void AssemblyFilterPseudo::filter( at::Program program ) {
     program->accept( this );

@@ -12,8 +12,8 @@
 
 #include <string>
 
-#include "at/visitor.h"
-#include "at/base.h"
+#include "../at/base.h"
+#include "../at/visitor.h"
 
 class PrinterAT : public at::Visitor<std::string> {
   public:

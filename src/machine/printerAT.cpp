@@ -10,9 +10,9 @@
 
 #include "printerAT.h"
 
-#include "ast/base.h"
-#include "at/includes.h"
-#include "common.h"
+#include "../ast/base.h"
+#include "../at/includes.h"
+#include "../common.h"
 
 std::string PrinterAT::print( const at::Program ast ) {
     return ast->accept( this );
