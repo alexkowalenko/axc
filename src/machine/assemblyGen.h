@@ -23,6 +23,7 @@ class AssemblyGen {
 
     void ret( const tac::Return atac, std::vector<at::Instruction>& instructions );
     void unary( const tac::Unary atac, std::vector<at::Instruction>& instructions );
+    void unary_not(const tac::Unary atac, std::vector<at::Instruction>& instructions);
     void binary( const tac::Binary atac, std::vector<at::Instruction>& instructions );
     void idiv( const tac::Binary atac, std::vector<at::Instruction>& instructions );
     void jump( const tac::Jump atac, std::vector<at::Instruction>& instructions );

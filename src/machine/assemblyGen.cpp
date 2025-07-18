@@ -14,25 +14,20 @@
 
 namespace {
 
-template <typename T, typename... Args>
-constexpr std::shared_ptr<T> mk_AT_TAC( const std::shared_ptr<tac::Base> b, const Args... args ) {
-    return std::make_shared<T>( b->location, args... );
-}
-
-constexpr at::Register mk_reg( const std::shared_ptr<tac::Base> b, std::string const & name ) {
+constexpr at::Register mk_reg( const std::shared_ptr<tac::Base> b, std::string const& name ) {
     return mk_node<at::Register_>( b, name );
 }
 
 } // namespace
 
 at::Program AssemblyGen::generate( const tac::Program atac ) {
-    auto program = mk_AT_TAC<at::Program_>( atac );
+    auto program = mk_node<at::Program_>( atac );
     program->function = functionDef( atac->function );
     return program;
 }
 
 at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
-    auto function = mk_AT_TAC<at::FunctionDef_>( atac );
+    auto function = mk_node<at::FunctionDef_>( atac );
     function->name = atac->name;
     for ( auto instr : atac->instructions ) {
         std::visit( overloaded {
@@ -55,16 +50,24 @@ at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
 };
 
 void AssemblyGen::ret( const tac::Return atac, std::vector<at::Instruction>& instructions ) {
-    auto mov = mk_AT_TAC<at::Mov_>( atac, value( atac->value ), mk_reg( atac, "eax" ) );
+    // Mov(value, %eax)
+    auto mov = mk_node<at::Mov_>( atac, value( atac->value ), mk_reg( atac, "eax" ) );
     instructions.push_back( mov );
-    auto ret = mk_AT_TAC<at::Ret_>( atac );
+    // Ret
+    auto ret = mk_node<at::Ret_>( atac );
     instructions.push_back( ret );
 };
 
 void AssemblyGen::unary( const tac::Unary atac, std::vector<at::Instruction>& instructions ) {
-    auto mov = mk_AT_TAC<at::Mov_>( atac, value( atac->src ), value( atac->dst ) );
+    // Handle not differently
+    if ( atac->op == tac::UnaryOpType::Not ) {
+        unary_not( atac, instructions );
+        return;
+    }
+
+    auto mov = mk_node<at::Mov_>( atac, value( atac->src ), value( atac->dst ) );
     instructions.push_back( mov );
-    auto unary = mk_AT_TAC<at::Unary_>( atac );
+    auto unary = mk_node<at::Unary_>( atac );
     switch ( atac->op ) {
     case tac::UnaryOpType::Complement :
         unary->op = at::UnaryOpType::NOT;
@@ -79,15 +82,28 @@ void AssemblyGen::unary( const tac::Unary atac, std::vector<at::Instruction>& in
     instructions.push_back( unary );
 };
 
+void AssemblyGen::unary_not( const tac::Unary atac, std::vector<at::Instruction>& instructions ) {
+    auto zero = mk_node<at::Imm_>( atac, 0 );
+    // Cmp(Imm(0), src)
+    auto cmp = mk_node<at::Cmp_>( atac, zero, value( atac->src ) );
+    instructions.push_back( cmp );
+    // Mov(Imm(0), dst)
+    auto mov = mk_node<at::Mov_>( atac, zero, value( atac->dst ) );
+    instructions.push_back( mov );
+    // SetCC(E, dst)
+    auto sete = mk_node<at::SetCC_>( atac, at::CondCode::E, value( atac->dst ) );
+    instructions.push_back( sete );
+}
+
 void AssemblyGen::binary( const tac::Binary atac, std::vector<at::Instruction>& instructions ) {
     if ( atac->op == tac::BinaryOpType::Divide || atac->op == tac::BinaryOpType::Modulo ) {
         idiv( atac, instructions );
         return;
     }
 
-    auto mov = mk_AT_TAC<at::Mov_>( atac, value( atac->src1 ), value( atac->dst ) );
+    auto mov = mk_node<at::Mov_>( atac, value( atac->src1 ), value( atac->dst ) );
     instructions.push_back( mov );
-    auto binary = mk_AT_TAC<at::Binary_>( atac );
+    auto binary = mk_node<at::Binary_>( atac );
     switch ( atac->op ) {
     case tac::BinaryOpType::Add :
         binary->op = at::BinaryOpType::ADD;
@@ -126,18 +142,18 @@ void AssemblyGen::idiv( const tac::Binary atac, std::vector<at::Instruction>& in
     auto dx = mk_reg( atac, "edx" );
 
     // Mov(src1, Reg(AX))
-    auto mov = mk_AT_TAC<at::Mov_>( atac, value( atac->src1 ), ax );
+    auto mov = mk_node<at::Mov_>( atac, value( atac->src1 ), ax );
     instructions.push_back( mov );
 
     // Cdq
-    instructions.push_back( mk_AT_TAC<at::Cdq_>( atac ) );
+    instructions.push_back( mk_node<at::Cdq_>( atac ) );
 
     // Idiv(src2)
-    auto idiv = mk_AT_TAC<at::Idiv_>( atac, value( atac->src2 ) );
+    auto idiv = mk_node<at::Idiv_>( atac, value( atac->src2 ) );
     instructions.push_back( idiv );
 
     // Mov(Reg(AX), dst)
-    mov = mk_AT_TAC<at::Mov_>( atac );
+    mov = mk_node<at::Mov_>( atac );
     if ( atac->op == tac::BinaryOpType::Divide ) {
         mov->src = ax;
     } else {
@@ -149,17 +165,17 @@ void AssemblyGen::idiv( const tac::Binary atac, std::vector<at::Instruction>& in
 }
 
 void AssemblyGen::jump( const tac::Jump atac, std::vector<at::Instruction>& instructions ) {
-    auto j = mk_AT_TAC<at::Jump_>( atac, atac->target );
+    auto j = mk_node<at::Jump_>( atac, atac->target );
     instructions.push_back( j );
 }
 
 void AssemblyGen::copy( const tac::Copy atac, std::vector<at::Instruction>& instructions ) {
-    auto mov = mk_AT_TAC<at::Mov_>( atac, value( atac->src ), value( atac->dst ) );
+    auto mov = mk_node<at::Mov_>( atac, value( atac->src ), value( atac->dst ) );
     instructions.push_back( mov );
 }
 
 void AssemblyGen::label( const tac::Label atac, std::vector<at::Instruction>& instructions ) {
-    auto label = mk_AT_TAC<at::Label_>( atac, atac->name );
+    auto label = mk_node<at::Label_>( atac, atac->name );
     instructions.push_back( label );
 }
 
@@ -170,9 +186,9 @@ at::Operand AssemblyGen::value( const tac::Value& atac ) {
 }
 
 at::Operand AssemblyGen::constant( const tac::Constant& atac ) {
-    return mk_AT_TAC<at::Imm_>( atac, atac->value );
+    return mk_node<at::Imm_>( atac, atac->value );
 };
 
 at::Operand AssemblyGen::pseudo( tac::Variable atac ) {
-    return mk_AT_TAC<at::Pseudo_>( atac, atac->name );
+    return mk_node<at::Pseudo_>( atac, atac->name );
 }

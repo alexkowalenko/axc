@@ -41,7 +41,7 @@ void AssemblyFixInstruct::visit_FunctionDef( const at::FunctionDef ast ) {
                                  [ this ]( at::Cdq c ) -> void { current_instructions.push_back( c ); },
                                  [ this ]( at::Jump c ) -> void { current_instructions.push_back( c ); },
                                  [ this ]( at::JumpCC c ) -> void { current_instructions.push_back( c ); },
-                                 [ this ]( at::SetCC c ) -> void { c->accept( this ); },
+                                 [ this ]( at::SetCC c ) -> void { current_instructions.push_back( c ); },
                                  [ this ]( at::Label c ) -> void { current_instructions.push_back( c ); },
                                  [ this ]( at::Ret r ) -> void { current_instructions.push_back( r ); } },
                     instr );
