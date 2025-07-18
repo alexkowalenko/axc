@@ -14,6 +14,7 @@
 
 #include "ast/includes.h"
 #include "common.h"
+#include "spdlog/fmt/bundled/chrono.h"
 #include "tac/includes.h"
 
 namespace {
@@ -24,7 +25,8 @@ std::string  temp_name() {
 }
 
 template <typename T, typename... Args>
-constexpr std::shared_ptr<T> mk_TAC( const std::shared_ptr<ast::Base> b, Args... args ) {
+constexpr std::shared_ptr<T> mk_TAC( const auto b, Args... args )
+{
     return std::make_shared<T>( b->location, args... );
 }
 
@@ -76,6 +78,9 @@ tac::Value TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instr
         break;
     case TokenType::TILDE :
         u->op = tac::UnaryOpType::Complement;
+        break;
+    case TokenType::EXCLAMATION:
+        u->op = tac::UnaryOpType::Not;
         break;
     default :
         break;
@@ -138,35 +143,61 @@ tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& ins
 
 tac::Value TacGen::logical( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::logical: {}", to_string( ast->op ) );
-    auto false_label = generate_label( ast, "logicalfalse" );
+    auto false_label = generate_label( ast, "logicalfalse" ); // For AND
+    auto true_label = generate_label( ast, "logicaltrue" ); // For OR
     auto end_label = generate_label( ast, "logicalend" );
+    auto result = mk_TAC<tac::Variable_>( ast, temp_name() );
+    auto one = mk_TAC<tac::Constant_>( ast, 1 );
+    auto zero = mk_TAC<tac::Constant_>( ast, 0 );
 
     // v1
     auto v = expr( ast->left, instructions );
-    auto jump = mk_TAC<tac::JumpIfZero_>( ast, v, false_label->name );
-    instructions.emplace_back( jump );
+    if (ast->op == TokenType::LOGICAL_AND ) {
+        auto jump = mk_TAC<tac::JumpIfZero_>( ast, v, false_label->name );
+        instructions.emplace_back( jump );
+    } else {
+        // LOGICAL OR
+        auto jump = mk_TAC<tac::JumpIfNotZero_>( ast, v, true_label->name );
+        instructions.emplace_back( jump );
+    }
 
     // v2
     v = expr( ast->right, instructions );
-    jump = mk_TAC<tac::JumpIfZero_>( ast, v, false_label->name );
+    if (ast->op == TokenType::LOGICAL_AND ) {
+        auto jump = mk_TAC<tac::JumpIfZero_>( ast, v, false_label->name );
+        instructions.emplace_back( jump );
+        // result = 1
+        auto copy = mk_TAC<tac::Copy_>( ast, one, result );
+        instructions.emplace_back( copy );
+    } else {
+        // LOGICAL OR
+        auto jump = mk_TAC<tac::JumpIfNotZero_>( ast, v, true_label->name );
+        instructions.emplace_back( jump );
+        // result = 0
+        auto copy = mk_TAC<tac::Copy_>( ast, zero, result );
+        instructions.emplace_back( copy );
+    }
+
+    // jump end
+    auto jump = mk_TAC<tac::Jump_>( ast, end_label->name );
     instructions.emplace_back( jump );
 
-    // result = 1
-    auto one = mk_TAC<tac::Constant_>( ast, 1 );
-    auto result = mk_TAC<tac::Variable_>( ast, temp_name() );
-    auto copy = mk_TAC<tac::Copy_>( ast, one, result );
-    instructions.emplace_back( copy );
-    // jump end
-    auto jump2 = mk_TAC<tac::Jump_>( ast, end_label->name );
-    instructions.emplace_back( jump2 );
-
     // label false:
-    instructions.emplace_back( false_label );
+    if (ast->op == TokenType::LOGICAL_AND ) {
+        instructions.emplace_back( false_label );
+    } else {
+        instructions.emplace_back( true_label );
+    }
 
-    // result = 0
-    auto zero = mk_TAC<tac::Constant_>( ast, 0 );
-    copy = mk_TAC<tac::Copy_>( ast, zero, result );
-    instructions.emplace_back( copy );
+    if (ast->op == TokenType::LOGICAL_AND ) {
+        // result = 0
+       auto copy = mk_TAC<tac::Copy_>( ast, zero, result );
+        instructions.emplace_back( copy );
+    } else {
+        // result 1
+        auto copy = mk_TAC<tac::Copy_>( ast, one, result );
+        instructions.emplace_back( copy );
+    }
     // label end:
     instructions.emplace_back( end_label );
     return result;
