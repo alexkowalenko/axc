@@ -13,3 +13,10 @@
 template <class... Ts> struct overloaded : Ts... {
     using Ts::operator()...;
 };
+
+template <typename T>
+concept HasLocation = requires( T t ) { t->location; };
+
+template <typename T, typename... Args> constexpr std::shared_ptr<T> mk_node( const HasLocation auto b, Args... args ) {
+    return std::make_shared<T>( b->location, args... );
+}

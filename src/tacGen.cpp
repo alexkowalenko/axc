@@ -24,23 +24,17 @@ std::string  temp_name() {
     return std::format( "temp.{}", temp_counter++ );
 }
 
-template <typename T, typename... Args>
-constexpr std::shared_ptr<T> mk_TAC( const auto b, Args... args )
-{
-    return std::make_shared<T>( b->location, args... );
-}
-
 } // namespace
 
 tac::Program TacGen::generate( ast::Program ast ) {
-    auto program = mk_TAC<tac::Program_>( ast );
+    auto program = mk_node<tac::Program_>( ast );
     program->function = functionDef( ast->function );
     return program;
 }
 
 tac::FunctionDef TacGen::functionDef( ast::FunctionDef ast ) {
     spdlog::debug( "tac::functionDef: {}", ast->name );
-    auto function = mk_TAC<tac::FunctionDef_>( ast );
+    auto function = mk_node<tac::FunctionDef_>( ast );
     function->name = ast->name;
     function->instructions = ret( ast->statement->ret );
     return function;
@@ -54,8 +48,7 @@ std::vector<tac::Instruction> TacGen::ret( ast::Return ast ) {
     auto value = expr( ast->expr, instructions );
 
     // Do Return
-    auto ret = mk_TAC<tac::Return_>( ast );
-    ret->value = value;
+    auto ret = mk_node<tac::Return_>( ast, value );
     instructions.push_back( ret );
     return instructions;
 }
@@ -71,7 +64,7 @@ tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructi
 
 tac::Value TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::unary: {}", to_string( ast->op ) );
-    auto u = mk_TAC<tac::Unary_>( ast );
+    auto u = mk_node<tac::Unary_>( ast );
     switch ( ast->op ) {
     case TokenType::DASH :
         u->op = tac::UnaryOpType::Negate;
@@ -79,14 +72,14 @@ tac::Value TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instr
     case TokenType::TILDE :
         u->op = tac::UnaryOpType::Complement;
         break;
-    case TokenType::EXCLAMATION:
+    case TokenType::EXCLAMATION :
         u->op = tac::UnaryOpType::Not;
         break;
     default :
         break;
     }
     u->src = expr( ast->operand, instructions );
-    auto dst = mk_TAC<tac::Variable_>( ast, temp_name() );
+    auto dst = mk_node<tac::Variable_>( ast, temp_name() );
     u->dst = dst;
     instructions.push_back( u );
     return u->dst;
@@ -94,7 +87,7 @@ tac::Value TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instr
 
 tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::binary: {}", to_string( ast->op ) );
-    auto b = mk_TAC<tac::Binary_>( ast );
+    auto b = mk_node<tac::Binary_>( ast );
     switch ( ast->op ) {
     case TokenType::PLUS :
         b->op = tac::BinaryOpType::Add;
@@ -129,6 +122,24 @@ tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& ins
     case TokenType::LOGICAL_AND :
     case TokenType::LOGICAL_OR :
         return logical( ast, instructions );
+    case TokenType::COMPARISON_EQUALS :
+        b->op = tac::BinaryOpType::Equal;
+        break;
+    case TokenType::COMPARISON_NOT :
+        b->op = tac::BinaryOpType::NotEqual;
+        break;
+    case TokenType::LESS :
+        b->op = tac::BinaryOpType::Less;
+        break;
+    case TokenType::LESS_EQUALS:
+        b->op = tac::BinaryOpType::LessEqual;
+        break;
+    case TokenType::GREATER :
+        b->op = tac::BinaryOpType::Greater;
+        break;
+    case TokenType::GREATER_EQUALS :
+        b->op = tac::BinaryOpType::GreaterEqual;
+        break;
     default :
         break;
     }
@@ -144,58 +155,58 @@ tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& ins
 tac::Value TacGen::logical( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::logical: {}", to_string( ast->op ) );
     auto false_label = generate_label( ast, "logicalfalse" ); // For AND
-    auto true_label = generate_label( ast, "logicaltrue" ); // For OR
+    auto true_label = generate_label( ast, "logicaltrue" );   // For OR
     auto end_label = generate_label( ast, "logicalend" );
-    auto result = mk_TAC<tac::Variable_>( ast, temp_name() );
-    auto one = mk_TAC<tac::Constant_>( ast, 1 );
-    auto zero = mk_TAC<tac::Constant_>( ast, 0 );
+    auto result = mk_node<tac::Variable_>( ast, temp_name() );
+    auto one = mk_node<tac::Constant_>( ast, 1 );
+    auto zero = mk_node<tac::Constant_>( ast, 0 );
 
     // v1
     auto v = expr( ast->left, instructions );
-    if (ast->op == TokenType::LOGICAL_AND ) {
-        auto jump = mk_TAC<tac::JumpIfZero_>( ast, v, false_label->name );
+    if ( ast->op == TokenType::LOGICAL_AND ) {
+        auto jump = mk_node<tac::JumpIfZero_>( ast, v, false_label->name );
         instructions.emplace_back( jump );
     } else {
         // LOGICAL OR
-        auto jump = mk_TAC<tac::JumpIfNotZero_>( ast, v, true_label->name );
+        auto jump = mk_node<tac::JumpIfNotZero_>( ast, v, true_label->name );
         instructions.emplace_back( jump );
     }
 
     // v2
     v = expr( ast->right, instructions );
-    if (ast->op == TokenType::LOGICAL_AND ) {
-        auto jump = mk_TAC<tac::JumpIfZero_>( ast, v, false_label->name );
+    if ( ast->op == TokenType::LOGICAL_AND ) {
+        auto jump = mk_node<tac::JumpIfZero_>( ast, v, false_label->name );
         instructions.emplace_back( jump );
         // result = 1
-        auto copy = mk_TAC<tac::Copy_>( ast, one, result );
+        auto copy = mk_node<tac::Copy_>( ast, one, result );
         instructions.emplace_back( copy );
     } else {
         // LOGICAL OR
-        auto jump = mk_TAC<tac::JumpIfNotZero_>( ast, v, true_label->name );
+        auto jump = mk_node<tac::JumpIfNotZero_>( ast, v, true_label->name );
         instructions.emplace_back( jump );
         // result = 0
-        auto copy = mk_TAC<tac::Copy_>( ast, zero, result );
+        auto copy = mk_node<tac::Copy_>( ast, zero, result );
         instructions.emplace_back( copy );
     }
 
     // jump end
-    auto jump = mk_TAC<tac::Jump_>( ast, end_label->name );
+    auto jump = mk_node<tac::Jump_>( ast, end_label->name );
     instructions.emplace_back( jump );
 
     // label false:
-    if (ast->op == TokenType::LOGICAL_AND ) {
+    if ( ast->op == TokenType::LOGICAL_AND ) {
         instructions.emplace_back( false_label );
     } else {
         instructions.emplace_back( true_label );
     }
 
-    if (ast->op == TokenType::LOGICAL_AND ) {
+    if ( ast->op == TokenType::LOGICAL_AND ) {
         // result = 0
-       auto copy = mk_TAC<tac::Copy_>( ast, zero, result );
+        auto copy = mk_node<tac::Copy_>( ast, zero, result );
         instructions.emplace_back( copy );
     } else {
         // result 1
-        auto copy = mk_TAC<tac::Copy_>( ast, one, result );
+        auto copy = mk_node<tac::Copy_>( ast, one, result );
         instructions.emplace_back( copy );
     }
     // label end:
@@ -204,12 +215,10 @@ tac::Value TacGen::logical( ast::BinaryOp ast, std::vector<tac::Instruction>& in
 }
 
 tac::Label TacGen::generate_label( const std::shared_ptr<ast::Base> b, std::string_view name ) {
-    return mk_TAC<tac::Label_>( b, std::format( "{:s}.{:d}", name, label_count++ ) );
+    return mk_node<tac::Label_>( b, std::format( "{:s}.{:d}", name, label_count++ ) );
 }
 
 tac::Constant TacGen::constant( ast::Constant ast ) {
     spdlog::debug( "tac::constant: {}", ast->value );
-    auto c = mk_TAC<tac::Constant_>( ast );
-    c->value = ast->value;
-    return c;
+    return mk_node<tac::Constant_>( ast, ast->value );
 }

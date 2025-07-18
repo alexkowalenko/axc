@@ -19,10 +19,8 @@ constexpr std::shared_ptr<T> mk_AT_TAC( const std::shared_ptr<tac::Base> b, cons
     return std::make_shared<T>( b->location, args... );
 }
 
-constexpr at::Register mk_reg( const std::shared_ptr<tac::Base> b, const std::string_view name ) {
-    auto reg = mk_AT_TAC<at::Register_>( b );
-    reg->reg = name;
-    return reg;
+constexpr at::Register mk_reg( const std::shared_ptr<tac::Base> b, std::string const & name ) {
+    return mk_node<at::Register_>( b, name );
 }
 
 } // namespace
@@ -43,8 +41,12 @@ at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
                         [ &function, this ]( tac::Binary r ) -> void { binary( r, function->instructions ); },
                         [ &function, this ]( tac::Copy r ) -> void { copy( r, function->instructions ); },
                         [ &function, this ]( tac::Jump r ) -> void { jump( r, function->instructions ); },
-                        [ &function, this ]( tac::JumpIfZero r ) -> void { jumpIfZero<tac::JumpIfZero>( r, true, function->instructions ); },
-                        [ &function, this ]( tac::JumpIfNotZero r ) -> void { jumpIfZero<tac::JumpIfNotZero>( r, false, function->instructions ); },
+                        [ &function, this ]( tac::JumpIfZero r ) -> void {
+                            jumpIfZero<tac::JumpIfZero>( r, true, function->instructions );
+                        },
+                        [ &function, this ]( tac::JumpIfNotZero r ) -> void {
+                            jumpIfZero<tac::JumpIfNotZero>( r, false, function->instructions );
+                        },
                         [ &function, this ]( tac::Label r ) -> void { label( r, function->instructions ); },
                     },
                     instr );
