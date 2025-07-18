@@ -17,7 +17,7 @@
 #include <functional>
 #include <map>
 
-std::map<TokenType, Precedence> precedence_map = {
+const std::map<TokenType, Precedence> precedence_map = {
     { TokenType::PIPE, Precedence::BitwiseOr },
     { TokenType::CARET, Precedence::BitwiseXor },
     { TokenType::AMPERSAND, Precedence::BitwiseAnd },
@@ -32,8 +32,8 @@ std::map<TokenType, Precedence> precedence_map = {
     { TokenType::LESS_EQUALS, Precedence::Comparison },
     { TokenType::GREATER, Precedence::Comparison },
     { TokenType::GREATER_EQUALS, Precedence::Comparison },
-    { TokenType::COMPARISON_EQUALS, Precedence::Comparison },
-    { TokenType::COMPARISON_NOT, Precedence::Comparison },
+    { TokenType::COMPARISON_EQUALS, Precedence::Equals },
+    { TokenType::COMPARISON_NOT, Precedence::Equals },
     { TokenType::LOGICAL_AND, Precedence::And },
     { TokenType::LOGICAL_OR, Precedence::Or },
 };

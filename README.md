@@ -32,4 +32,10 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 - [X] Parser.
 - [X] TAC intermediate.
 - [X] Code Generator.
-- [ ] Output.
+- [X] Output.
+
+## Chapter 5 Local Variables
+- [ ] Lexer.
+- [ ] Parser.
+- [ ] Semantic Analysis.
+- [ ] TAX intermediate.

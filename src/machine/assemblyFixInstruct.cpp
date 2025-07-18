@@ -149,11 +149,13 @@ void AssemblyFixInstruct::visit_Cmp( const at::Cmp ast ) {
         auto dst = ast->operand2;
         auto reg = mk_reg( ast, "R10D" );
 
-        auto c1 = mk_node<at::Cmp_>( ast, src, reg );
+        auto c1 = mk_node<at::Mov_>( ast, src, reg );
         current_instructions.push_back( c1 );
         auto c2 = mk_node<at::Cmp_>( ast, reg, dst );
         current_instructions.push_back( c2 );
-    } if ( std::holds_alternative<at::Imm>( ast->operand2 ) ) {
+        return;
+    }
+    if ( std::holds_alternative<at::Imm>( ast->operand2 ) ) {
         // Second operand can't be a constant
         auto reg = mk_reg( ast, "R11D" );
 
@@ -163,10 +165,8 @@ void AssemblyFixInstruct::visit_Cmp( const at::Cmp ast ) {
         // cmpl operand1, %r11d
         auto mov2 = mk_node<at::Cmp_>( ast, ast->operand1, reg );
         current_instructions.push_back( mov2 );
-    }else {
+    } else {
         // Other MOV instructions
         current_instructions.push_back( ast );
     }
 }
-
-
