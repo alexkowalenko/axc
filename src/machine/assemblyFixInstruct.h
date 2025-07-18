@@ -13,7 +13,7 @@
 
 class AssemblyFixInstruct : public at::Visitor<void> {
   public:
-    AssemblyFixInstruct() = default;
+    AssemblyFixInstruct();
     ~AssemblyFixInstruct() override = default;
 
     void set_number_stack_locations( const int number_stack_locations ) {
@@ -48,4 +48,11 @@ class AssemblyFixInstruct : public at::Visitor<void> {
     int                          number_stack_locations { 0 };
     static constexpr int         stack_increment { 4 };
     std::vector<at::Instruction> current_instructions;
+
+    at::Register ax;
+    at::Register cx;
+    at::Register cl;
+    at::Register dx;
+    at::Register r10;
+    at::Register r11;
 };

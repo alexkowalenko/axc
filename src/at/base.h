@@ -40,6 +40,43 @@ enum class BinaryOpType {
 
 enum class CondCode { E, NE, G, GE, L, LE };
 
+enum class RegisterName {
+    AX,
+    CX,
+    DX,
+    R10,
+    R11,
+};
+
+constexpr std::string to_string( const RegisterName rn ) {
+    switch ( rn ) {
+    case RegisterName::AX :
+        return "A";
+    case RegisterName::CX :
+        return "C";
+    case RegisterName::DX :
+        return "D";
+    case RegisterName::R10 :
+        return "R10";
+    case RegisterName::R11 :
+        return "R11";
+    }
+}
+
+enum class RegisterSize {
+    Long,
+    Byte,
+};
+
+constexpr std::string to_string( const RegisterSize rs ) {
+    switch ( rs ) {
+    case RegisterSize::Long :
+        return "E";
+    case RegisterSize::Byte :
+        return "L";
+    }
+}
+
 class Mov_;
 using Mov = std::shared_ptr<Mov_>;
 

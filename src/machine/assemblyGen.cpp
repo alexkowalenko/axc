@@ -15,16 +15,10 @@
 #include "../common.h"
 #include "x86_common.h"
 
-namespace {
-
-constexpr at::Register mk_reg( const std::shared_ptr<tac::Base> b, std::string const& name ) {
-    return mk_node<at::Register_>( b, name );
-}
-
-} // namespace
-
 AssemblyGen::AssemblyGen() {
     zero = std::make_shared<at::Imm_>( Location(), 0 );
+    ax = std::make_shared<at::Register_>( Location(), at::RegisterName::AX, at::RegisterSize::Long );
+    dx = std::make_shared<at::Register_>( Location(), at::RegisterName::DX, at::RegisterSize::Long );
 }
 
 at::Program AssemblyGen::generate( const tac::Program atac ) {
@@ -58,7 +52,7 @@ at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
 
 void AssemblyGen::ret( const tac::Return atac, std::vector<at::Instruction>& instructions ) {
     // Mov(value, %eax)
-    auto mov = mk_node<at::Mov_>( atac, value( atac->value ), mk_reg( atac, "eax" ) );
+    auto mov = mk_node<at::Mov_>( atac, value( atac->value ), ax );
     instructions.push_back( mov );
     // Ret
     auto ret = mk_node<at::Ret_>( atac );
@@ -152,9 +146,6 @@ void AssemblyGen::binary( const tac::Binary atac, std::vector<at::Instruction>& 
 }
 
 void AssemblyGen::idiv( const tac::Binary atac, std::vector<at::Instruction>& instructions ) {
-
-    auto ax = mk_reg( atac, "eax" );
-    auto dx = mk_reg( atac, "edx" );
 
     // Mov(src1, Reg(AX))
     auto mov = mk_node<at::Mov_>( atac, value( atac->src1 ), ax );

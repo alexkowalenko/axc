@@ -40,6 +40,9 @@ class AssemblyGen {
 
   private:
     at::Imm zero;
+
+    at::Register ax;
+    at::Register dx;
 };
 
 template <typename T>

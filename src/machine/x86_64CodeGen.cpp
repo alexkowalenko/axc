@@ -12,14 +12,32 @@
 
 #include "../at/includes.h"
 #include "../exception.h"
+#include "../common.h"
 #include "x86_common.h"
 
-template <class... Ts> struct overloaded : Ts... {
-    using Ts::operator()...;
-};
+std::string to_lower( const std::string& s ) {
+    std::string buf = s;
+    std::transform( s.begin(), s.end(), buf.begin(), []( unsigned char c ) { return std::tolower( c ); } );
+    return buf;
+}
+
+std::string assemble_reg( at::Register r ) {
+    std::string name = to_lower( to_string( r->reg ) );
+    if ( r->reg == at::RegisterName::AX || r->reg == at::RegisterName::CX || r->reg == at::RegisterName::DX ) {
+        if ( r->size == at::RegisterSize::Long ) {
+            return "e" + name + "x";
+        }
+        return name + "l";
+    }
+    // RX
+    if ( r->size == at::RegisterSize::Long ) {
+        return name + "d";
+    }
+    return name + "b";
+}
 
 X86_64CodeGen::X86_64CodeGen( Option const& option ) : CodeGenerator( option ) {
-    if ( option.system == System::Linux  || option.system == System::FreeBSD) {
+    if ( option.system == System::Linux || option.system == System::FreeBSD ) {
         local_prefix = ".L";
     } else if ( option.system == System::MacOS ) {
         local_prefix = "L";
@@ -63,14 +81,14 @@ void X86_64CodeGen::visit_FunctionDef( const at::FunctionDef ast ) {
         std::visit( overloaded { [ this ]( at::Mov v ) -> void { v->accept( this ); },
                                  [ this ]( at::Unary u ) -> void { u->accept( this ); },
                                  [ this ]( at::Binary b ) -> void { b->accept( this ); },
-                                     [ this ]( at::Cmp b ) -> void { b->accept( this ); },
+                                 [ this ]( at::Cmp b ) -> void { b->accept( this ); },
                                  [ this ]( at::AllocateStack a ) -> void { a->accept( this ); },
                                  [ this ]( at::Idiv i ) -> void { i->accept( this ); },
                                  [ this ]( at::Cdq c ) -> void { c->accept( this ); },
-                                     [ this ]( at::Jump c ) -> void { c->accept( this ); },
-                              [ this ]( at::JumpCC c ) -> void { c->accept( this ); },
-                              [ this ]( at::SetCC c ) -> void { c->accept( this ); },
-                              [ this ]( at::Label c ) -> void { c->accept( this ); },
+                                 [ this ]( at::Jump c ) -> void { c->accept( this ); },
+                                 [ this ]( at::JumpCC c ) -> void { c->accept( this ); },
+                                 [ this ]( at::SetCC c ) -> void { c->accept( this ); },
+                                 [ this ]( at::Label c ) -> void { c->accept( this ); },
                                  [ this ]( at::Ret r ) -> void { r->accept( this ); } },
                     instr );
     }
@@ -167,15 +185,15 @@ void X86_64CodeGen::visit_Jump( const at::Jump ast ) {
 }
 
 void X86_64CodeGen::visit_JumpCC( const at::JumpCC ast ) {
-    add_line( std::format("j{}", cond_code(ast->cond)), local_prefix + ast->target );
+    add_line( std::format( "j{}", cond_code( ast->cond ) ), local_prefix + ast->target );
 }
 
 void X86_64CodeGen::visit_SetCC( const at::SetCC ast ) {
-    add_line( std::format("set{}", cond_code(ast->cond)), operand( ast->operand ) );
+    add_line( std::format( "set{}", cond_code( ast->cond ) ), operand( ast->operand ) );
 }
 
 void X86_64CodeGen::visit_Label( const at::Label ast ) {
-    add_line(local_prefix + ast->name + ":");
+    add_line( local_prefix + ast->name + ":" );
 }
 
 void X86_64CodeGen::visit_Cdq( const at::Cdq ast ) {
@@ -187,7 +205,7 @@ void X86_64CodeGen::visit_Imm( const at::Imm ast ) {
 }
 
 void X86_64CodeGen::visit_Register( const at::Register ast ) {
-    last_string = std::format( "%{}", ast->reg );
+    last_string = std::format( "%{}", assemble_reg( ast ) );
 }
 
 void X86_64CodeGen::visit_Pseudo( const at::Pseudo ast ) {

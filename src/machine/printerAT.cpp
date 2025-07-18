@@ -153,7 +153,7 @@ std::string PrinterAT::visit_AllocateStack( const at::AllocateStack ast ) {
 };
 
 std::string PrinterAT::visit_Register( const at::Register ast ) {
-    return std::format( "%{}", ast->reg );
+    return std::format( "%({}.{})", to_string(ast->reg), to_string(ast->size) );
 };
 
 std::string PrinterAT::visit_Pseudo( const at::Pseudo ast ) {

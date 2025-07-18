@@ -31,7 +31,7 @@ if __name__ == "__main__":
             "Ret": [],
             # 4 Operand types for Operand
             "Imm": [("std::int32_t", "value", False)],
-            "Register": [("std::string", "reg", False)],
+            "Register": [("RegisterName", "reg", False), ("RegisterSize", "size", False)],
             "Pseudo": [("std::string", "name", False)],
             "Stack": [("std::int32_t", "offset", False)],
          })
