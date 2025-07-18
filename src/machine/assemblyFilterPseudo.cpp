@@ -77,9 +77,7 @@ at::Operand AssemblyFilterPseudo::operand( const at::Operand& op ) {
             location = next_stack_location;
             stack_location_map[ p->name ] = location;
         }
-        auto s = std::make_shared<at::Stack_>( p->location );
-        s->offset = location;
-        return s;
+        return mk_node<at::Stack_>( p, location );
     } else {
         return op;
     }

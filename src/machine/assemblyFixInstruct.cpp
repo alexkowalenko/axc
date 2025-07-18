@@ -26,7 +26,7 @@ void AssemblyFixInstruct::visit_FunctionDef( const at::FunctionDef ast ) {
     current_instructions.clear();
 
     // Add Allocate Stack Instruction
-    auto allocate = make_AT<at::AllocateStack_>( ast );
+    auto allocate = mk_node<at::AllocateStack_>( ast );
     allocate->size = stack_increment * number_stack_locations;
     current_instructions.push_back( allocate );
 
@@ -56,9 +56,9 @@ void AssemblyFixInstruct::visit_Mov( const at::Mov ast ) {
         auto dst = ast->dst;
         auto reg = mk_reg( ast, "R10D" );
 
-        auto mov1 = make_AT<at::Mov_>( ast, src, reg );
+        auto mov1 = mk_node<at::Mov_>( ast, src, reg );
         current_instructions.push_back( mov1 );
-        auto mov2 = make_AT<at::Mov_>( ast, reg, dst );
+        auto mov2 = mk_node<at::Mov_>( ast, reg, dst );
         current_instructions.push_back( mov2 );
     } else {
         // Other MOV instructions
@@ -71,10 +71,10 @@ void AssemblyFixInstruct::visit_Idiv( const at::Idiv ast ) {
     if ( std::holds_alternative<at::Imm>( ast->src ) ) {
         auto reg = mk_reg( ast, "R10D" );
 
-        auto mov1 = make_AT<at::Mov_>( ast, ast->src, reg );
+        auto mov1 = mk_node<at::Mov_>( ast, ast->src, reg );
         current_instructions.push_back( mov1 );
 
-        auto idiv = make_AT<at::Idiv_>( ast, reg );
+        auto idiv = mk_node<at::Idiv_>( ast, reg );
         current_instructions.push_back( idiv );
     } else {
         // Other Idiv instructions
@@ -90,10 +90,10 @@ void AssemblyFixInstruct::visit_Binary( const at::Binary ast ) {
              std::holds_alternative<at::Stack>( ast->operand2 ) ) {
             auto reg = mk_reg( ast, "R10D" );
 
-            auto mov1 = make_AT<at::Mov_>( ast, ast->operand1, reg );
+            auto mov1 = mk_node<at::Mov_>( ast, ast->operand1, reg );
             current_instructions.push_back( mov1 );
 
-            auto binary = make_AT<at::Binary_>( ast, ast->op, reg, ast->operand2 );
+            auto binary = mk_node<at::Binary_>( ast, ast->op, reg, ast->operand2 );
             current_instructions.push_back( binary );
 
             // There is any extra rule that the second operand can't be a constant (pg. 88),
@@ -107,13 +107,13 @@ void AssemblyFixInstruct::visit_Binary( const at::Binary ast ) {
         if ( std::holds_alternative<at::Stack>( ast->operand2 ) ) {
             auto reg = mk_reg( ast, "R11D" );
 
-            auto mov1 = make_AT<at::Mov_>( ast, ast->operand2, reg );
+            auto mov1 = mk_node<at::Mov_>( ast, ast->operand2, reg );
             current_instructions.push_back( mov1 );
 
-            auto binary = make_AT<at::Binary_>( ast, ast->op, ast->operand1, reg );
+            auto binary = mk_node<at::Binary_>( ast, ast->op, ast->operand1, reg );
             current_instructions.push_back( binary );
 
-            auto mov2 = make_AT<at::Mov_>( ast, reg, ast->operand2 );
+            auto mov2 = mk_node<at::Mov_>( ast, reg, ast->operand2 );
             current_instructions.push_back( mov2 );
         } else {
             // Other Mul instructions
@@ -125,16 +125,16 @@ void AssemblyFixInstruct::visit_Binary( const at::Binary ast ) {
         auto eax = mk_reg( ast, "eax" );
         auto cl = mk_reg( ast, "cl" );
 
-        auto mov1 = make_AT<at::Mov_>( ast, ast->operand2, eax );
+        auto mov1 = mk_node<at::Mov_>( ast, ast->operand2, eax );
         current_instructions.push_back( mov1 );
 
-        auto mov2 = make_AT<at::Mov_>( ast, ast->operand1, ecx );
+        auto mov2 = mk_node<at::Mov_>( ast, ast->operand1, ecx );
         current_instructions.push_back( mov2 );
 
-        auto binary = make_AT<at::Binary_>( ast, ast->op, cl, eax );
+        auto binary = mk_node<at::Binary_>( ast, ast->op, cl, eax );
         current_instructions.push_back( binary );
 
-        mov2 = make_AT<at::Mov_>( ast, eax, ast->operand2 );
+        mov2 = mk_node<at::Mov_>( ast, eax, ast->operand2 );
         current_instructions.push_back( mov2 );
     } else {
         // Other Binary instructions
@@ -149,19 +149,19 @@ void AssemblyFixInstruct::visit_Cmp( const at::Cmp ast ) {
         auto dst = ast->operand2;
         auto reg = mk_reg( ast, "R10D" );
 
-        auto c1 = make_AT<at::Cmp_>( ast, src, reg );
+        auto c1 = mk_node<at::Cmp_>( ast, src, reg );
         current_instructions.push_back( c1 );
-        auto c2 = make_AT<at::Cmp_>( ast, reg, dst );
+        auto c2 = mk_node<at::Cmp_>( ast, reg, dst );
         current_instructions.push_back( c2 );
     } if ( std::holds_alternative<at::Imm>( ast->operand2 ) ) {
         // Second operand can't be a constant
         auto reg = mk_reg( ast, "R11D" );
 
         // movl operand2, %r11d
-        auto mov1 = make_AT<at::Mov_>( ast, ast->operand2, reg );
+        auto mov1 = mk_node<at::Mov_>( ast, ast->operand2, reg );
         current_instructions.push_back( mov1 );
         // cmpl operand1, %r11d
-        auto mov2 = make_AT<at::Cmp_>( ast, ast->operand1, reg );
+        auto mov2 = mk_node<at::Cmp_>( ast, ast->operand1, reg );
         current_instructions.push_back( mov2 );
     }else {
         // Other MOV instructions

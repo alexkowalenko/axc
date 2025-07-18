@@ -9,6 +9,9 @@
 //
 
 #include "assemblyGen.h"
+
+#include <map>
+
 #include "../common.h"
 #include "x86_common.h"
 
@@ -19,6 +22,10 @@ constexpr at::Register mk_reg( const std::shared_ptr<tac::Base> b, std::string c
 }
 
 } // namespace
+
+AssemblyGen::AssemblyGen() {
+    zero = std::make_shared<at::Imm_>( Location(), 0 );
+}
 
 at::Program AssemblyGen::generate( const tac::Program atac ) {
     auto program = mk_node<at::Program_>( atac );
@@ -83,7 +90,6 @@ void AssemblyGen::unary( const tac::Unary atac, std::vector<at::Instruction>& in
 };
 
 void AssemblyGen::unary_not( const tac::Unary atac, std::vector<at::Instruction>& instructions ) {
-    auto zero = mk_node<at::Imm_>( atac, 0 );
     // Cmp(Imm(0), src)
     auto cmp = mk_node<at::Cmp_>( atac, zero, value( atac->src ) );
     instructions.push_back( cmp );
@@ -96,8 +102,17 @@ void AssemblyGen::unary_not( const tac::Unary atac, std::vector<at::Instruction>
 }
 
 void AssemblyGen::binary( const tac::Binary atac, std::vector<at::Instruction>& instructions ) {
+    // Handle divide and mod differently
     if ( atac->op == tac::BinaryOpType::Divide || atac->op == tac::BinaryOpType::Modulo ) {
         idiv( atac, instructions );
+        return;
+    }
+
+    // Handle relational operations differently
+    if ( atac->op == tac::BinaryOpType::Equal || atac->op == tac::BinaryOpType::NotEqual ||
+         atac->op == tac::BinaryOpType::Less || atac->op == tac::BinaryOpType::LessEqual ||
+         atac->op == tac::BinaryOpType::Greater || atac->op == tac::BinaryOpType::GreaterEqual ) {
+        binary_relation( atac, instructions );
         return;
     }
 
@@ -162,6 +177,24 @@ void AssemblyGen::idiv( const tac::Binary atac, std::vector<at::Instruction>& in
     }
     mov->dst = value( atac->dst );
     instructions.push_back( mov );
+}
+
+const std::map<tac::BinaryOpType, at::CondCode> condCodeMap = {
+    { tac::BinaryOpType::Equal, at::CondCode::E },   { tac::BinaryOpType::NotEqual, at::CondCode::NE },
+    { tac::BinaryOpType::Less, at::CondCode::L },    { tac::BinaryOpType::LessEqual, at::CondCode::LE },
+    { tac::BinaryOpType::Greater, at::CondCode::G }, { tac::BinaryOpType::GreaterEqual, at::CondCode::GE },
+};
+
+void AssemblyGen::binary_relation( const tac::Binary atac, std::vector<at::Instruction>& instructions ) {
+    // Cmp(Imm(0), src)
+    auto cmp = mk_node<at::Cmp_>( atac, value( atac->src2 ), value( atac->src1 ) );
+    instructions.push_back( cmp );
+    // Mov(Imm(0), dst)
+    auto mov = mk_node<at::Mov_>( atac, zero, value( atac->dst ) );
+    instructions.push_back( mov );
+    // SetCC(condCode, dst)
+    auto setcc = mk_node<at::SetCC_>( atac, condCodeMap.at( atac->op ), value( atac->dst ) );
+    instructions.push_back( setcc );
 }
 
 void AssemblyGen::jump( const tac::Jump atac, std::vector<at::Instruction>& instructions ) {
