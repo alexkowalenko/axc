@@ -88,7 +88,7 @@ char Lexer::get() {
 Token Lexer::get_identifier( const char c ) {
     std::string identifier( 1, c );
     char        x = peek();
-    while ( std::isalnum( x ) ) {
+    while ( std::isalnum( x ) || x == '_' ) {
         get();
         identifier.push_back( x );
         x = peek();
