@@ -21,9 +21,9 @@ class TacGen {
     tac::Program generate( ast::Program ast );
 
   private:
-    tac::FunctionDef              functionDef( ast::FunctionDef ast );
-    std::vector<tac::Instruction> ret( ast::Return ast );
-    tac::Value                    expr( ast::Expr ast, std::vector<tac::Instruction>& instructions );
+    tac::FunctionDef functionDef( ast::FunctionDef ast );
+    void             ret( ast::Return ast, std::vector<tac::Instruction>& instructions );
+    tac::Value       expr( ast::Expr ast, std::vector<tac::Instruction>& instructions );
 
     tac::Value    unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions );
     tac::Value    binary( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions );

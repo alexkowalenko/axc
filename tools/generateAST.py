@@ -14,11 +14,14 @@ if __name__ == "__main__":
         output_dir,
         "ast",
         {
-           "Program": [("FunctionDef", "function", False)],
-           "FunctionDef": [("std::string", "name", False), ("Statement", "statement", False)],
-           "Statement": [("Return", "ret", False)],
-           "Return": [("Expr", "expr", False)],
-           "UnaryOp": [("TokenType", "op", False), ("Expr", "operand", False)],
-           "BinaryOp": [("TokenType", "op", False), ("Expr", "left", False), ("Expr", "right", False)],
-           "Constant": [("std::int32_t", "value", False)],
+            "Program": [("FunctionDef", "function", False)],
+            "FunctionDef": [("std::string", "name", False), ("std::vector<BlockItem>", "block_items", False)],
+            "Declaration": [("std::string", "name", False), ("std::optional<Expr>", "init", False)],
+            "Null": [], # Null statement
+            "Return": [("Expr", "expr", False)],
+            "UnaryOp": [("TokenType", "op", False), ("Expr", "operand", False)],
+            "BinaryOp": [("TokenType", "op", False), ("Expr", "left", False), ("Expr", "right", False)],
+            "Assign": [("Expr", "left", False), ("Expr", "right", False)],
+            "Var": [("std::string", "name", False)],
+            "Constant": [("std::int32_t", "value", False)],
          })

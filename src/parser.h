@@ -15,6 +15,7 @@
 
 enum class Precedence {
     Lowest = 0,
+    Assignment = 1,
     Or = 5,
     And = 10,
     BitwiseOr = 15,
@@ -35,9 +36,9 @@ class Parser {
     ast::Program parse();
 
     ast::Expr     expr( Precedence precedence = Precedence::Lowest );
-    ast::Expr factor();
+    ast::Expr     factor();
     ast::UnaryOp  unaryOp();
-    ast::BinaryOp binaryOp(ast::Expr left);
+    ast::BinaryOp binaryOp( ast::Expr left );
     ast::Expr     group();
     ast::Constant constant();
 
@@ -45,6 +46,7 @@ class Parser {
     template <class T> constexpr std::shared_ptr<T> make_AST() { return std::make_shared<T>( lexer.get_location() ); }
 
     ast::FunctionDef functionDef();
+    ast::Declaration declaration();
     ast::Statement   statement();
     ast::Return      ret();
 

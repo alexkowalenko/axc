@@ -36,13 +36,15 @@ tac::FunctionDef TacGen::functionDef( ast::FunctionDef ast ) {
     spdlog::debug( "tac::functionDef: {}", ast->name );
     auto function = mk_node<tac::FunctionDef_>( ast );
     function->name = ast->name;
-    function->instructions = ret( ast->statement->ret );
+    for ( auto b : ast->block_items ) {
+        std::visit(
+            overloaded { [ this ]( ast::Declaration ast ) -> void {}, [ this ]( ast::Statement ast ) -> void {} }, b );
+    }
     return function;
 }
 
-std::vector<tac::Instruction> TacGen::ret( ast::Return ast ) {
+void TacGen::ret( ast::Return ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::ret: {}" );
-    std::vector<tac::Instruction> instructions;
 
     // Do expression
     auto value = expr( ast->expr, instructions );
@@ -50,7 +52,6 @@ std::vector<tac::Instruction> TacGen::ret( ast::Return ast ) {
     // Do Return
     auto ret = mk_node<tac::Return_>( ast, value );
     instructions.push_back( ret );
-    return instructions;
 }
 
 tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructions ) {
@@ -131,7 +132,7 @@ tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& ins
     case TokenType::LESS :
         b->op = tac::BinaryOpType::Less;
         break;
-    case TokenType::LESS_EQUALS:
+    case TokenType::LESS_EQUALS :
         b->op = tac::BinaryOpType::LessEqual;
         break;
     case TokenType::GREATER :

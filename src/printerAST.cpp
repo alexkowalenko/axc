@@ -25,13 +25,36 @@ std::string PrinterAST::visit_Program( const ast::Program ast ) {
 
 std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef ast ) {
     std::string buf = std::format( "{}({}) {{{}", ast->name, TokenType::VOID, new_line );
-    buf += ast->statement->accept( this );
+    for ( auto b : ast->block_items ) {
+        buf += block_item( b ) + ";";
+    }
     buf += new_line + "}" + new_line;
     return buf;
 }
 
-std::string PrinterAST::visit_Statement( const ast::Statement ast ) {
-    return indent + ast->ret->accept( this ) + ";";
+std::string PrinterAST::block_item( const ast::BlockItem ast ) {
+    return std::visit( overloaded { [ this ]( ast::Declaration ast ) -> std::string { return ast->accept( this ); },
+                                    [ this ]( ast::Statement ast ) -> std::string { return statement( ast ); } },
+                       ast );
+}
+
+std::string PrinterAST::visit_Declaration( const ast::Declaration ast ) {
+    std::string buf = "int " + ast->name;
+    if ( ast->init ) {
+        buf += std::format( " = {}", expr( ast->init.value() ) );
+    }
+    return buf;
+}
+
+std::string PrinterAST::statement( const ast::Statement ast ) {
+    return std::visit( overloaded { [ this ]( ast::Return ast ) -> std::string { return ast->accept( this ); },
+                                    [ this ]( ast::Expr ast ) -> std::string { return statement( ast ); },
+                                    [ this ]( ast::Null ) -> std::string { return ""; } },
+                       ast );
+}
+
+std::string PrinterAST::visit_Null( const ast::Null ast ) {
+    return "";
 }
 
 std::string PrinterAST::expr( const ast::Expr ast ) {
@@ -52,6 +75,14 @@ std::string PrinterAST::visit_BinaryOp( const ast::BinaryOp ast ) {
 
 std::string PrinterAST::visit_UnaryOp( const ast::UnaryOp ast ) {
     return std::format( "{}{}", ast->op, expr( ast->operand ) );
+};
+
+std::string PrinterAST::visit_Assign( const ast::Assign ast ) {
+    return std::format( "{} = {}", expr( ast->left ), expr( ast->right ) );
+}
+
+std::string PrinterAST::visit_Var( const ast::Var ast ) {
+    return ast->name;
 };
 
 std::string PrinterAST::visit_Constant( const ast::Constant ast ) {

@@ -10,6 +10,7 @@
 
 #include "parser.h"
 #include "ast/includes.h"
+#include "ast/statement.h"
 #include "exception.h"
 #include "spdlog/spdlog.h"
 
@@ -18,6 +19,7 @@
 #include <map>
 
 const std::map<TokenType, Precedence> precedence_map = {
+    //
     { TokenType::PIPE, Precedence::BitwiseOr },
     { TokenType::CARET, Precedence::BitwiseXor },
     { TokenType::AMPERSAND, Precedence::BitwiseAnd },
@@ -36,7 +38,7 @@ const std::map<TokenType, Precedence> precedence_map = {
     { TokenType::COMPARISON_NOT, Precedence::Equals },
     { TokenType::LOGICAL_AND, Precedence::And },
     { TokenType::LOGICAL_OR, Precedence::Or },
-};
+    { TokenType::EQUALS, Precedence::Assignment } };
 
 constexpr Precedence get_precedence( const TokenType tok ) {
     if ( precedence_map.contains( tok ) ) {
@@ -68,21 +70,59 @@ ast::FunctionDef Parser::functionDef() {
     expect_token( TokenType::R_PAREN );
     expect_token( TokenType::L_BRACE );
 
-    funct->statement = statement();
+    auto token = lexer.peek_token();
+    while ( token.tok != TokenType::R_BRACE ) {
+        if ( token.tok == TokenType::INT ) {
+            ast::BlockItem block = declaration();
+            funct->block_items.push_back( block );
+        } else {
+            ast::BlockItem block = statement();
+            funct->block_items.push_back( block );
+        }
+        token = lexer.peek_token();
+    }
 
     // }
     expect_token( TokenType::R_BRACE );
     return funct;
 }
 
+ast::Declaration Parser::declaration() {
+    spdlog::debug( "declaration" );
+    auto decl = make_AST<ast::Declaration_>();
+    expect_token( TokenType::INT );
+
+    // Get name
+    auto name = expect_token( TokenType::IDENTIFIER );
+    decl->name = name.value;
+
+    // check for =
+    auto token = lexer.peek_token();
+    if ( token.tok == TokenType::EQUALS ) {
+        expect_token( TokenType::EQUALS );
+        decl->init = expr();
+    }
+    expect_token( TokenType::SEMICOLON );
+    return decl;
+}
+
 ast::Statement Parser::statement() {
-    auto statement = make_AST<ast::Statement_>();
-    statement->ret = ret();
+    spdlog::debug( "statement" );
+    ast::Statement statement;
+    auto           token = lexer.peek_token();
+    if ( token.tok == TokenType::RETURN ) {
+        statement = ret();
+    } else if ( token.tok == TokenType::SEMICOLON ) {
+        statement = make_AST<ast::Null_>();
+    } else {
+        statement = expr();
+    }
     expect_token( TokenType::SEMICOLON );
     return statement;
 }
 
 ast::Return Parser::ret() {
+    spdlog::debug( "ret" );
     auto ret = make_AST<ast::Return_>();
     expect_token( TokenType::RETURN );
     ret->expr = expr();

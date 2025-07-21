@@ -15,6 +15,7 @@
 #include "../token.h"
 
 #include <variant>
+#include <vector>
 
 namespace ast {
 
@@ -26,6 +27,15 @@ class Base {
     Location location;
 };
 
+class Declaration_;
+using Declaration = std::shared_ptr<Declaration_>;
+
+class Null_;
+using Null = std::shared_ptr<Null_>;
+
+class Return_;
+using Return = std::shared_ptr<Return_>;
+
 class Constant_;
 using Constant = std::shared_ptr<Constant_>;
 
@@ -36,5 +46,9 @@ class BinaryOp_;
 using BinaryOp = std::shared_ptr<BinaryOp_>;
 
 using Expr = std::variant<Constant, UnaryOp, BinaryOp>;
+
+using Statement = std::variant<Return, Expr, Null>;
+
+using BlockItem = std::variant<Statement, Declaration>;
 
 } // namespace ast

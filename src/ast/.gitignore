@@ -1,9 +1,13 @@
+assign.h
 binaryop.h
 constant.h
+declaration.h
 functiondef.h
 includes.h
+null.h
 program.h
 return.h
 statement.h
 visitor.h
 unaryop.h
+var.h
