@@ -39,8 +39,10 @@ class Parser {
     ast::Expr     factor();
     ast::UnaryOp  unaryOp();
     ast::BinaryOp binaryOp( ast::Expr left );
+    ast::Assign   assign(ast::Expr left);
     ast::Expr     group();
     ast::Constant constant();
+    ast::Var      var();
 
   private:
     template <class T> constexpr std::shared_ptr<T> make_AST() { return std::make_shared<T>( lexer.get_location() ); }

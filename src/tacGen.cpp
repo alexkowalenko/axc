@@ -59,6 +59,8 @@ tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructi
     return std::visit(
         overloaded { [ &instructions, this ]( ast::UnaryOp u ) -> tac::Value { return unary( u, instructions ); },
                      [ &instructions, this ]( ast::BinaryOp b ) -> tac::Value { return binary( b, instructions ); },
+                     [ this ]( ast::Assign a ) -> tac::Value { return {}; },
+                     [ this ]( ast::Var v ) -> tac::Value { return {}; },
                      [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
         ast );
 }

@@ -26,8 +26,9 @@ std::string PrinterAST::visit_Program( const ast::Program ast ) {
 std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef ast ) {
     std::string buf = std::format( "{}({}) {{{}", ast->name, TokenType::VOID, new_line );
     for ( auto b : ast->block_items ) {
-        buf += block_item( b ) + ";";
+        buf += indent + block_item( b ) + ";\n";
     }
+    buf.pop_back(); // remove last \n
     buf += new_line + "}" + new_line;
     return buf;
 }
@@ -41,14 +42,14 @@ std::string PrinterAST::block_item( const ast::BlockItem ast ) {
 std::string PrinterAST::visit_Declaration( const ast::Declaration ast ) {
     std::string buf = "int " + ast->name;
     if ( ast->init ) {
-        buf += std::format( " = {}", expr( ast->init.value() ) );
+        buf += " = " + expr( ast->init.value() );
     }
     return buf;
 }
 
 std::string PrinterAST::statement( const ast::Statement ast ) {
     return std::visit( overloaded { [ this ]( ast::Return ast ) -> std::string { return ast->accept( this ); },
-                                    [ this ]( ast::Expr ast ) -> std::string { return statement( ast ); },
+                                    [ this ]( ast::Expr e ) -> std::string { return expr( e ); },
                                     [ this ]( ast::Null ) -> std::string { return ""; } },
                        ast );
 }
@@ -58,11 +59,12 @@ std::string PrinterAST::visit_Null( const ast::Null ast ) {
 }
 
 std::string PrinterAST::expr( const ast::Expr ast ) {
-    return std::format(
-        "{}", std::visit( overloaded { [ this ]( ast::UnaryOp u ) -> std::string { return u->accept( this ); },
-                                       [ this ]( ast::BinaryOp b ) -> std::string { return b->accept( this ); },
-                                       [ this ]( ast::Constant c ) -> std::string { return c->accept( this ); } },
-                          ast ) );
+    return std::visit( overloaded { [ this ]( ast::UnaryOp u ) -> std::string { return u->accept( this ); },
+                                    [ this ]( ast::BinaryOp b ) -> std::string { return b->accept( this ); },
+                                    [ this ]( ast::Assign a ) -> std::string { return a->accept( this ); },
+                                    [ this ]( ast::Var v ) -> std::string { return v->accept( this ); },
+                                    [ this ]( ast::Constant c ) -> std::string { return c->accept( this ); } },
+                       ast );
 }
 
 std::string PrinterAST::visit_Return( const ast::Return ast ) {
@@ -74,7 +76,7 @@ std::string PrinterAST::visit_BinaryOp( const ast::BinaryOp ast ) {
 }
 
 std::string PrinterAST::visit_UnaryOp( const ast::UnaryOp ast ) {
-    return std::format( "{}{}", ast->op, expr( ast->operand ) );
+    return to_string( ast->op ) + expr( ast->operand );
 };
 
 std::string PrinterAST::visit_Assign( const ast::Assign ast ) {

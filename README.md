@@ -35,7 +35,7 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 - [X] Output.
 
 ## Chapter 5 Local Variables
-- [X] Lexer.
-- [ ] Parser.
+- [x] Lexer.
+- [x] Parser.
 - [ ] Semantic Analysis.
-- [ ] TAX intermediate.
+- [ ] TAC intermediate.

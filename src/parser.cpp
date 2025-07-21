@@ -10,7 +10,6 @@
 
 #include "parser.h"
 #include "ast/includes.h"
-#include "ast/statement.h"
 #include "exception.h"
 #include "spdlog/spdlog.h"
 
@@ -51,6 +50,7 @@ ast::Program Parser::parse() {
     auto program = make_AST<ast::Program_>();
     program->function = functionDef();
     expect_token( TokenType::Eof );
+    spdlog::debug( "Finish parse." );
     return program;
 }
 
@@ -132,6 +132,7 @@ ast::Return Parser::ret() {
 using PrefixParselet = std::function<ast::Expr( Parser* )>;
 const std::map<TokenType, PrefixParselet> prefix_map {
     { TokenType::CONSTANT, []( Parser* p ) -> ast::Expr { return p->constant(); } },
+    { TokenType::IDENTIFIER, []( Parser* p ) -> ast::Expr { return p->var(); } },
     { TokenType::DASH, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
     { TokenType::TILDE, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
     { TokenType::EXCLAMATION, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
@@ -158,6 +159,7 @@ const std::map<TokenType, InfixParselet> infix_map {
     { TokenType::LESS_EQUALS, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
     { TokenType::GREATER, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
     { TokenType::GREATER_EQUALS, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
+    { TokenType::EQUALS, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
 };
 
 ast::Expr Parser::expr( const Precedence precedence ) {
@@ -203,6 +205,15 @@ ast::BinaryOp Parser::binaryOp( ast::Expr left ) {
     return op;
 }
 
+ast::Assign Parser::assign( ast::Expr left ) {
+    spdlog::debug( "assign()" );
+    auto token = lexer.get_token();
+    auto op = make_AST<ast::Assign_>();
+    op->left = std::move( left );
+    op->right = expr( static_cast<Precedence>( static_cast<int>( get_precedence( TokenType::EQUALS ) ) ) );
+    return op;
+}
+
 ast::Expr Parser::group() {
     spdlog::debug( "group()" );
     expect_token( TokenType::L_PAREN );
@@ -220,6 +231,14 @@ ast::Constant Parser::constant() {
         return constant;
     }
     throw ParseException( token.location, "Expected constant but found {}", token );
+}
+
+ast::Var Parser::var() {
+    spdlog::debug( "var()" );
+    auto token = lexer.get_token();
+    auto var = make_AST<ast::Var_>();
+    var->name = token.value;
+    return var;
 }
 
 Token Parser::expect_token( TokenType expected ) {

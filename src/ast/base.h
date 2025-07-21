@@ -45,7 +45,13 @@ using UnaryOp = std::shared_ptr<UnaryOp_>;
 class BinaryOp_;
 using BinaryOp = std::shared_ptr<BinaryOp_>;
 
-using Expr = std::variant<Constant, UnaryOp, BinaryOp>;
+class Assign_;
+using Assign = std::shared_ptr<Assign_>;
+
+class Var_;
+using Var = std::shared_ptr<Var_>;
+
+using Expr = std::variant<Constant, UnaryOp, BinaryOp, Var, Assign>;
 
 using Statement = std::variant<Return, Expr, Null>;
 
