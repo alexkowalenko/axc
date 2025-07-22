@@ -17,15 +17,6 @@
 #include "spdlog/fmt/bundled/chrono.h"
 #include "tac/includes.h"
 
-namespace {
-
-std::int32_t temp_counter = 0;
-std::string  temp_name() {
-    return std::format( "temp.{}", temp_counter++ );
-}
-
-} // namespace
-
 tac::Program TacGen::generate( ast::Program ast ) {
     auto program = mk_node<tac::Program_>( ast );
     program->function = functionDef( ast->function );
@@ -82,7 +73,7 @@ tac::Value TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instr
         break;
     }
     u->src = expr( ast->operand, instructions );
-    auto dst = mk_node<tac::Variable_>( ast, temp_name() );
+    auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
     u->dst = dst;
     instructions.push_back( u );
     return u->dst;
@@ -149,7 +140,7 @@ tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& ins
     b->src1 = expr( ast->left, instructions );
     b->src2 = expr( ast->right, instructions );
     auto dst = std::make_shared<tac::Variable_>( ast->location );
-    dst->name = temp_name();
+    dst->name = symbol_table.temp_name();
     b->dst = dst;
     instructions.push_back( b );
     return b->dst;
@@ -160,7 +151,7 @@ tac::Value TacGen::logical( ast::BinaryOp ast, std::vector<tac::Instruction>& in
     auto false_label = generate_label( ast, "logicalfalse" ); // For AND
     auto true_label = generate_label( ast, "logicaltrue" );   // For OR
     auto end_label = generate_label( ast, "logicalend" );
-    auto result = mk_node<tac::Variable_>( ast, temp_name() );
+    auto result = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
     auto one = mk_node<tac::Constant_>( ast, 1 );
     auto zero = mk_node<tac::Constant_>( ast, 0 );
 

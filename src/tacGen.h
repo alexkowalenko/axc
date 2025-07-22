@@ -10,12 +10,13 @@
 
 #include "ast/base.h"
 #include "ast/visitor.h"
+#include "symbolTable.h"
 #include "tac/base.h"
 #include "tac/visitor.h"
 
 class TacGen {
   public:
-    TacGen() = default;
+    TacGen( SymbolTable& symbol_table ) : symbol_table( symbol_table ) {};
     ~TacGen() = default;
 
     tac::Program generate( ast::Program ast );
@@ -32,5 +33,6 @@ class TacGen {
 
     tac::Label generate_label( std::shared_ptr<ast::Base> b, std::string_view name );
 
-    size_t label_count {};
+    SymbolTable& symbol_table;
+    size_t       label_count {};
 };

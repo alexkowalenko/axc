@@ -20,6 +20,8 @@
 #include "parser.h"
 #include "printerAST.h"
 #include "printerTAC.h"
+#include "semanticAnalyser.h"
+#include "symbolTable.h"
 #include "tacGen.h"
 
 void setup_logging( Option const& options ) {
@@ -58,15 +60,20 @@ int do_args( int argc, char** argv, Option& options ) {
 
     bool lex { false };
     bool parse { false };
+    bool semantic { false };
     bool codegen { false };
     bool tac { false };
 
     auto& group = app.add_mutually_exclusive_group();
     group.add_argument( "-l", "--lex" ).help( "run only lexer." ).flag().store_into( lex );
     group.add_argument( "-p", "--parse" ).help( "run lexer and parser." ).flag().store_into( parse );
-    group.add_argument( "-t", "--tacky" ).help( "run lexer, parser, tac generator." ).flag().store_into( tac );
+    group.add_argument( "-v", "--validate" ).help( "run the semantic analyser." ).flag().store_into( semantic );
+    group.add_argument( "-t", "--tacky" )
+        .help( "run lexer, parser, semantic, tac generator." )
+        .flag()
+        .store_into( tac );
     group.add_argument( "-c", "--codegen" )
-        .help( "run lex, parser, tac and codegen, no output." )
+        .help( "run lex, parser, semantic tac and codegen, no output." )
         .flag()
         .store_into( codegen );
 
@@ -87,10 +94,13 @@ int do_args( int argc, char** argv, Option& options ) {
         options.stage = Stages::Lex;
     } else if ( parse ) {
         options.stage = static_cast<Stages>( Stages::Lex | Stages::Parse );
+    } else if ( semantic ) {
+        options.stage = static_cast<Stages>( Stages::Lex | Stages::Parse | Stages::Semantic );
     } else if ( tac ) {
-        options.stage = static_cast<Stages>( Stages::Lex | Stages::Parse | Stages::Tac );
+        options.stage = static_cast<Stages>( Stages::Lex | Stages::Parse | Stages::Semantic | Stages::Tac );
     } else if ( codegen ) {
-        options.stage = static_cast<Stages>( Stages::Lex | Stages::Parse | Stages::Tac | Stages::CodeGen );
+        options.stage =
+            static_cast<Stages>( Stages::Lex | Stages::Parse | Stages::Semantic | Stages::Tac | Stages::CodeGen );
     } else {
         options.stage = Stages::All;
     }
@@ -126,9 +136,21 @@ ast::Program run_parser( Lexer& lexer ) {
     return program;
 }
 
-tac::Program run_tac( ast::Program program ) {
+void run_sematic( ast::Program program, SymbolTable& symbol_table ) {
+    spdlog::info( "Run semantic anylser," );
+    SemanticAnalyser analyser( symbol_table );
+    analyser.analyse( program );
+
+    PrinterAST printer;
+    auto       output = printer.print( program );
+    std::println( "Semantic Output:" );
+    std::println( "----------------" );
+    std::println( "{:s}", output );
+}
+
+tac::Program run_tac( ast::Program program, SymbolTable& table ) {
     spdlog::info( "Run TAC generator," );
-    TacGen tac_generator;
+    TacGen tac_generator( table );
     auto   tac = tac_generator.generate( program );
 
     PrinterTAC tac_printer;
@@ -202,12 +224,19 @@ int main( int argc, char** argv ) {
         // Run Parser
         auto program = run_parser( lexer );
 
+        if ( ( options.stage & Stages::Semantic ) == 0 ) {
+            return EXIT_SUCCESS;
+        }
+
+        SymbolTable symbol_table;
+        run_sematic( program, symbol_table );
+
         if ( ( options.stage & Stages::Tac ) == 0 ) {
             return EXIT_SUCCESS;
         }
 
         // Run TAC Generator
-        auto tac = run_tac( program );
+        auto tac = run_tac( program, symbol_table );
 
         if ( ( options.stage & Stages::CodeGen ) == 0 ) {
             return EXIT_SUCCESS;
@@ -227,6 +256,9 @@ int main( int argc, char** argv ) {
         return EXIT_FAILURE;
     } catch ( const ParseException& e ) {
         std::println( "Parse error: {}", e.get_message() );
+        return EXIT_FAILURE;
+    } catch ( const SemanticException& e ) {
+        std::println( "Semantic error: {}", e.get_message() );
         return EXIT_FAILURE;
     } catch ( const CodeException& e ) {
         std::println( "Code Generation: {}", e.get_message() );

@@ -13,9 +13,10 @@ enum Stages {
     Lex = 0x1,
     Parse = 0x2,
     CodeGen = 0x4,
-    Tac = 0x8,
-    File = 0x10,
-    All = Lex | Parse | CodeGen | Tac | File
+    Semantic = 0x8,
+    Tac = 0x10,
+    File = 0x20,
+    All = Lex | Parse | CodeGen | Semantic | Tac | File
 };
 
 enum class Machine {

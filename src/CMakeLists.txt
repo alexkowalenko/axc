@@ -38,6 +38,10 @@ add_library(compiler STATIC
         ${AST_HEADER}
         ${AT_HEADER}
         ${TAC_HEADER}
+        symbolTable.cpp
+        symbolTable.h
+        SemanticAnalyser.cpp
+        SemanticAnalyser.h
 )
 
 target_link_libraries(compiler
