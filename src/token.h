@@ -46,6 +46,16 @@ enum class TokenType : std::uint8_t {
     COMPARISON_NOT,
     LESS_EQUALS,
     GREATER_EQUALS,
+    COMPOUND_PLUS,
+    COMPOUND_MINUS,
+    COMPOUND_ASTERIX,
+    COMPOUND_SLASH,
+    COMPOUND_PERCENT,
+    COMPOUND_AND,
+    COMPOUND_OR,
+    COMPOUND_XOR,
+    COMPOUND_LEFT_SHIFT,
+    COMPOUND_RIGHT_SHIFT,
 
     IDENTIFIER,
     CONSTANT,
@@ -114,6 +124,26 @@ constexpr auto to_string( const TokenType l ) {
         return "&&";
     case LOGICAL_OR :
         return "||";
+    case COMPOUND_PLUS :
+        return "+=";
+    case COMPOUND_MINUS :
+        return "-=";
+    case COMPOUND_ASTERIX :
+        return "*=";
+    case COMPOUND_SLASH :
+        return "/=";
+    case COMPOUND_PERCENT :
+        return "%=";
+    case COMPOUND_AND :
+        return "&=";
+    case COMPOUND_OR :
+        return "|=";
+    case COMPOUND_XOR :
+        return "^=";
+    case COMPOUND_LEFT_SHIFT :
+        return "<<=";
+    case COMPOUND_RIGHT_SHIFT :
+        return ">>=";
 
     case IDENTIFIER :
         return "<identifier>";

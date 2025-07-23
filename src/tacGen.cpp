@@ -233,10 +233,59 @@ tac::Value TacGen::logical( ast::BinaryOp ast, std::vector<tac::Instruction>& in
 }
 
 tac::Value TacGen::assign( ast::Assign ast, std::vector<tac::Instruction>& instructions ) {
-    auto result = expr( ast->right, instructions );
-    auto copy = mk_node<tac::Copy_>( ast, result, expr( ast->left, instructions ) );
+
+    if ( ast->op == TokenType::EQUALS ) {
+        // Handle normal assignment
+        auto result = expr( ast->right, instructions );
+        auto copy = mk_node<tac::Copy_>( ast, result, expr( ast->left, instructions ) );
+        instructions.push_back( copy );
+        return result;
+    }
+
+    auto b = mk_node<tac::Binary_>( ast );
+    switch ( ast->op ) {
+    case TokenType::COMPOUND_PLUS :
+        b->op = tac::BinaryOpType::Add;
+        break;
+    case TokenType::COMPOUND_MINUS :
+        b->op = tac::BinaryOpType::Subtract;
+        break;
+    case TokenType::COMPOUND_ASTERIX :
+        b->op = tac::BinaryOpType::Multiply;
+        break;
+    case TokenType::COMPOUND_SLASH :
+        b->op = tac::BinaryOpType::Divide;
+        break;
+    case TokenType::COMPOUND_PERCENT :
+        b->op = tac::BinaryOpType::Modulo;
+        break;
+    case TokenType::COMPOUND_AND :
+        b->op = tac::BinaryOpType::BitwiseAnd;
+        break;
+    case TokenType::COMPOUND_XOR :
+        b->op = tac::BinaryOpType::BitwiseXor;
+        break;
+    case TokenType::COMPOUND_OR :
+        b->op = tac::BinaryOpType::BitwiseOr;
+        break;
+    case TokenType::COMPOUND_LEFT_SHIFT :
+        b->op = tac::BinaryOpType::ShiftLeft;
+        break;
+    case TokenType::COMPOUND_RIGHT_SHIFT :
+        b->op = tac::BinaryOpType::ShiftRight;
+        break;
+    default :
+        throw SemanticException( ast->location, "Internal: assignment operator invalid: {}", to_string( ast->op ) );
+    }
+    b->src1 = expr( ast->left, instructions );
+    b->src2 = expr( ast->right, instructions );
+    auto temp = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+    b->dst = temp;
+    instructions.push_back( b );
+
+    auto copy = mk_node<tac::Copy_>( ast, temp, expr( ast->left, instructions ) );
     instructions.push_back( copy );
-    return result;
+    return temp;
 }
 
 tac::Label TacGen::generate_label( const std::shared_ptr<ast::Base> b, std::string_view name ) {

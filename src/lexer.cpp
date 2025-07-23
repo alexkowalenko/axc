@@ -130,20 +130,43 @@ Token Lexer::make_token() {
         return { TokenType::R_BRACE, get_location() };
     case ';' :
         return { TokenType::SEMICOLON, get_location() };
-    case '+' :
+    case '+' : {
+        if ( peek() == '=' ) {
+            get();
+            return { TokenType::COMPOUND_PLUS, get_location() };
+        }
         return { TokenType::PLUS, get_location() };
+    }
     case '-' :
         if ( peek() == '-' ) {
             get();
             return { TokenType::DECREMENT, get_location() };
         }
+        if ( peek() == '=' ) {
+            get();
+            return { TokenType::COMPOUND_MINUS, get_location() };
+        }
         return { TokenType::DASH, get_location() };
-    case '*' :
+    case '*' : {
+        if ( peek() == '=' ) {
+            get();
+            return { TokenType::COMPOUND_ASTERIX, get_location() };
+        }
         return { TokenType::ASTÉRIX, get_location() };
+    }
     case '%' :
+        if ( peek() == '=' ) {
+            get();
+            return { TokenType::COMPOUND_PERCENT, get_location() };
+        }
         return { TokenType::PERCENT, get_location() };
-    case '/' :
+    case '/' : {
+        if ( peek() == '=' ) {
+            get();
+            return { TokenType::COMPOUND_SLASH, get_location() };
+        }
         return { TokenType::SLASH, get_location() };
+    }
     case '~' :
         return { TokenType::TILDE, get_location() };
     case '&' :
@@ -151,15 +174,28 @@ Token Lexer::make_token() {
             get();
             return { TokenType::LOGICAL_AND, get_location() };
         }
+        if ( peek() == '=' ) {
+            get();
+            return { TokenType::COMPOUND_AND, get_location() };
+        }
         return { TokenType::AMPERSAND, get_location() };
     case '|' :
         if ( peek() == '|' ) {
             get();
             return { TokenType::LOGICAL_OR, get_location() };
         }
+        if ( peek() == '=' ) {
+            get();
+            return { TokenType::COMPOUND_OR, get_location() };
+        }
         return { TokenType::PIPE, get_location() };
-    case '^' :
+    case '^' : {
+        if ( peek() == '=' ) {
+            get();
+            return { TokenType::COMPOUND_XOR, get_location() };
+        }
         return { TokenType::CARET, get_location() };
+    }
     case '!' :
         if ( peek() == '=' ) {
             get();
@@ -169,6 +205,10 @@ Token Lexer::make_token() {
     case '<' :
         if ( peek() == '<' ) {
             get();
+            if ( peek() == '=' ) {
+                get();
+                return { TokenType::COMPOUND_LEFT_SHIFT, get_location() };
+            }
             return { TokenType::LEFT_SHIFT, get_location() };
         }
         if ( peek() == '=' ) {
@@ -179,6 +219,10 @@ Token Lexer::make_token() {
     case '>' :
         if ( peek() == '>' ) {
             get();
+            if ( peek() == '=' ) {
+                get();
+                return { TokenType::COMPOUND_RIGHT_SHIFT, get_location() };
+            }
             return { TokenType::RIGHT_SHIFT, get_location() };
         }
         if ( peek() == '=' ) {

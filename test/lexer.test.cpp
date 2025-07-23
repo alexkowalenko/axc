@@ -59,6 +59,16 @@ TEST( Lexer, Basic ) { // NOLINT
         { "<=", TokenType::LESS_EQUALS, "<=" },
         { ">", TokenType::GREATER, ">" },
         { ">=", TokenType::GREATER_EQUALS, ">=" },
+        { "+=", TokenType::COMPOUND_PLUS, "+=" },
+        { "-=", TokenType::COMPOUND_MINUS, "-=" },
+        { "*=", TokenType::COMPOUND_ASTERIX, "*=" },
+        { "/=", TokenType::COMPOUND_SLASH, "/=" },
+        { "%=", TokenType::COMPOUND_PERCENT, "%=" },
+        { "&=", TokenType::COMPOUND_AND, "&=" },
+        { "|=", TokenType::COMPOUND_OR, "|=" },
+        { "^=", TokenType::COMPOUND_XOR, "^=" },
+        { "<<=", TokenType::COMPOUND_LEFT_SHIFT, "<<=" },
+        { ">>=", TokenType::COMPOUND_RIGHT_SHIFT, ">>=" },
 
         { "", TokenType::Eof, "" },
     };

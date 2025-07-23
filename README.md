@@ -41,4 +41,4 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 - [x] TAC intermediate.
 - [ ] Extra:
   - [ ] Increment/Decrement operators
-  - [ ] Compound assignment.
+  - [x] Compound assignment.

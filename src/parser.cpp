@@ -37,7 +37,18 @@ const std::map<TokenType, Precedence> precedence_map = {
     { TokenType::COMPARISON_NOT, Precedence::Equals },
     { TokenType::LOGICAL_AND, Precedence::And },
     { TokenType::LOGICAL_OR, Precedence::Or },
-    { TokenType::EQUALS, Precedence::Assignment } };
+    { TokenType::EQUALS, Precedence::Assignment },
+    { TokenType::COMPOUND_PLUS, Precedence::Assignment },
+    { TokenType::COMPOUND_MINUS, Precedence::Assignment },
+    { TokenType::COMPOUND_ASTERIX, Precedence::Assignment },
+    { TokenType::COMPOUND_SLASH, Precedence::Assignment },
+    { TokenType::COMPOUND_PERCENT, Precedence::Assignment },
+    { TokenType::COMPOUND_AND, Precedence::Assignment },
+    { TokenType::COMPOUND_OR, Precedence::Assignment },
+    { TokenType::COMPOUND_XOR, Precedence::Assignment },
+    { TokenType::COMPOUND_LEFT_SHIFT, Precedence::Assignment },
+    { TokenType::COMPOUND_RIGHT_SHIFT, Precedence::Assignment },
+};
 
 constexpr Precedence get_precedence( const TokenType tok ) {
     if ( precedence_map.contains( tok ) ) {
@@ -160,6 +171,16 @@ const std::map<TokenType, InfixParselet> infix_map {
     { TokenType::GREATER, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
     { TokenType::GREATER_EQUALS, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->binaryOp( left ); } },
     { TokenType::EQUALS, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
+    { TokenType::COMPOUND_PLUS, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
+    { TokenType::COMPOUND_MINUS, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
+    { TokenType::COMPOUND_ASTERIX, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
+    { TokenType::COMPOUND_SLASH, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
+    { TokenType::COMPOUND_PERCENT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
+    { TokenType::COMPOUND_AND, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
+    { TokenType::COMPOUND_OR, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
+    { TokenType::COMPOUND_XOR, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
+    { TokenType::COMPOUND_LEFT_SHIFT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
+    { TokenType::COMPOUND_RIGHT_SHIFT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
 };
 
 ast::Expr Parser::expr( const Precedence precedence ) {
@@ -210,6 +231,7 @@ ast::Assign Parser::assign( ast::Expr left ) {
     auto token = lexer.get_token();
     auto op = make_AST<ast::Assign_>();
     op->left = std::move( left );
+    op->op = token.tok;
     op->right = expr( static_cast<Precedence>( static_cast<int>( get_precedence( TokenType::EQUALS ) ) ) );
     return op;
 }

@@ -21,7 +21,7 @@ if __name__ == "__main__":
             "Return": [("Expr", "expr", False)],
             "UnaryOp": [("TokenType", "op", False), ("Expr", "operand", False)],
             "BinaryOp": [("TokenType", "op", False), ("Expr", "left", False), ("Expr", "right", False)],
-            "Assign": [("Expr", "left", False), ("Expr", "right", False)],
+            "Assign": [("TokenType", "op", False), ("Expr", "left", False), ("Expr", "right", False)],
             "Var": [("std::string", "name", False)],
             "Constant": [("std::int32_t", "value", False)],
          })

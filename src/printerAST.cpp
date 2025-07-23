@@ -80,7 +80,7 @@ std::string PrinterAST::visit_UnaryOp( const ast::UnaryOp ast ) {
 };
 
 std::string PrinterAST::visit_Assign( const ast::Assign ast ) {
-    return std::format( "{} = {}", expr( ast->left ), expr( ast->right ) );
+    return std::format( "{} {} {}", expr( ast->left ), ast->op, expr( ast->right ) );
 }
 
 std::string PrinterAST::visit_Var( const ast::Var ast ) {
