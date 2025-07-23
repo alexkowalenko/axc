@@ -31,6 +31,7 @@ class TacGen {
     tac::Value    unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions );
     tac::Value    binary( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions );
     tac::Value    post( ast::PostOp ast, std::vector<tac::Instruction>& instructions );
+    tac::Value    conditional( ast::Conditional ast, std::vector<tac::Instruction>& instructions );
     tac::Value    logical( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions );
     tac::Value    assign( ast::Assign ast, std::vector<tac::Instruction>& instructions );
     tac::Constant constant( ast::Constant ast );

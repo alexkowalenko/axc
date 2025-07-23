@@ -1,8 +1,10 @@
 assign.h
 binaryop.h
 constant.h
+conditional.h
 declaration.h
 functiondef.h
+if.h
 includes.h
 null.h
 program.h

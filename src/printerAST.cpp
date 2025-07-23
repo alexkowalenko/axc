@@ -49,9 +49,20 @@ std::string PrinterAST::visit_Declaration( const ast::Declaration ast ) {
 
 std::string PrinterAST::statement( const ast::Statement ast ) {
     return std::visit( overloaded { [ this ]( ast::Return ast ) -> std::string { return ast->accept( this ); },
+                                    [ this ]( ast::If ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Expr e ) -> std::string { return expr( e ); },
                                     [ this ]( ast::Null ) -> std::string { return ""; } },
                        ast );
+}
+
+std::string PrinterAST::visit_If( const ast::If ast ) {
+    std::string buf = std::format( "if({})\n", expr( ast->condition ) );
+    buf += indent + statement( ast->then ) + "\n";
+    if ( ast->else_stat ) {
+        buf += "else\n";
+        buf += indent + statement( ast->else_stat.value() ) + "\n";
+    }
+    return buf;
 }
 
 std::string PrinterAST::visit_Null( const ast::Null ast ) {
@@ -62,6 +73,7 @@ std::string PrinterAST::expr( const ast::Expr ast ) {
     return std::visit( overloaded { [ this ]( ast::UnaryOp u ) -> std::string { return u->accept( this ); },
                                     [ this ]( ast::BinaryOp b ) -> std::string { return b->accept( this ); },
                                     [ this ]( ast::PostOp b ) -> std::string { return b->accept( this ); },
+                                    [ this ]( ast::Conditional c ) -> std::string { return c->accept( this ); },
                                     [ this ]( ast::Assign a ) -> std::string { return a->accept( this ); },
                                     [ this ]( ast::Var v ) -> std::string { return v->accept( this ); },
                                     [ this ]( ast::Constant c ) -> std::string { return c->accept( this ); } },
@@ -78,6 +90,10 @@ std::string PrinterAST::visit_BinaryOp( const ast::BinaryOp ast ) {
 
 std::string PrinterAST::visit_PostOp( const ast::PostOp ast ) {
     return std::format( "({}{})", expr( ast->operand ), ast->op );
+}
+
+std::string PrinterAST::visit_Conditional( const ast::Conditional ast ) {
+    return std::format( "({} ? {} : {})", expr( ast->condition ), expr( ast->then_expr ), expr( ast->else_expr ) );
 }
 
 std::string PrinterAST::visit_UnaryOp( const ast::UnaryOp ast ) {

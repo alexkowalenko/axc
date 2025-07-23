@@ -36,6 +36,9 @@ using Null = std::shared_ptr<Null_>;
 class Return_;
 using Return = std::shared_ptr<Return_>;
 
+class If_;
+using If = std::shared_ptr<If_>;
+
 class Constant_;
 using Constant = std::shared_ptr<Constant_>;
 
@@ -48,15 +51,18 @@ using BinaryOp = std::shared_ptr<BinaryOp_>;
 class PostOp_;
 using PostOp = std::shared_ptr<PostOp_>;
 
+class Conditional_;
+using Conditional = std::shared_ptr<Conditional_>;
+
 class Assign_;
 using Assign = std::shared_ptr<Assign_>;
 
 class Var_;
 using Var = std::shared_ptr<Var_>;
 
-using Expr = std::variant<Constant, UnaryOp, BinaryOp, PostOp, Var, Assign>;
+using Expr = std::variant<Constant, UnaryOp, BinaryOp, PostOp, Conditional, Var, Assign>;
 
-using Statement = std::variant<Return, Expr, Null>;
+using Statement = std::variant<Return, Expr, If, Null>;
 
 using BlockItem = std::variant<Statement, Declaration>;
 

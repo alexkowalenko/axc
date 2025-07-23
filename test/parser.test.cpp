@@ -102,6 +102,14 @@ TEST( Parse, Postfix ) {
     do_parse_tests( tests );
 }
 
+TEST( Parse, Conditional ) {
+    std::vector<ParseTests> tests = {
+        { "int main(void) { a > b ? a : b; }", "int main(void) {((a > b) ? a : b);}", "" },
+        { "int main(void) { a > b ? a = 1 : a = 0; }", "int main(void) {((a > b) ? a = 1 : a) = 0;}", "" },
+    };
+    do_parse_tests( tests );
+}
+
 auto do_parse_tests( std::vector<ParseTests> const& tests ) -> void {
 
     for ( auto const& t : tests ) {

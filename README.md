@@ -45,7 +45,7 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 
 ## Chapter 6 If Statements and Conditional Expressions
 - [x] Lexer.
-- [ ] Parser.
-- [ ] Semantic Analysis.
+- [x] Parser.
+- [x] Semantic Analysis.
 - [ ] TAC intermediate.
 - [ ] Extra: Labels and goto

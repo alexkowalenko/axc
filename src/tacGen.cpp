@@ -53,6 +53,7 @@ void TacGen::declaration( ast::Declaration ast, std::vector<tac::Instruction>& i
 void TacGen::statement( const ast::Statement ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::statement" );
     return std::visit( overloaded { [ this, &instructions ]( ast::Return ast ) -> void { ret( ast, instructions ); },
+                                    [ this, &instructions ]( ast::If ) -> void {},
                                     [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
                                     [ this ]( ast::Null ) -> void { ; } },
                        ast );
@@ -72,12 +73,14 @@ void TacGen::ret( ast::Return ast, std::vector<tac::Instruction>& instructions )
 tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::expr" );
     return std::visit(
-        overloaded { [ &instructions, this ]( ast::UnaryOp u ) -> tac::Value { return unary( u, instructions ); },
-                     [ &instructions, this ]( ast::BinaryOp b ) -> tac::Value { return binary( b, instructions ); },
-                     [ &instructions, this ]( ast::PostOp b ) -> tac::Value { return post( b, instructions ); },
-                     [ &instructions, this ]( ast::Assign a ) -> tac::Value { return assign( a, instructions ); },
-                     [ this ]( ast::Var v ) -> tac::Value { return mk_node<tac::Variable_>( v, v->name ); },
-                     [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
+        overloaded {
+            [ &instructions, this ]( ast::UnaryOp u ) -> tac::Value { return unary( u, instructions ); },
+            [ &instructions, this ]( ast::BinaryOp b ) -> tac::Value { return binary( b, instructions ); },
+            [ &instructions, this ]( ast::PostOp b ) -> tac::Value { return post( b, instructions ); },
+            [ &instructions, this ]( ast::Conditional b ) -> tac::Value { return conditional( b, instructions ); },
+            [ &instructions, this ]( ast::Assign a ) -> tac::Value { return assign( a, instructions ); },
+            [ this ]( ast::Var v ) -> tac::Value { return mk_node<tac::Variable_>( v, v->name ); },
+            [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
         ast );
 }
 
@@ -289,6 +292,11 @@ tac::Value TacGen::logical( ast::BinaryOp ast, std::vector<tac::Instruction>& in
     // label end:
     instructions.emplace_back( end_label );
     return result;
+}
+
+tac::Value TacGen::conditional( ast::Conditional ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::conditional" );
+    return {};
 }
 
 tac::Value TacGen::assign( ast::Assign ast, std::vector<tac::Instruction>& instructions ) {

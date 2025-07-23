@@ -33,6 +33,7 @@ void SemanticAnalyser::visit_FunctionDef( const ast::FunctionDef ast ) {
 
 void SemanticAnalyser::statement( const ast::Statement ast ) {
     std::visit( overloaded { [ this ]( ast::Return ast ) -> void { ast->accept( this ); },
+                             [ this ]( ast::If ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Expr e ) -> void { expr( e ); }, // expr
                              [ this ]( ast::Null ) -> void { ; } },
                 ast );
@@ -50,6 +51,14 @@ void SemanticAnalyser::visit_Declaration( const ast::Declaration ast ) {
     }
 }
 
+void SemanticAnalyser::visit_If( const ast::If ast ) {
+    expr( ast->condition );
+    statement( ast->then );
+    if ( ast->else_stat ) {
+        statement( ast->else_stat.value() );
+    }
+}
+
 void SemanticAnalyser::visit_Return( const ast::Return ast ) {
     expr( ast->expr );
 }
@@ -58,6 +67,7 @@ void SemanticAnalyser::expr( const ast::Expr ast ) {
     std::visit( overloaded { [ this ]( ast::UnaryOp u ) -> void { u->accept( this ); },
                              [ this ]( ast::BinaryOp b ) -> void { b->accept( this ); },
                              [ this ]( ast::PostOp b ) -> void { b->accept( this ); },
+                             [ this ]( ast::Conditional b ) -> void { b->accept( this ); },
                              [ this ]( ast::Assign a ) -> void { a->accept( this ); },
                              [ this ]( ast::Var v ) -> void { v->accept( this ); },
                              [ this ]( ast::Constant c ) -> void { ; } },
@@ -85,6 +95,12 @@ void SemanticAnalyser::visit_PostOp( const ast::PostOp ast ) {
         throw SemanticException( ast->location, "Invalid lvalue: for {} ", ast->op );
     }
     expr( ast->operand );
+}
+
+void SemanticAnalyser::visit_Conditional( const ast::Conditional ast ) {
+    expr( ast->condition );
+    expr( ast->then_expr );
+    expr( ast->else_expr );
 }
 
 void SemanticAnalyser::visit_Assign( const ast::Assign ast ) {

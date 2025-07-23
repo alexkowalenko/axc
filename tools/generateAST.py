@@ -19,9 +19,11 @@ if __name__ == "__main__":
             "Declaration": [("std::string", "name", False), ("std::optional<Expr>", "init", False)],
             "Null": [], # Null statement
             "Return": [("Expr", "expr", False)],
+            "If": [("Expr", "condition", False), ("Statement", "then", False), ("std::optional<Statement>", "else_stat", False)],
             "UnaryOp": [("TokenType", "op", False), ("Expr", "operand", False)],
             "BinaryOp": [("TokenType", "op", False), ("Expr", "left", False), ("Expr", "right", False)],
             "PostOp": [("TokenType", "op", False), ("Expr", "operand", False)],
+            "Conditional": [("Expr", "condition", False), ("Expr", "then_expr", False), ("Expr", "else_expr", False)],
             "Assign": [("TokenType", "op", False), ("Expr", "left", False), ("Expr", "right", False)],
             "Var": [("std::string", "name", False)],
             "Constant": [("std::int32_t", "value", False)],

@@ -50,6 +50,7 @@ const std::map<TokenType, Precedence> precedence_map = {
     { TokenType::COMPOUND_RIGHT_SHIFT, Precedence::Assignment },
     { TokenType::INCREMENT, Precedence::Postfix },
     { TokenType::DECREMENT, Precedence::Postfix },
+    { TokenType::QUESTION, Precedence::Conditional },
 };
 
 constexpr Precedence get_precedence( const TokenType tok ) {
@@ -125,13 +126,32 @@ ast::Statement Parser::statement() {
     auto           token = lexer.peek_token();
     if ( token.tok == TokenType::RETURN ) {
         statement = ret();
+    } else if ( token.tok == TokenType::IF ) {
+        statement = if_stat();
     } else if ( token.tok == TokenType::SEMICOLON ) {
+        expect_token( TokenType::SEMICOLON );
         statement = make_AST<ast::Null_>();
     } else {
         statement = expr();
+        expect_token( TokenType::SEMICOLON );
     }
-    expect_token( TokenType::SEMICOLON );
     return statement;
+}
+
+ast::If Parser::if_stat() {
+    spdlog::debug( "if" );
+    auto if_stat = make_AST<ast::If_>();
+    expect_token( TokenType::IF );
+    expect_token( TokenType::L_PAREN );
+    if_stat->condition = expr();
+    expect_token( TokenType::R_PAREN );
+    if_stat->then = statement();
+    auto token = lexer.peek_token();
+    if ( token.tok == TokenType::ELSE ) {
+        expect_token( TokenType::ELSE );
+        if_stat->else_stat = statement();
+    }
+    return if_stat;
 }
 
 ast::Return Parser::ret() {
@@ -139,6 +159,7 @@ ast::Return Parser::ret() {
     auto ret = make_AST<ast::Return_>();
     expect_token( TokenType::RETURN );
     ret->expr = expr();
+    expect_token( TokenType::SEMICOLON );
     return ret;
 }
 
@@ -187,6 +208,7 @@ const std::map<TokenType, InfixParselet> infix_map {
     { TokenType::COMPOUND_RIGHT_SHIFT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
     { TokenType::INCREMENT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->postfixOp( left ); } },
     { TokenType::DECREMENT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->postfixOp( left ); } },
+    { TokenType::QUESTION, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->conditional( left ); } },
 };
 
 ast::Expr Parser::expr( const Precedence precedence ) {
@@ -245,6 +267,17 @@ ast::PostOp Parser::postfixOp( ast::Expr left ) {
     op->operand = std::move( left );
     op->op = token.tok;
     // No right hand for postOp
+    return op;
+}
+
+ast::Conditional Parser::conditional( ast::Expr left ) {
+    spdlog::debug( "conditional()" );
+    auto token = lexer.get_token();
+    auto op = make_AST<ast::Conditional_>();
+    op->condition = std::move( left );
+    op->then_expr = expr();
+    expect_token( TokenType::COLON );
+    op->else_expr = expr(Precedence::Conditional);
     return op;
 }
 

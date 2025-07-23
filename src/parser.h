@@ -16,6 +16,7 @@
 enum class Precedence {
     Lowest = 0,
     Assignment = 1,
+    Conditional = 3,
     Or = 5,
     And = 10,
     BitwiseOr = 15,
@@ -41,6 +42,7 @@ class Parser {
     ast::UnaryOp  unaryOp();
     ast::BinaryOp binaryOp( ast::Expr left );
     ast::PostOp   postfixOp( ast::Expr left );
+    ast::Conditional conditional( ast::Expr left );
     ast::Assign   assign( ast::Expr left );
     ast::Expr     group();
     ast::Constant constant();
@@ -52,6 +54,7 @@ class Parser {
     ast::FunctionDef functionDef();
     ast::Declaration declaration();
     ast::Statement   statement();
+    ast::If          if_stat();
     ast::Return      ret();
 
     Token expect_token( TokenType expected );
