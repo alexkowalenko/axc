@@ -23,12 +23,15 @@ class TacGen {
 
   private:
     tac::FunctionDef functionDef( ast::FunctionDef ast );
+    void             declaration( ast::Declaration ast, std::vector<tac::Instruction>& instructions );
+    void             statement( ast::Statement ast, std::vector<tac::Instruction>& instructions );
     void             ret( ast::Return ast, std::vector<tac::Instruction>& instructions );
     tac::Value       expr( ast::Expr ast, std::vector<tac::Instruction>& instructions );
 
     tac::Value    unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions );
     tac::Value    binary( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions );
     tac::Value    logical( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions );
+    tac::Value    assign( ast::Assign ast, std::vector<tac::Instruction>& instructions );
     tac::Constant constant( ast::Constant ast );
 
     tac::Label generate_label( std::shared_ptr<ast::Base> b, std::string_view name );

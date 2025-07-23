@@ -14,6 +14,7 @@
 
 #include "ast/includes.h"
 #include "common.h"
+#include "exception.h"
 #include "spdlog/fmt/bundled/chrono.h"
 #include "tac/includes.h"
 
@@ -27,11 +28,34 @@ tac::FunctionDef TacGen::functionDef( ast::FunctionDef ast ) {
     spdlog::debug( "tac::functionDef: {}", ast->name );
     auto function = mk_node<tac::FunctionDef_>( ast );
     function->name = ast->name;
+    std::vector<tac::Instruction> instructions;
     for ( auto b : ast->block_items ) {
+        spdlog::debug( "tac::functionDef: block" );
         std::visit(
-            overloaded { [ this ]( ast::Declaration ast ) -> void {}, [ this ]( ast::Statement ast ) -> void {} }, b );
+            overloaded { [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
+                         [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
+            b );
     }
+    instructions.push_back( mk_node<tac::Return_>( ast, mk_node<tac::Constant_>( ast, 0 ) ) ); // Return 0
+    function->instructions = instructions;
     return function;
+}
+
+void TacGen::declaration( ast::Declaration ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::declaration: {} {}", ast->name, ast->init ? "init" : "" );
+    if ( ast->init ) {
+        auto result = expr( *ast->init, instructions );
+        auto copy = mk_node<tac::Copy_>( ast, result, mk_node<tac::Variable_>( ast, ast->name ) );
+        instructions.push_back( copy );
+    }
+}
+
+void TacGen::statement( const ast::Statement ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::statement" );
+    return std::visit( overloaded { [ this, &instructions ]( ast::Return ast ) -> void { ret( ast, instructions ); },
+                                    [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
+                                    [ this ]( ast::Null ) -> void { ; } },
+                       ast );
 }
 
 void TacGen::ret( ast::Return ast, std::vector<tac::Instruction>& instructions ) {
@@ -50,8 +74,8 @@ tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructi
     return std::visit(
         overloaded { [ &instructions, this ]( ast::UnaryOp u ) -> tac::Value { return unary( u, instructions ); },
                      [ &instructions, this ]( ast::BinaryOp b ) -> tac::Value { return binary( b, instructions ); },
-                     [ this ]( ast::Assign a ) -> tac::Value { return {}; },
-                     [ this ]( ast::Var v ) -> tac::Value { return {}; },
+                     [ &instructions, this ]( ast::Assign a ) -> tac::Value { return assign( a, instructions ); },
+                     [ this ]( ast::Var v ) -> tac::Value { return mk_node<tac::Variable_>( v, v->name ); },
                      [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
         ast );
 }
@@ -139,7 +163,7 @@ tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& ins
     }
     b->src1 = expr( ast->left, instructions );
     b->src2 = expr( ast->right, instructions );
-    auto dst = std::make_shared<tac::Variable_>( ast->location );
+    auto dst = mk_node<tac::Variable_>( ast );
     dst->name = symbol_table.temp_name();
     b->dst = dst;
     instructions.push_back( b );
@@ -205,6 +229,13 @@ tac::Value TacGen::logical( ast::BinaryOp ast, std::vector<tac::Instruction>& in
     }
     // label end:
     instructions.emplace_back( end_label );
+    return result;
+}
+
+tac::Value TacGen::assign( ast::Assign ast, std::vector<tac::Instruction>& instructions ) {
+    auto result = expr( ast->right, instructions );
+    auto copy = mk_node<tac::Copy_>( ast, result, expr( ast->left, instructions ) );
+    instructions.push_back( copy );
     return result;
 }
 
