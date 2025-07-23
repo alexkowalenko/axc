@@ -49,6 +49,10 @@ const char* to_string( const TokenType l ) {
         return ">";
     case LESS :
         return "<";
+    case QUESTION :
+        return "?";
+    case COLON :
+        return ":";
 
     case INCREMENT :
         return "++";
@@ -102,6 +106,10 @@ const char* to_string( const TokenType l ) {
         return "<null>";
 
     // Keywords
+    case IF :
+        return "if";
+    case ELSE :
+        return "else";
     case INT :
         return "int";
     case RETURN :

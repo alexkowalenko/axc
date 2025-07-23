@@ -44,3 +44,8 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
   - [x] Compound assignment.
 
 ## Chapter 6 If Statements and Conditional Expressions
+- [x] Lexer.
+- [ ] Parser.
+- [ ] Semantic Analysis.
+- [ ] TAC intermediate.
+- [ ] Extra: Labels and goto

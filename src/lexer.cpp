@@ -17,7 +17,12 @@
 #include "exception.h"
 
 const std::map<std::string, TokenType> keywords = {
-    { "int", TokenType::INT }, { "return", TokenType::RETURN }, { "void", TokenType::VOID } };
+    { "int", TokenType::INT },
+    { "return", TokenType::RETURN },
+    { "void", TokenType::VOID },
+    { "if", TokenType::IF },
+    { "else", TokenType::ELSE } //
+};
 
 Lexer::Lexer( std::istream const& s ) {
     std::stringstream buffer;
@@ -241,6 +246,10 @@ Token Lexer::make_token() {
         }
         return { TokenType::EQUALS, get_location() };
     }
+    case '?' :
+        return { TokenType::QUESTION, get_location() };
+    case ':' :
+        return { TokenType::COLON, get_location() };
     default :;
     };
     if ( std::isdigit( c ) ) {

@@ -36,6 +36,8 @@ enum class TokenType : std::uint8_t {
     EQUALS,
     LESS,
     GREATER,
+    QUESTION,
+    COLON,
 
     INCREMENT,
     DECREMENT,
@@ -62,6 +64,8 @@ enum class TokenType : std::uint8_t {
     CONSTANT,
 
     // Keywords
+    IF,
+    ELSE,
     INT,
     RETURN,
     VOID

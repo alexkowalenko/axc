@@ -70,6 +70,8 @@ TEST( Lexer, Basic ) { // NOLINT
         { "^=", TokenType::COMPOUND_XOR, "^=" },
         { "<<=", TokenType::COMPOUND_LEFT_SHIFT, "<<=" },
         { ">>=", TokenType::COMPOUND_RIGHT_SHIFT, ">>=" },
+        { "?", TokenType::QUESTION, "?" },
+        { ":", TokenType::COLON, ":" },
 
         { "", TokenType::Eof, "" },
     };
@@ -144,9 +146,13 @@ TEST( Lexer, Comments ) {
 }
 
 TEST( Lexer, Keywords ) {
-    std::vector<TestLexer> const tests = { { "int", TokenType::INT, "int" },
-                                           { "void", TokenType::VOID, "void" },
-                                           { "return", TokenType::RETURN, "return" } };
+    std::vector<TestLexer> const tests = {
+        { "int", TokenType::INT, "int" },
+        { "void", TokenType::VOID, "void" },
+        { "return", TokenType::RETURN, "return" },
+        { "if", TokenType::IF, "if" },
+        { "else", TokenType::ELSE, "else" } //
+    };
     test_Lexer( tests );
 }
 
