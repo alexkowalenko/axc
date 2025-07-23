@@ -41,11 +41,11 @@ TEST( Parser, Parens ) { // NOLINT
 
 TEST( Parser, Unary ) {
     std::vector<ParseTests> tests = {
-        { "int main(void) { return -2;}", "int main(void) {return -2;}", "" },
-        { "int main(void) { return ~0;}", "int main(void) {return ~0;}", "" },
-        { "int main(void) { return -~1;}", "int main(void) {return -~1;}", "" },
-        { "int main(void) { return ~-1;}", "int main(void) {return ~-1;}", "" },
-        { "int main(void) { return ~-~1;}", "int main(void) {return ~-~1;}", "" },
+        { "int main(void) { return -2;}", "int main(void) {return (-2);}", "" },
+        { "int main(void) { return ~0;}", "int main(void) {return (~0);}", "" },
+        { "int main(void) { return -~1;}", "int main(void) {return (-(~1));}", "" },
+        { "int main(void) { return ~-1;}", "int main(void) {return (~(-1));}", "" },
+        { "int main(void) { return ~-~1;}", "int main(void) {return (~(-(~1)));}", "" },
     };
     do_parse_tests( tests );
 }
@@ -68,9 +68,9 @@ TEST( Parser, Binary ) {
 
 TEST( Parser, Combined ) {
     std::vector<ParseTests> tests = {
-        { "int main(void) { return ~(1+1);}", "int main(void) {return ~(1 + 1);}", "" },
-        { "int main(void) { return (-1)+1;}", "int main(void) {return (-1 + 1);}", "" },
-        { "int main(void) { return -1+1;}", "int main(void) {return (-1 + 1);}", "" },
+        { "int main(void) { return ~(1+1);}", "int main(void) {return (~(1 + 1));}", "" },
+        { "int main(void) { return (-1)+1;}", "int main(void) {return ((-1) + 1);}", "" },
+        { "int main(void) { return -1+1;}", "int main(void) {return ((-1) + 1);}", "" },
     };
     do_parse_tests( tests );
 }
@@ -90,6 +90,14 @@ TEST( Parse, Bitwise ) {
         { "int main(void) { return 1 | 1 & 1;}", "int main(void) {return (1 | (1 & 1));}", "" },
         { "int main(void) { return 1 << 1 ^ 1;}", "int main(void) {return ((1 << 1) ^ 1);}", "" },
         { "int main(void) { return 1 & 1 >> 1;}", "int main(void) {return (1 & (1 >> 1));}", "" },
+    };
+    do_parse_tests( tests );
+}
+
+TEST( Parse, Postfix ) {
+    std::vector<ParseTests> tests = {
+        { "int main(void) { return !a++;}", "int main(void) {return (!(a++));}", "" },
+        { "int main(void) { return !(a)++;}", "int main(void) {return (!(a++));}", "" },
     };
     do_parse_tests( tests );
 }

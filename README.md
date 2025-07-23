@@ -39,6 +39,8 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 - [x] Parser.
 - [x] Semantic Analysis.
 - [x] TAC intermediate.
-- [ ] Extra:
-  - [ ] Increment/Decrement operators
+- [x] Extra:
+  - [x] Increment/Decrement operators
   - [x] Compound assignment.
+
+## Chapter 6 If Statements and Conditional Expressions

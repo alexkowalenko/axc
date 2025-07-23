@@ -21,6 +21,7 @@ add_generator(AT  ${AT_HEADER})
 add_generator(TAC ${TAC_HEADER})
 
 add_library(compiler STATIC
+        token.cpp
         lexer.cpp
         parser.cpp
         printerAST.cpp
@@ -39,9 +40,7 @@ add_library(compiler STATIC
         ${AT_HEADER}
         ${TAC_HEADER}
         symbolTable.cpp
-        symbolTable.h
         semanticAnalyser.cpp
-        semanticAnalyser.h
 )
 
 target_link_libraries(compiler

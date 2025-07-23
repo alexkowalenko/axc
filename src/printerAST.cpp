@@ -72,11 +72,17 @@ std::string PrinterAST::visit_Return( const ast::Return ast ) {
 }
 
 std::string PrinterAST::visit_BinaryOp( const ast::BinaryOp ast ) {
+    if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
+        return std::format( "({}{})", expr( ast->left ), ast->op );
+    }
     return std::format( "({} {} {})", expr( ast->left ), ast->op, expr( ast->right ) );
 }
 
 std::string PrinterAST::visit_UnaryOp( const ast::UnaryOp ast ) {
-    return to_string( ast->op ) + expr( ast->operand );
+    if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
+        return std::format( "({}{})", expr( ast->operand ), ast->op );
+    }
+    return std::format( "({}{})", ast->op, expr( ast->operand ));
 };
 
 std::string PrinterAST::visit_Assign( const ast::Assign ast ) {

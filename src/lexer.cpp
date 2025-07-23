@@ -131,6 +131,10 @@ Token Lexer::make_token() {
     case ';' :
         return { TokenType::SEMICOLON, get_location() };
     case '+' : {
+        if ( peek() == '+' ) {
+            get();
+            return { TokenType::INCREMENT, get_location() };
+        }
         if ( peek() == '=' ) {
             get();
             return { TokenType::COMPOUND_PLUS, get_location() };

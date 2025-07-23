@@ -64,17 +64,32 @@ void SemanticAnalyser::expr( const ast::Expr ast ) {
 }
 
 void SemanticAnalyser::visit_UnaryOp( const ast::UnaryOp ast ) {
+    if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
+        // operand must be a variable
+        if ( !std::holds_alternative<ast::Var>( ast->operand ) ) {
+            throw SemanticException( ast->location, "Invalid lvalue: for {} ", ast->op );
+        }
+    }
     expr( ast->operand );
 }
 
 void SemanticAnalyser::visit_BinaryOp( const ast::BinaryOp ast ) {
+    // Check left side for postfix increment/decrement
+    if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
+        if ( !std::holds_alternative<ast::Var>( ast->left ) ) {
+            throw SemanticException( ast->location, "Invalid lvalue: for {} ", ast->op );
+        }
+        expr( ast->left );
+        return;
+    }
+    // Other operators
     expr( ast->left );
     expr( ast->right );
 }
 
 void SemanticAnalyser::visit_Assign( const ast::Assign ast ) {
     if ( !std::holds_alternative<ast::Var>( ast->left ) ) {
-        throw SemanticException( ast->location, "Invalid lvalue: {}" );
+        throw SemanticException( ast->location, "Invalid lvalue: for {}", ast->op );
     }
     expr( ast->left );
     expr( ast->right );

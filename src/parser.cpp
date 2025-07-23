@@ -48,6 +48,8 @@ const std::map<TokenType, Precedence> precedence_map = {
     { TokenType::COMPOUND_XOR, Precedence::Assignment },
     { TokenType::COMPOUND_LEFT_SHIFT, Precedence::Assignment },
     { TokenType::COMPOUND_RIGHT_SHIFT, Precedence::Assignment },
+    { TokenType::INCREMENT, Precedence::Postfix },
+    { TokenType::DECREMENT, Precedence::Postfix },
 };
 
 constexpr Precedence get_precedence( const TokenType tok ) {
@@ -147,6 +149,8 @@ const std::map<TokenType, PrefixParselet> prefix_map {
     { TokenType::DASH, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
     { TokenType::TILDE, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
     { TokenType::EXCLAMATION, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
+    { TokenType::INCREMENT, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
+    { TokenType::DECREMENT, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
     { TokenType::L_PAREN, []( Parser* p ) -> ast::Expr { return p->group(); } },
 };
 
@@ -181,6 +185,8 @@ const std::map<TokenType, InfixParselet> infix_map {
     { TokenType::COMPOUND_XOR, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
     { TokenType::COMPOUND_LEFT_SHIFT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
     { TokenType::COMPOUND_RIGHT_SHIFT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->assign( left ); } },
+    { TokenType::INCREMENT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->postfixOp( left ); } },
+    { TokenType::DECREMENT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->postfixOp( left ); } },
 };
 
 ast::Expr Parser::expr( const Precedence precedence ) {
@@ -204,6 +210,12 @@ ast::Expr Parser::factor() {
         throw ParseException( token.location, "Unexpected token {}", token );
     }
     auto left = prefix_map.at( token.tok )( this );
+
+    // Look for postfix operators
+    token = lexer.peek_token();
+    if ( token.tok == TokenType::INCREMENT || token.tok == TokenType::DECREMENT ) {
+        return postfixOp( ast::Expr( left ) );
+    }
     return left;
 }
 
@@ -223,6 +235,16 @@ ast::BinaryOp Parser::binaryOp( ast::Expr left ) {
     op->left = std::move( left );
     op->op = token.tok;
     op->right = expr( static_cast<Precedence>( static_cast<int>( get_precedence( token.tok ) ) + 1 ) );
+    return op;
+}
+
+ast::BinaryOp Parser::postfixOp( ast::Expr left ) {
+    spdlog::debug( "postfixOp()" );
+    auto token = lexer.get_token();
+    auto op = make_AST<ast::BinaryOp_>();
+    op->left = std::move( left );
+    op->op = token.tok;
+    // No right hand for postOp
     return op;
 }
 

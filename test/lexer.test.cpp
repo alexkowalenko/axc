@@ -43,6 +43,7 @@ TEST( Lexer, Basic ) { // NOLINT
         { "--", TokenType::DECREMENT, "--" },
         { "~", TokenType::TILDE, "~" },
         { "+", TokenType::PLUS, "+" },
+        { "++", TokenType::INCREMENT, "++" },
         { "/", TokenType::SLASH, "/" },
         { "%", TokenType::PERCENT, "%" },
         { "&", TokenType::AMPERSAND, "&" },

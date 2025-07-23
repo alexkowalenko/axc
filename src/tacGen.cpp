@@ -82,6 +82,32 @@ tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructi
 
 tac::Value TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::unary: {}", to_string( ast->op ) );
+
+    // Handle increment and decrement
+    if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
+        auto b = mk_node<tac::Binary_>( ast );
+        switch ( ast->op ) {
+        case TokenType::INCREMENT :
+            b->op = tac::BinaryOpType::Add;
+            break;
+        case TokenType::DECREMENT :
+            b->op = tac::BinaryOpType::Subtract;
+            break;
+        default :
+            throw SemanticException( ast->location, "Internal: increment operator invalid: {}", to_string( ast->op ) );
+        }
+        b->src1 = expr( ast->operand, instructions );
+        b->src2 = mk_node<tac::Constant_>( ast, 1 );
+        auto temp = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+        b->dst = temp;
+        instructions.push_back( b );
+
+        auto copy = mk_node<tac::Copy_>( ast, temp, expr( ast->operand, instructions ) );
+        instructions.push_back( copy );
+        return temp;
+    }
+
+    // Handle other unary operators
     auto u = mk_node<tac::Unary_>( ast );
     switch ( ast->op ) {
     case TokenType::DASH :
@@ -106,6 +132,41 @@ tac::Value TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instr
 tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::binary: {}", to_string( ast->op ) );
     auto b = mk_node<tac::Binary_>( ast );
+
+    if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
+        // Deal with postfix increment/decrement
+
+        // Copy(left, orig)
+        auto left = expr( ast->left, instructions );
+        auto orig = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+        auto copy = mk_node<tac::Copy_>( ast, left, orig );
+        instructions.push_back( copy );
+
+        // Binop(Add/Sub, left, 1, dst)
+        switch ( ast->op ) {
+        case TokenType::INCREMENT :
+            b->op = tac::BinaryOpType::Add;
+            break;
+        case TokenType::DECREMENT :
+            b->op = tac::BinaryOpType::Subtract;
+            break;
+        default :
+            throw SemanticException( ast->location, "Internal: increment operator invalid: {}", to_string( ast->op ) );
+        }
+        b->src1 = left;
+        b->src2 = mk_node<tac::Constant_>( ast, 1 );
+        auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+        b->dst = dst;
+        instructions.push_back( b );
+
+        // Copy(dst, left)
+        auto copy2 = mk_node<tac::Copy_>( ast, dst, left );
+        instructions.push_back( copy2 );
+
+        // Return orig
+        return orig;
+    }
+
     switch ( ast->op ) {
     case TokenType::PLUS :
         b->op = tac::BinaryOpType::Add;
@@ -163,8 +224,7 @@ tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& ins
     }
     b->src1 = expr( ast->left, instructions );
     b->src2 = expr( ast->right, instructions );
-    auto dst = mk_node<tac::Variable_>( ast );
-    dst->name = symbol_table.temp_name();
+    auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
     b->dst = dst;
     instructions.push_back( b );
     return b->dst;
