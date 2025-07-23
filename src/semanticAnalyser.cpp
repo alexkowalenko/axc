@@ -57,6 +57,7 @@ void SemanticAnalyser::visit_Return( const ast::Return ast ) {
 void SemanticAnalyser::expr( const ast::Expr ast ) {
     std::visit( overloaded { [ this ]( ast::UnaryOp u ) -> void { u->accept( this ); },
                              [ this ]( ast::BinaryOp b ) -> void { b->accept( this ); },
+                             [ this ]( ast::PostOp b ) -> void { b->accept( this ); },
                              [ this ]( ast::Assign a ) -> void { a->accept( this ); },
                              [ this ]( ast::Var v ) -> void { v->accept( this ); },
                              [ this ]( ast::Constant c ) -> void { ; } },
@@ -74,17 +75,16 @@ void SemanticAnalyser::visit_UnaryOp( const ast::UnaryOp ast ) {
 }
 
 void SemanticAnalyser::visit_BinaryOp( const ast::BinaryOp ast ) {
-    // Check left side for postfix increment/decrement
-    if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
-        if ( !std::holds_alternative<ast::Var>( ast->left ) ) {
-            throw SemanticException( ast->location, "Invalid lvalue: for {} ", ast->op );
-        }
-        expr( ast->left );
-        return;
-    }
-    // Other operators
     expr( ast->left );
     expr( ast->right );
+}
+
+void SemanticAnalyser::visit_PostOp( const ast::PostOp ast ) {
+    // Check left side for postfix increment/decrement
+    if ( !std::holds_alternative<ast::Var>( ast->operand ) ) {
+        throw SemanticException( ast->location, "Invalid lvalue: for {} ", ast->op );
+    }
+    expr( ast->operand );
 }
 
 void SemanticAnalyser::visit_Assign( const ast::Assign ast ) {

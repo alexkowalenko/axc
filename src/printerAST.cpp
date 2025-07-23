@@ -61,6 +61,7 @@ std::string PrinterAST::visit_Null( const ast::Null ast ) {
 std::string PrinterAST::expr( const ast::Expr ast ) {
     return std::visit( overloaded { [ this ]( ast::UnaryOp u ) -> std::string { return u->accept( this ); },
                                     [ this ]( ast::BinaryOp b ) -> std::string { return b->accept( this ); },
+                                    [ this ]( ast::PostOp b ) -> std::string { return b->accept( this ); },
                                     [ this ]( ast::Assign a ) -> std::string { return a->accept( this ); },
                                     [ this ]( ast::Var v ) -> std::string { return v->accept( this ); },
                                     [ this ]( ast::Constant c ) -> std::string { return c->accept( this ); } },
@@ -72,17 +73,18 @@ std::string PrinterAST::visit_Return( const ast::Return ast ) {
 }
 
 std::string PrinterAST::visit_BinaryOp( const ast::BinaryOp ast ) {
-    if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
-        return std::format( "({}{})", expr( ast->left ), ast->op );
-    }
     return std::format( "({} {} {})", expr( ast->left ), ast->op, expr( ast->right ) );
+}
+
+std::string PrinterAST::visit_PostOp( const ast::PostOp ast ) {
+    return std::format( "({}{})", expr( ast->operand ), ast->op );
 }
 
 std::string PrinterAST::visit_UnaryOp( const ast::UnaryOp ast ) {
     if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
         return std::format( "({}{})", expr( ast->operand ), ast->op );
     }
-    return std::format( "({}{})", ast->op, expr( ast->operand ));
+    return std::format( "({}{})", ast->op, expr( ast->operand ) );
 };
 
 std::string PrinterAST::visit_Assign( const ast::Assign ast ) {

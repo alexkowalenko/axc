@@ -40,8 +40,8 @@ class Parser {
     ast::Expr     factor();
     ast::UnaryOp  unaryOp();
     ast::BinaryOp binaryOp( ast::Expr left );
-    ast::BinaryOp postfixOp( ast::Expr left );
-    ast::Assign   assign(ast::Expr left);
+    ast::PostOp   postfixOp( ast::Expr left );
+    ast::Assign   assign( ast::Expr left );
     ast::Expr     group();
     ast::Constant constant();
     ast::Var      var();

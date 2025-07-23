@@ -238,11 +238,11 @@ ast::BinaryOp Parser::binaryOp( ast::Expr left ) {
     return op;
 }
 
-ast::BinaryOp Parser::postfixOp( ast::Expr left ) {
+ast::PostOp Parser::postfixOp( ast::Expr left ) {
     spdlog::debug( "postfixOp()" );
     auto token = lexer.get_token();
-    auto op = make_AST<ast::BinaryOp_>();
-    op->left = std::move( left );
+    auto op = make_AST<ast::PostOp_>();
+    op->operand = std::move( left );
     op->op = token.tok;
     // No right hand for postOp
     return op;
