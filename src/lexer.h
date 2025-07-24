@@ -18,7 +18,7 @@
 
 class Lexer {
   public:
-    Lexer( std::istream const& s );
+    explicit Lexer( std::istream const& s );
     ~Lexer() = default;
 
     Token        get_token();

@@ -63,7 +63,6 @@ char Lexer::get() {
                 while ( c = *( ptr ), c != '\n' ) {
                     ++ptr;
                 }
-                c = *ptr;
                 continue;
             }
             if ( c == '*' ) {
@@ -73,12 +72,10 @@ char Lexer::get() {
                     c = *ptr;
                     if ( c == '*' && *( ptr + 1 ) == '/' ) {
                         ptr += 2;
-                        c = *( ptr );
                         break;
                     }
                     ++ptr;
                 } while ( true );
-                c = *ptr;
                 continue;
             }
             // otherwise return /

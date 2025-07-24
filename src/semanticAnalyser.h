@@ -16,26 +16,26 @@
 
 class SemanticAnalyser : public ast::Visitor<void> {
   public:
-    SemanticAnalyser( SymbolTable& table ) : symbol_table( table ) {};
+    explicit SemanticAnalyser( SymbolTable& table ) : symbol_table( table ) {};
     ~SemanticAnalyser() override = default;
 
-    void analyse( const ast::Program ast );
+    void analyse( ast::Program ast );
 
-    void visit_Program( const ast::Program ast ) override;
-    void visit_FunctionDef( const ast::FunctionDef ast ) override;
-    void visit_Declaration( const ast::Declaration ast ) override;
-    void statement( const ast::Statement ast );
-    void visit_If( const ast::If ast ) override;
-    void visit_Null( const ast::Null ast ) override {};
-    void visit_Return( const ast::Return ast ) override;
-    void expr( const ast::Expr ast );
-    void visit_UnaryOp( const ast::UnaryOp ast ) override;
-    void visit_BinaryOp( const ast::BinaryOp ast ) override;
-    void visit_PostOp( const ast::PostOp ast ) override;
-    void visit_Conditional( const ast::Conditional ast ) override;
-    void visit_Assign( const ast::Assign ast ) override;
-    void visit_Var( const ast::Var ast ) override;
-    void visit_Constant( const ast::Constant ast ) override {};
+    void visit_Program( ast::Program ast ) override;
+    void visit_FunctionDef( ast::FunctionDef ast ) override;
+    void visit_Declaration( ast::Declaration ast ) override;
+    void statement( ast::Statement ast );
+    void visit_If( ast::If ast ) override;
+    void visit_Null( ast::Null ast ) override {};
+    void visit_Return( ast::Return ast ) override;
+    void expr( ast::Expr ast );
+    void visit_UnaryOp( ast::UnaryOp ast ) override;
+    void visit_BinaryOp( ast::BinaryOp ast ) override;
+    void visit_PostOp( ast::PostOp ast ) override;
+    void visit_Conditional( ast::Conditional ast ) override;
+    void visit_Assign( ast::Assign ast ) override;
+    void visit_Var( ast::Var ast ) override;
+    void visit_Constant( ast::Constant ast ) override {};
 
   private:
     SymbolTable& symbol_table;

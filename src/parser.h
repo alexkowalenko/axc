@@ -32,7 +32,7 @@ enum class Precedence {
 
 class Parser {
   public:
-    Parser( Lexer& lexer ) : lexer( lexer ) {};
+    explicit Parser( Lexer& lexer ) : lexer( lexer ) {};
     ~Parser() = default;
 
     ast::Program parse();

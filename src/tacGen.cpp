@@ -53,7 +53,7 @@ void TacGen::declaration( ast::Declaration ast, std::vector<tac::Instruction>& i
 void TacGen::statement( const ast::Statement ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::statement" );
     return std::visit( overloaded { [ this, &instructions ]( ast::Return ast ) -> void { ret( ast, instructions ); },
-                                    [ this, &instructions ]( ast::If ) -> void {},
+                                    [ this, &instructions ]( ast::If ast ) -> void { if_stat( ast, instructions ); },
                                     [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
                                     [ this ]( ast::Null ) -> void { ; } },
                        ast );
@@ -68,6 +68,37 @@ void TacGen::ret( ast::Return ast, std::vector<tac::Instruction>& instructions )
     // Do Return
     auto ret = mk_node<tac::Return_>( ast, value );
     instructions.push_back( ret );
+}
+
+void TacGen::if_stat( ast::If ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::if_stat" );
+    auto end_label = generate_label( ast, "ifend" );
+    auto else_label = generate_label( ast, "else" );
+
+    // Instructs for condition
+    auto       c = expr( ast->condition, instructions );
+
+    tac::Label jump_label =  ast->else_stat ? else_label :  end_label;
+
+    // JumpIfZero(c, jump_label)
+    auto jump = mk_node<tac::JumpIfZero_>( ast, c, jump_label->name );
+    instructions.push_back( jump );
+
+    // Instructs for then
+    statement( ast->then, instructions );
+
+    if ( ast->else_stat ) {
+        // Jump(end)
+        auto jump = mk_node<tac::Jump_>( ast, end_label->name );
+        instructions.push_back( jump );
+        // Label(else_label)
+        instructions.push_back( else_label );
+        // Instructs for else
+        statement( ast->else_stat.value(), instructions );
+    }
+
+    // Label(end)
+    instructions.push_back( end_label );
 }
 
 tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructions ) {
@@ -296,7 +327,35 @@ tac::Value TacGen::logical( ast::BinaryOp ast, std::vector<tac::Instruction>& in
 
 tac::Value TacGen::conditional( ast::Conditional ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::conditional" );
-    return {};
+    auto end_label = generate_label( ast, "ternend" );
+    auto e2_label = generate_label( ast, "terne2" );
+    auto result = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+
+    // Instructs for condition
+    auto c = expr( ast->condition, instructions );
+    // JumpIfZero(c, end)
+    auto jump = mk_node<tac::JumpIfZero_>( ast, c, e2_label->name );
+    instructions.push_back( jump );
+    // Instructs for e1
+    auto v1 = expr( ast->then_expr, instructions );
+    // result = v1
+    auto copy = mk_node<tac::Copy_>( ast, v1, result );
+    instructions.push_back( copy );
+    // Jump(end)
+    auto jump2 = mk_node<tac::Jump_>( ast, end_label->name );
+    instructions.push_back( jump2 );
+
+    // Label(e2_label)
+    instructions.push_back( e2_label );
+    // Instructs for e2
+    auto v2 = expr( ast->else_expr, instructions );
+    // result = v2
+    copy = mk_node<tac::Copy_>( ast, v2, result );
+    instructions.push_back( copy );
+
+    // Label(end)
+    instructions.push_back( end_label );
+    return result;
 }
 
 tac::Value TacGen::assign( ast::Assign ast, std::vector<tac::Instruction>& instructions ) {

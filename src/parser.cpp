@@ -54,10 +54,7 @@ const std::map<TokenType, Precedence> precedence_map = {
 };
 
 constexpr Precedence get_precedence( const TokenType tok ) {
-    if ( precedence_map.contains( tok ) ) {
-        return precedence_map.at( tok );
-    }
-    return Precedence::Lowest;
+    return precedence_map.contains( tok ) ? precedence_map.at( tok ) : Precedence::Lowest;
 }
 
 ast::Program Parser::parse() {
@@ -277,7 +274,7 @@ ast::Conditional Parser::conditional( ast::Expr left ) {
     op->condition = std::move( left );
     op->then_expr = expr();
     expect_token( TokenType::COLON );
-    op->else_expr = expr(Precedence::Conditional);
+    op->else_expr = expr( Precedence::Conditional );
     return op;
 }
 

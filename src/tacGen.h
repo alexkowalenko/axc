@@ -26,6 +26,7 @@ class TacGen {
     void             declaration( ast::Declaration ast, std::vector<tac::Instruction>& instructions );
     void             statement( ast::Statement ast, std::vector<tac::Instruction>& instructions );
     void             ret( ast::Return ast, std::vector<tac::Instruction>& instructions );
+    void             if_stat( ast::If ast, std::vector<tac::Instruction>& instructions );
     tac::Value       expr( ast::Expr ast, std::vector<tac::Instruction>& instructions );
 
     tac::Value    unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions );

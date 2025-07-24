@@ -25,6 +25,9 @@ add_library(compiler STATIC
         lexer.cpp
         parser.cpp
         printerAST.cpp
+        # Semantic analysis
+        symbolTable.cpp
+        semanticAnalyser.cpp
         # TAC Generation
         tacGen.cpp
         printerTAC.cpp
@@ -39,8 +42,6 @@ add_library(compiler STATIC
         ${AST_HEADER}
         ${AT_HEADER}
         ${TAC_HEADER}
-        symbolTable.cpp
-        semanticAnalyser.cpp
 )
 
 target_link_libraries(compiler
