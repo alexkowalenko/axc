@@ -1,5 +1,6 @@
 assign.h
 binaryop.h
+compound.h
 constant.h
 conditional.h
 declaration.h

@@ -51,6 +51,6 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 - [x] Extra: Labels and goto
 
 ## Chapter 7 Compound Statements
-- [ ] Parser.
-- [ ] Semantic Analysis.
+- [x] Parser.
+- [x] Semantic Analysis.
 - [ ] TAC intermediate.

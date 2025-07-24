@@ -29,6 +29,7 @@ class TacGen {
     void             if_stat( ast::If ast, std::vector<tac::Instruction>& instructions );
     void             goto_stat( ast::Goto ast, std::vector<tac::Instruction>& instructions );
     void             label( ast::Label ast, std::vector<tac::Instruction>& instructions );
+    void             compound( ast::Compound ast, std::vector<tac::Instruction>& instructions );
     tac::Value       expr( ast::Expr ast, std::vector<tac::Instruction>& instructions );
 
     tac::Value    unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions );

@@ -68,7 +68,10 @@ using Goto = std::shared_ptr<Goto_>;
 class Label_;
 using Label = std::shared_ptr<Label_>;
 
-using Statement = std::variant<Return, Expr, If, Null, Goto, Label>;
+class Compound_;
+using Compound = std::shared_ptr<Compound_>;
+
+using Statement = std::variant<Return, Expr, If, Null, Goto, Label, Compound>;
 
 using BlockItem = std::variant<Statement, Declaration>;
 

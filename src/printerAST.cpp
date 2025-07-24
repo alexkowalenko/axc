@@ -24,12 +24,8 @@ std::string PrinterAST::visit_Program( const ast::Program ast ) {
 }
 
 std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef ast ) {
-    std::string buf = std::format( "{}({}) {{{}", ast->name, TokenType::VOID, new_line );
-    for ( auto b : ast->block_items ) {
-        buf += indent + block_item( b ) + "\n";
-    }
-    buf.pop_back(); // remove last \n
-    buf += new_line + "}" + new_line;
+    std::string buf = std::format( "{}({}) {}", ast->name, TokenType::VOID, new_line );
+    buf += ast->block->accept( this );
     return buf;
 }
 
@@ -52,7 +48,8 @@ std::string PrinterAST::statement( const ast::Statement ast ) {
                                     [ this ]( ast::If ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Goto ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Label ast ) -> std::string { return ast->accept( this ); },
-                                    [ this ]( ast::Expr e ) -> std::string { return expr( e ); },
+                                    [ this ]( ast::Compound ast ) -> std::string { return ast->accept( this ); },
+                                    [ this ]( ast::Expr e ) -> std::string { return expr( e ) + ";"; },
                                     [ this ]( ast::Null ) -> std::string { return ""; } },
                        ast );
 }
@@ -77,6 +74,15 @@ std::string PrinterAST::visit_Goto( const ast::Goto ast ) {
 
 std::string PrinterAST::visit_Label( ast::Label ast ) {
     return ast->label + ":";
+}
+
+std::string PrinterAST::visit_Compound( const ast::Compound ast ) {
+    std::string buf = "{" + new_line;
+    for ( auto b : ast->block_items ) {
+        buf += indent + block_item( b ) + new_line;
+    }
+    buf += "}";
+    return buf;
 }
 
 std::string PrinterAST::expr( const ast::Expr ast ) {

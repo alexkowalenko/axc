@@ -28,14 +28,11 @@ tac::FunctionDef TacGen::functionDef( ast::FunctionDef ast ) {
     spdlog::debug( "tac::functionDef: {}", ast->name );
     auto function = mk_node<tac::FunctionDef_>( ast );
     function->name = ast->name;
+
     std::vector<tac::Instruction> instructions;
-    for ( auto b : ast->block_items ) {
-        spdlog::debug( "tac::functionDef: block" );
-        std::visit(
-            overloaded { [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
-                         [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
-            b );
-    }
+    compound( ast->block, instructions );
+
+    // Add a return at the end of the function
     instructions.push_back( mk_node<tac::Return_>( ast, mk_node<tac::Constant_>( ast, 0 ) ) ); // Return 0
     function->instructions = instructions;
     return function;
@@ -56,6 +53,7 @@ void TacGen::statement( const ast::Statement ast, std::vector<tac::Instruction>&
                                     [ this, &instructions ]( ast::If ast ) -> void { if_stat( ast, instructions ); },
                                     [ this, &instructions ]( ast::Goto g ) -> void { goto_stat( g, instructions ); },
                                     [ this, &instructions ]( ast::Label l ) -> void { label( l, instructions ); },
+                                    [ this, &instructions ]( ast::Compound c ) -> void { compound( c, instructions ); },
                                     [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
                                     [ this ]( ast::Null ) -> void { ; } },
                        ast );
@@ -110,8 +108,19 @@ void TacGen::goto_stat( ast::Goto ast, std::vector<tac::Instruction>& instructio
 
 void TacGen::label( ast::Label ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::label: {}", ast->label );
-    auto label = mk_node<tac::Label_>(ast, ast->label );
+    auto label = mk_node<tac::Label_>( ast, ast->label );
     instructions.push_back( label );
+}
+
+void TacGen::compound( ast::Compound ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::compound:" );
+    for ( auto b : ast->block_items ) {
+        spdlog::debug( "tac::functionDef: block" );
+        std::visit(
+            overloaded { [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
+                         [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
+            b );
+    }
 }
 
 tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructions ) {

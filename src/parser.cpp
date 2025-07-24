@@ -75,32 +75,13 @@ ast::FunctionDef Parser::functionDef() {
     auto name = expect_token( TokenType::IDENTIFIER );
     funct->name = name.value;
 
-    // ( void ) {
+    // ( void )
     expect_token( TokenType::L_PAREN );
     expect_token( TokenType::VOID );
     expect_token( TokenType::R_PAREN );
-    expect_token( TokenType::L_BRACE );
 
-    auto token = lexer.peek_token();
-    while ( token.tok != TokenType::R_BRACE ) {
-        if ( token.tok == TokenType::INT ) {
-            // Check for label - not valid in C17, but allowed in C23.
-            previous_label( funct );
+    funct->block = compound();
 
-            ast::BlockItem block = declaration();
-            funct->block_items.push_back( block );
-        } else {
-            ast::BlockItem block = statement();
-            funct->block_items.push_back( block );
-        }
-        token = lexer.peek_token();
-    }
-
-    // Check label without statement - not valid in C17, but allowed in C23.
-    previous_label( funct );
-
-    // }
-    expect_token( TokenType::R_BRACE );
     return funct;
 }
 
@@ -133,11 +114,12 @@ ast::Statement Parser::statement() {
         statement = if_stat();
     } else if ( token.tok == TokenType::GOTO ) {
         statement = goto_stat();
+    } else if ( token.tok == TokenType::L_BRACE ) {
+        statement = compound();
     } else if ( token.tok == TokenType::SEMICOLON ) {
         expect_token( TokenType::SEMICOLON );
         statement = make_AST<ast::Null_>();
     } else {
-
         // Handle label
         if ( token.tok == TokenType::IDENTIFIER && lexer.peek_token( 1 ).tok == TokenType::COLON ) {
             statement = label();
@@ -147,6 +129,34 @@ ast::Statement Parser::statement() {
         }
     }
     return statement;
+}
+
+ast::Compound Parser::compound() {
+    spdlog::debug( "compound" );
+    expect_token( TokenType::L_BRACE );
+    auto compound = make_AST<ast::Compound_>();
+
+    auto token = lexer.peek_token();
+    while ( token.tok != TokenType::R_BRACE ) {
+        if ( token.tok == TokenType::INT ) {
+            // Check for label - not valid in C17, but allowed in C23.
+            previous_label( compound );
+
+            ast::BlockItem block = declaration();
+            compound->block_items.push_back( block );
+        } else {
+            ast::BlockItem block = statement();
+            compound->block_items.push_back( block );
+        }
+        token = lexer.peek_token();
+    }
+
+    // Check label without statement - not valid in C17, but allowed in C23.
+    previous_label( compound );
+
+    // }
+    expect_token( TokenType::R_BRACE );
+    return compound;
 }
 
 ast::If Parser::if_stat() {
@@ -355,10 +365,10 @@ Token Parser::expect_token( TokenType expected ) {
     return token;
 }
 
-void Parser::previous_label( ast::FunctionDef funct ) {
+void Parser::previous_label( ast::Compound compound ) {
     // Check if the previous item was a label
-    if ( !funct->block_items.empty() && std::holds_alternative<ast::Statement>( funct->block_items.back() ) ) {
-        auto last_statement = std::get<ast::Statement>( funct->block_items.back() );
+    if ( !compound->block_items.empty() && std::holds_alternative<ast::Statement>( compound->block_items.back() ) ) {
+        auto last_statement = std::get<ast::Statement>( compound->block_items.back() );
         if ( std::holds_alternative<ast::Label>( last_statement ) ) {
             throw ParseException( lexer.get_location(), "Label without statement is not allowed in C17." );
         }

@@ -32,6 +32,7 @@ class SemanticAnalyser : public ast::Visitor<void> {
     void visit_Label( ast::Label ast ) override;
     void visit_Null( ast::Null ast ) override {};
     void visit_Return( ast::Return ast ) override;
+    void visit_Compound( const ast::Compound ast ) override;
     void expr( ast::Expr ast );
     void visit_UnaryOp( ast::UnaryOp ast ) override;
     void visit_BinaryOp( ast::BinaryOp ast ) override;
@@ -42,6 +43,9 @@ class SemanticAnalyser : public ast::Visitor<void> {
     void visit_Constant( ast::Constant ast ) override {};
 
   private:
+
+    SymbolTable new_scope();
+
     SymbolTable& symbol_table;
     std::map<std::string, bool> labels;
 };
