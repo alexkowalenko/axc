@@ -110,6 +110,8 @@ const char* to_string( const TokenType l ) {
         return "if";
     case ELSE :
         return "else";
+    case GOTO :
+        return "goto";
     case INT :
         return "int";
     case RETURN :

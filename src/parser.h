@@ -55,9 +55,12 @@ class Parser {
     ast::Declaration declaration();
     ast::Statement   statement();
     ast::If          if_stat();
+    ast::Goto        goto_stat();
+    ast::Label       label();
     ast::Return      ret();
 
     Token expect_token( TokenType expected );
+    void previous_label(ast::FunctionDef funct);
 
     Lexer& lexer;
 };

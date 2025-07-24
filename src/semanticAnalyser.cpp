@@ -24,16 +24,29 @@ void SemanticAnalyser::visit_Program( const ast::Program ast ) {
 }
 
 void SemanticAnalyser::visit_FunctionDef( const ast::FunctionDef ast ) {
+
+    // Clear the labels for each function.
+    labels.clear();
+
     for ( ast::BlockItem b : ast->block_items ) {
         std::visit( overloaded { [ this ]( ast::Declaration ast ) -> void { ast->accept( this ); },
                                  [ this ]( ast::Statement ast ) -> void { statement( ast ); } },
                     b );
+    }
+
+    // Check for labels that were used but not defined.
+    for ( auto [label, defined] : labels ) {
+        if (!defined) {
+            throw SemanticException( ast->location, "Label {} not defined", label );
+        }
     }
 }
 
 void SemanticAnalyser::statement( const ast::Statement ast ) {
     std::visit( overloaded { [ this ]( ast::Return ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::If ast ) -> void { ast->accept( this ); },
+                             [ this ]( ast::Goto ast ) -> void { ast->accept( this ); },
+                             [ this ]( ast::Label ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Expr e ) -> void { expr( e ); }, // expr
                              [ this ]( ast::Null ) -> void { ; } },
                 ast );
@@ -57,6 +70,20 @@ void SemanticAnalyser::visit_If( const ast::If ast ) {
     if ( ast->else_stat ) {
         statement( ast->else_stat.value() );
     }
+}
+
+void SemanticAnalyser::visit_Goto( const ast::Goto ast ) {
+    if (!labels.contains( ast->label )) {
+        // If the label is not defined, we will throw an exception later.
+        labels[ast->label] =  false;
+    }
+}
+
+void SemanticAnalyser::visit_Label( const ast::Label ast ) {
+    if (labels.contains( ast->label ) && labels[ast->label] == true) {
+        throw SemanticException( ast->location, "Duplicate label in function: {}", ast->label );
+    }
+    labels[ast->label] =  true;
 }
 
 void SemanticAnalyser::visit_Return( const ast::Return ast ) {

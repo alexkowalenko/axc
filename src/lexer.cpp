@@ -17,11 +17,8 @@
 #include "exception.h"
 
 const std::map<std::string, TokenType> keywords = {
-    { "int", TokenType::INT },
-    { "return", TokenType::RETURN },
-    { "void", TokenType::VOID },
-    { "if", TokenType::IF },
-    { "else", TokenType::ELSE } //
+    { "int", TokenType::INT }, { "return", TokenType::RETURN }, { "void", TokenType::VOID },
+    { "if", TokenType::IF },   { "else", TokenType::ELSE },     { "goto", TokenType::GOTO } //
 };
 
 Lexer::Lexer( std::istream const& s ) {
@@ -252,16 +249,16 @@ Token Lexer::make_token() {
     if ( std::isdigit( c ) ) {
         return get_number( c );
     }
-    if ( std::isalpha( c ) ) {
+    if ( std::isalpha( c ) or c == '_' ) {
         return get_identifier( c );
     }
     throw LexicalException( get_location(), "Unknown character '{:c}'", c );
 }
 
 Token Lexer::get_token() {
-    if ( next_token ) {
-        auto t = *next_token;
-        next_token = std::nullopt;
+    if ( !next_token.empty() ) {
+        auto t = next_token.front();
+        next_token.pop_front();
         return t;
     }
 
@@ -269,10 +266,16 @@ Token Lexer::get_token() {
     return token;
 }
 
-Token const& Lexer::peek_token() {
-    if ( next_token ) {
-        return *next_token;
+Token const& Lexer::peek_token(size_t offset) {
+    size_t i = offset;
+    while ( i >= next_token.size() ) {
+        auto t = make_token();
+        next_token.push_back( t );
     }
-    next_token = get_token();
-    return *next_token;
+    if ( next_token.size() > offset ) {
+        return next_token.at( offset );
+    }
+    auto t = get_token();
+    next_token.push_back( t );
+    return next_token.front();
 }

@@ -4,8 +4,10 @@ constant.h
 conditional.h
 declaration.h
 functiondef.h
+goto.h
 if.h
 includes.h
+label.h
 null.h
 program.h
 postop.h

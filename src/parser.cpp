@@ -84,6 +84,9 @@ ast::FunctionDef Parser::functionDef() {
     auto token = lexer.peek_token();
     while ( token.tok != TokenType::R_BRACE ) {
         if ( token.tok == TokenType::INT ) {
+            // Check for label - not valid in C17, but allowed in C23.
+            previous_label( funct );
+
             ast::BlockItem block = declaration();
             funct->block_items.push_back( block );
         } else {
@@ -92,6 +95,9 @@ ast::FunctionDef Parser::functionDef() {
         }
         token = lexer.peek_token();
     }
+
+    // Check label without statement - not valid in C17, but allowed in C23.
+    previous_label( funct );
 
     // }
     expect_token( TokenType::R_BRACE );
@@ -125,12 +131,20 @@ ast::Statement Parser::statement() {
         statement = ret();
     } else if ( token.tok == TokenType::IF ) {
         statement = if_stat();
+    } else if ( token.tok == TokenType::GOTO ) {
+        statement = goto_stat();
     } else if ( token.tok == TokenType::SEMICOLON ) {
         expect_token( TokenType::SEMICOLON );
         statement = make_AST<ast::Null_>();
     } else {
-        statement = expr();
-        expect_token( TokenType::SEMICOLON );
+
+        // Handle label
+        if ( token.tok == TokenType::IDENTIFIER && lexer.peek_token( 1 ).tok == TokenType::COLON ) {
+            statement = label();
+        } else {
+            statement = expr();
+            expect_token( TokenType::SEMICOLON );
+        }
     }
     return statement;
 }
@@ -149,6 +163,24 @@ ast::If Parser::if_stat() {
         if_stat->else_stat = statement();
     }
     return if_stat;
+}
+
+ast::Goto Parser::goto_stat() {
+    spdlog::debug( "goto" );
+    auto goto_stat = make_AST<ast::Goto_>();
+    expect_token( TokenType::GOTO );
+    goto_stat->label = expect_token( TokenType::IDENTIFIER ).value;
+    expect_token( TokenType::SEMICOLON );
+    return goto_stat;
+}
+
+ast::Label Parser::label() {
+    spdlog::debug( "label" );
+    auto label = make_AST<ast::Label_>();
+    auto token = expect_token( TokenType::IDENTIFIER );
+    label->label = token.value;
+    expect_token( TokenType::COLON );
+    return label;
 }
 
 ast::Return Parser::ret() {
@@ -321,4 +353,14 @@ Token Parser::expect_token( TokenType expected ) {
         throw ParseException( token.location, "Expected: {} but found {}", expected, token );
     }
     return token;
+}
+
+void Parser::previous_label( ast::FunctionDef funct ) {
+    // Check if the previous item was a label
+    if ( !funct->block_items.empty() && std::holds_alternative<ast::Statement>( funct->block_items.back() ) ) {
+        auto last_statement = std::get<ast::Statement>( funct->block_items.back() );
+        if ( std::holds_alternative<ast::Label>( last_statement ) ) {
+            throw ParseException( lexer.get_location(), "Label without statement is not allowed in C17." );
+        }
+    }
 }

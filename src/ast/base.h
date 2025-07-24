@@ -62,7 +62,13 @@ using Var = std::shared_ptr<Var_>;
 
 using Expr = std::variant<Constant, UnaryOp, BinaryOp, PostOp, Conditional, Var, Assign>;
 
-using Statement = std::variant<Return, Expr, If, Null>;
+class Goto_;
+using Goto = std::shared_ptr<Goto_>;
+
+class Label_;
+using Label = std::shared_ptr<Label_>;
+
+using Statement = std::variant<Return, Expr, If, Null, Goto, Label>;
 
 using BlockItem = std::variant<Statement, Declaration>;
 

@@ -66,6 +66,7 @@ enum class TokenType : std::uint8_t {
     // Keywords
     IF,
     ELSE,
+    GOTO,
     INT,
     RETURN,
     VOID

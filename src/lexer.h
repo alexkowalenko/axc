@@ -13,6 +13,7 @@
 #include <istream>
 #include <optional>
 #include <string>
+#include <deque>
 
 #include "token.h"
 
@@ -22,7 +23,7 @@ class Lexer {
     ~Lexer() = default;
 
     Token        get_token();
-    Token const& peek_token();
+    Token const& peek_token(size_t offset = 0);
 
     [[nodiscard]] Location get_location() const { return { line, pos + 1 }; };
 
@@ -39,5 +40,5 @@ class Lexer {
     size_t                line { 1 };
     size_t                pos { 1 };
 
-    std::optional<Token> next_token = std::nullopt;
+    std::deque<Token> next_token;
 };

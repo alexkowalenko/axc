@@ -54,6 +54,8 @@ void TacGen::statement( const ast::Statement ast, std::vector<tac::Instruction>&
     spdlog::debug( "tac::statement" );
     return std::visit( overloaded { [ this, &instructions ]( ast::Return ast ) -> void { ret( ast, instructions ); },
                                     [ this, &instructions ]( ast::If ast ) -> void { if_stat( ast, instructions ); },
+                                    [ this, &instructions ]( ast::Goto g ) -> void { goto_stat( g, instructions ); },
+                                    [ this, &instructions ]( ast::Label l ) -> void { label( l, instructions ); },
                                     [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
                                     [ this ]( ast::Null ) -> void { ; } },
                        ast );
@@ -76,9 +78,9 @@ void TacGen::if_stat( ast::If ast, std::vector<tac::Instruction>& instructions )
     auto else_label = generate_label( ast, "else" );
 
     // Instructs for condition
-    auto       c = expr( ast->condition, instructions );
+    auto c = expr( ast->condition, instructions );
 
-    tac::Label jump_label =  ast->else_stat ? else_label :  end_label;
+    tac::Label jump_label = ast->else_stat ? else_label : end_label;
 
     // JumpIfZero(c, jump_label)
     auto jump = mk_node<tac::JumpIfZero_>( ast, c, jump_label->name );
@@ -99,6 +101,17 @@ void TacGen::if_stat( ast::If ast, std::vector<tac::Instruction>& instructions )
 
     // Label(end)
     instructions.push_back( end_label );
+}
+void TacGen::goto_stat( ast::Goto ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::goto_stat: {}", ast->label );
+    auto jump = mk_node<tac::Jump_>( ast, ast->label );
+    instructions.push_back( jump );
+}
+
+void TacGen::label( ast::Label ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::label: {}", ast->label );
+    auto label = mk_node<tac::Label_>(ast, ast->label );
+    instructions.push_back( label );
 }
 
 tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructions ) {

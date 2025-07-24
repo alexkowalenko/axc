@@ -20,6 +20,8 @@ if __name__ == "__main__":
             "Null": [], # Null statement
             "Return": [("Expr", "expr", False)],
             "If": [("Expr", "condition", False), ("Statement", "then", False), ("std::optional<Statement>", "else_stat", False)],
+            "Goto": [("std::string", "label", False)],
+            "Label": [("std::string", "label", False)],
             "UnaryOp": [("TokenType", "op", False), ("Expr", "operand", False)],
             "BinaryOp": [("TokenType", "op", False), ("Expr", "left", False), ("Expr", "right", False)],
             "PostOp": [("TokenType", "op", False), ("Expr", "operand", False)],

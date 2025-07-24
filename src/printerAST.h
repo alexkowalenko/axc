@@ -31,6 +31,8 @@ class PrinterAST : public ast::Visitor<std::string> {
     std::string visit_If(  ast::If ast ) override;
     std::string visit_Return(  ast::Return ast ) override;
     std::string visit_Null(  ast::Null ast ) override;
+    std::string visit_Goto(  ast::Goto ast ) override;
+    std::string visit_Label(  ast::Label ast ) override;
     std::string expr(  ast::Expr ast );
     std::string visit_UnaryOp(  ast::UnaryOp ast ) override;
     std::string visit_PostOp(  ast::PostOp ast ) override;

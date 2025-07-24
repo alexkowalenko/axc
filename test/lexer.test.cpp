@@ -117,6 +117,32 @@ TEST( Lexer, Line ) { // NOLINT
     EXPECT_EQ( token.tok, TokenType::Eof );
 }
 
+
+TEST( Lexer, Peek ) { // NOLINT
+    std::string        test = "void main() { return 2;}\n";
+    std::istringstream is( test );
+    Lexer              lex( is );
+
+    auto token = lex.get_token();
+    EXPECT_EQ( token.tok, TokenType::VOID );
+
+    // Peek at the next 2 tokens
+    token = lex.peek_token();
+    EXPECT_EQ( token.tok, TokenType::IDENTIFIER );
+    token = lex.peek_token(1);
+    EXPECT_EQ( token.tok, TokenType::L_PAREN );
+
+    // Now get the next 2 tokens
+    token = lex.get_token();
+    EXPECT_EQ( token.tok, TokenType::IDENTIFIER );
+    token = lex.get_token();
+    EXPECT_EQ( token.tok, TokenType::L_PAREN );
+
+    // Peek again
+    token = lex.peek_token();
+    EXPECT_EQ( token.tok, TokenType::R_PAREN );
+}
+
 TEST( Lexer, Constant ) { // NOLINT
     std::vector<TestLexer> const tests = {
         { "1", TokenType::CONSTANT, "1" },
@@ -150,6 +176,7 @@ TEST( Lexer, Keywords ) {
         { "int", TokenType::INT, "int" },
         { "void", TokenType::VOID, "void" },
         { "return", TokenType::RETURN, "return" },
+        { "goto", TokenType::GOTO, "goto" },
         { "if", TokenType::IF, "if" },
         { "else", TokenType::ELSE, "else" } //
     };

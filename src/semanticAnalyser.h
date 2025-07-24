@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <map>
+
 #include "ast/base.h"
 #include "ast/visitor.h"
 #include "symbolTable.h"
@@ -26,6 +28,8 @@ class SemanticAnalyser : public ast::Visitor<void> {
     void visit_Declaration( ast::Declaration ast ) override;
     void statement( ast::Statement ast );
     void visit_If( ast::If ast ) override;
+    void visit_Goto( ast::Goto ast ) override;
+    void visit_Label( ast::Label ast ) override;
     void visit_Null( ast::Null ast ) override {};
     void visit_Return( ast::Return ast ) override;
     void expr( ast::Expr ast );
@@ -39,4 +43,5 @@ class SemanticAnalyser : public ast::Visitor<void> {
 
   private:
     SymbolTable& symbol_table;
+    std::map<std::string, bool> labels;
 };
