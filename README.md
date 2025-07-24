@@ -56,7 +56,7 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 - [x] TAC intermediate.
 
 ## Chapter 8 Loops
-- [ ] Lexer.
+- [x] Lexer.
 - [ ] Parser.
 - [ ] Semantic Analysis.
 - [ ] TAC intermediate.

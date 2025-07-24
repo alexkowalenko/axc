@@ -178,7 +178,12 @@ TEST( Lexer, Keywords ) {
         { "return", TokenType::RETURN, "return" },
         { "goto", TokenType::GOTO, "goto" },
         { "if", TokenType::IF, "if" },
-        { "else", TokenType::ELSE, "else" } //
+        { "else", TokenType::ELSE, "else" },
+        { "for", TokenType::FOR, "for" },
+        { "while", TokenType::WHILE, "while" },
+        { "do", TokenType::DO, "do" },
+        { "break", TokenType::BREAK, "break" },
+        { "continue", TokenType::CONTINUE, "continue" },
     };
     test_Lexer( tests );
 }

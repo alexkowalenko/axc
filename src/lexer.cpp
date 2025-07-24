@@ -17,8 +17,12 @@
 #include "exception.h"
 
 const std::map<std::string, TokenType> keywords = {
-    { "int", TokenType::INT }, { "return", TokenType::RETURN }, { "void", TokenType::VOID },
-    { "if", TokenType::IF },   { "else", TokenType::ELSE },     { "goto", TokenType::GOTO } //
+    { "int", TokenType::INT },     { "return", TokenType::RETURN },
+    { "void", TokenType::VOID },   { "if", TokenType::IF },
+    { "else", TokenType::ELSE },   { "goto", TokenType::GOTO },
+    { "break", TokenType::BREAK }, { "continue", TokenType::CONTINUE },
+    { "for", TokenType::FOR },     { "while", TokenType::WHILE },
+    { "do", TokenType::DO },
 };
 
 Lexer::Lexer( std::istream const& s ) {
@@ -266,7 +270,7 @@ Token Lexer::get_token() {
     return token;
 }
 
-Token const& Lexer::peek_token(size_t offset) {
+Token const& Lexer::peek_token( size_t offset ) {
     size_t i = offset;
     while ( i >= next_token.size() ) {
         auto t = make_token();

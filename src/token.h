@@ -64,12 +64,17 @@ enum class TokenType : std::uint8_t {
     CONSTANT,
 
     // Keywords
-    IF,
+    BREAK,
+    CONTINUE,
+    DO,
     ELSE,
+    FOR,
     GOTO,
+    IF,
     INT,
     RETURN,
-    VOID
+    VOID,
+    WHILE,
 };
 
 const char* to_string( const TokenType l );
