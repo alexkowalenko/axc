@@ -30,5 +30,7 @@ class SymbolTable {
 
   private:
     std::map<std::string, Symbol> table;
-    std::int32_t                  temp_counter = 0;
+    static std::int32_t           temp_counter;
 };
+
+inline std::int32_t SymbolTable::temp_counter = 0;

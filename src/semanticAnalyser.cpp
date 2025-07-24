@@ -54,6 +54,7 @@ void SemanticAnalyser::visit_Declaration( const ast::Declaration ast ) {
         throw SemanticException( ast->location, "Duplicate declaration: {}", ast->name );
     }
     auto unique_name = symbol_table.temp_name( ast->name );
+    spdlog::debug( "Declaring variable: {} as {}", ast->name, unique_name );
     symbol_table.put( ast->name, Symbol { unique_name, true } );
     ast->name = unique_name;
     if ( ast->init ) {
