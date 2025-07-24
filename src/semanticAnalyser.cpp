@@ -43,6 +43,11 @@ void SemanticAnalyser::statement( const ast::Statement ast ) {
                              [ this ]( ast::If ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Goto ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Label ast ) -> void { ast->accept( this ); },
+                             [ this ]( ast::Break ast ) -> void { ast->accept( this ); },
+                             [ this ]( ast::Continue ast ) -> void { ast->accept( this ); },
+                             [ this ]( ast::While ast ) -> void { ast->accept( this ); },
+                             [ this ]( ast::DoWhile ast ) -> void { ast->accept( this ); },
+                             [ this ]( ast::For ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Compound ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Expr e ) -> void { expr( e ); }, // expr
                              [ this ]( ast::Null ) -> void { ; } },
@@ -86,6 +91,39 @@ void SemanticAnalyser::visit_Label( const ast::Label ast ) {
 
 void SemanticAnalyser::visit_Return( const ast::Return ast ) {
     expr( ast->expr );
+}
+
+void SemanticAnalyser::visit_Break( const ast::Break ast ) {}
+
+void SemanticAnalyser::visit_Continue( const ast::Continue ast ) {}
+
+void SemanticAnalyser::visit_While( const ast::While ast ) {
+    expr( ast->condition );
+    statement( ast->body );
+}
+
+void SemanticAnalyser::visit_DoWhile( const ast::DoWhile ast ) {
+    statement( ast->body );
+    expr( ast->condition );
+}
+
+void SemanticAnalyser::for_init( ast::ForInit ast ) {
+    std::visit( overloaded { [ this ]( ast::Expr e ) -> void { expr( e ); },
+                             [ this ]( ast::Declaration d ) -> void { d->accept( this ); } },
+                ast );
+}
+
+void SemanticAnalyser::visit_For( const ast::For ast ) {
+    if ( ast->init ) {
+        for_init( ast->init.value() );
+    }
+    if ( ast->condition ) {
+        expr( ast->condition.value() );
+    }
+    if ( ast->increment ) {
+        expr( ast->increment.value() );
+    }
+    statement( ast->body );
 }
 
 void SemanticAnalyser::visit_Compound( const ast::Compound ast ) {

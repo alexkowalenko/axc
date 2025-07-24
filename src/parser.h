@@ -37,6 +37,18 @@ class Parser {
 
     ast::Program parse();
 
+    ast::Compound    compound();
+    ast::If          if_stat();
+    ast::Goto        goto_stat();
+    ast::Label       label();
+    ast::Break       break_stat();
+    ast::Continue    continue_stat();
+    ast::While       while_stat();
+    ast::DoWhile     do_while_stat();
+    ast::For         for_stat();
+    ast::Return      ret();
+    ast::Null        null();
+
     ast::Expr     expr( Precedence precedence = Precedence::Lowest );
     ast::Expr     factor();
     ast::UnaryOp  unaryOp();
@@ -54,11 +66,7 @@ class Parser {
     ast::FunctionDef functionDef();
     ast::Declaration declaration();
     ast::Statement   statement();
-    ast::Compound    compound();
-    ast::If          if_stat();
-    ast::Goto        goto_stat();
-    ast::Label       label();
-    ast::Return      ret();
+
 
     Token expect_token( TokenType expected );
     void previous_label(ast::Compound funct);

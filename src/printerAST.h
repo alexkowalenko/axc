@@ -33,6 +33,12 @@ class PrinterAST : public ast::Visitor<std::string> {
     std::string visit_Null(  ast::Null ast ) override;
     std::string visit_Goto(  ast::Goto ast ) override;
     std::string visit_Label( ast::Label ast ) override;
+    std::string visit_Break( const ast::Break ast ) override;
+    std::string visit_Continue( const ast::Continue ast ) override;
+    std::string visit_While( const ast::While ast ) override;
+    std::string visit_DoWhile( const ast::DoWhile ast ) override;
+    std::string for_init( ast::ForInit ast );
+    std::string visit_For( const ast::For ast ) override;
     std::string visit_Compound( const ast::Compound ast ) override;
     std::string expr(  ast::Expr ast );
     std::string visit_UnaryOp(  ast::UnaryOp ast ) override;

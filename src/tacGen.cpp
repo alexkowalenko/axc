@@ -49,14 +49,20 @@ void TacGen::declaration( ast::Declaration ast, std::vector<tac::Instruction>& i
 
 void TacGen::statement( const ast::Statement ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::statement" );
-    return std::visit( overloaded { [ this, &instructions ]( ast::Return ast ) -> void { ret( ast, instructions ); },
-                                    [ this, &instructions ]( ast::If ast ) -> void { if_stat( ast, instructions ); },
-                                    [ this, &instructions ]( ast::Goto g ) -> void { goto_stat( g, instructions ); },
-                                    [ this, &instructions ]( ast::Label l ) -> void { label( l, instructions ); },
-                                    [ this, &instructions ]( ast::Compound c ) -> void { compound( c, instructions ); },
-                                    [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
-                                    [ this ]( ast::Null ) -> void { ; } },
-                       ast );
+    return std::visit(
+        overloaded { [ this, &instructions ]( ast::Return ast ) -> void { ret( ast, instructions ); },
+                     [ this, &instructions ]( ast::If ast ) -> void { if_stat( ast, instructions ); },
+                     [ this, &instructions ]( ast::Goto g ) -> void { goto_stat( g, instructions ); },
+                     [ this, &instructions ]( ast::Label l ) -> void { label( l, instructions ); },
+                     [ this, &instructions ]( ast::Break c ) -> void { break_stat( c, instructions ); },
+                     [ this, &instructions ]( ast::Continue c ) -> void { continue_stat( c, instructions ); },
+                     [ this, &instructions ]( ast::While c ) -> void { while_stat( c, instructions ); },
+                     [ this, &instructions ]( ast::DoWhile c ) -> void { do_while_stat( c, instructions ); },
+                     [ this, &instructions ]( ast::For c ) -> void { for_stat( c, instructions ); },
+                     [ this, &instructions ]( ast::Compound c ) -> void { compound( c, instructions ); },
+                     [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
+                     [ this ]( ast::Null ) -> void { ; } },
+        ast );
 }
 
 void TacGen::ret( ast::Return ast, std::vector<tac::Instruction>& instructions ) {
@@ -110,6 +116,26 @@ void TacGen::label( ast::Label ast, std::vector<tac::Instruction>& instructions 
     spdlog::debug( "tac::label: {}", ast->label );
     auto label = mk_node<tac::Label_>( ast, ast->label );
     instructions.push_back( label );
+}
+
+void TacGen::break_stat( const ast::Break ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::break_stat" );
+}
+
+void TacGen::continue_stat( const ast::Continue ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::continue_stat" );
+}
+
+void TacGen::while_stat( const ast::While ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::while_stat" );
+}
+
+void TacGen::do_while_stat( const ast::DoWhile ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::while_stat" );
+}
+
+void TacGen::for_stat( const ast::For ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::for_stat" );
 }
 
 void TacGen::compound( ast::Compound ast, std::vector<tac::Instruction>& instructions ) {
