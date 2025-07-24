@@ -1,9 +1,13 @@
 assign.h
 binaryop.h
+break.h
 compound.h
 constant.h
+continue.h
 conditional.h
 declaration.h
+dowhile.h
+for.h
 functiondef.h
 goto.h
 if.h
@@ -15,5 +19,6 @@ postop.h
 return.h
 statement.h
 visitor.h
+while.h
 unaryop.h
 var.h

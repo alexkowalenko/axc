@@ -48,6 +48,11 @@ std::string PrinterAST::statement( const ast::Statement ast ) {
                                     [ this ]( ast::If ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Goto ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Label ast ) -> std::string { return ast->accept( this ); },
+                                    [ this ]( ast::Break ast ) -> std::string { return ast->accept( this ); },
+                                    [ this ]( ast::Continue ast ) -> std::string { return ast->accept( this ); },
+                                    [ this ]( ast::While ast ) -> std::string { return ast->accept( this ); },
+                                    [ this ]( ast::DoWhile ast ) -> std::string { return ast->accept( this ); },
+                                    [ this ]( ast::For ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Compound ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Expr e ) -> std::string { return expr( e ) + ";"; },
                                     [ this ]( ast::Null ) -> std::string { return ""; } },
@@ -74,6 +79,52 @@ std::string PrinterAST::visit_Goto( const ast::Goto ast ) {
 
 std::string PrinterAST::visit_Label( ast::Label ast ) {
     return ast->label + ":";
+}
+
+std::string PrinterAST::visit_Break( const ast::Break ast ) {
+    return "break;";
+}
+
+std::string PrinterAST::visit_Continue( const ast::Continue ast ) {
+    return "continue;";
+}
+
+std::string PrinterAST::visit_While( const ast::While ast ) {
+    std::string buf = "while(" + expr( ast->condition ) + ")" + new_line;
+    buf += indent + statement( ast->body ) + new_line;
+    return buf;
+}
+
+std::string PrinterAST::visit_DoWhile( const ast::DoWhile ast ) {
+    std::string buf = "do" + new_line;
+    buf += indent + statement( ast->body ) + new_line;
+    buf += "while(" + expr( ast->condition ) + ");";
+    return buf;
+}
+
+std::string PrinterAST::for_init( ast::ForInit ast ) {
+    return std::visit( overloaded { [ this ]( ast::Expr e ) -> std::string { return expr( e ); },
+                                    [ this ]( ast::Declaration d ) -> std::string { return d->accept( this ); } },
+                       ast );
+}
+
+std::string PrinterAST::visit_For( const ast::For ast ) {
+    std::string buf = "for(";
+    if ( ast->init ) {
+        buf += for_init( ast->init.value() );
+    } else {
+        buf += ";";
+    }
+    if ( ast->condition ) {
+        buf += expr( ast->condition.value() );
+    }
+    buf += ";";
+    if ( ast->increment ) {
+        buf += expr( ast->increment.value() );
+    }
+    buf += ")" + new_line;
+    buf += indent + statement( ast->body ) + new_line;
+    return buf;
 }
 
 std::string PrinterAST::visit_Compound( const ast::Compound ast ) {

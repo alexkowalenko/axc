@@ -68,10 +68,27 @@ using Goto = std::shared_ptr<Goto_>;
 class Label_;
 using Label = std::shared_ptr<Label_>;
 
+class Break_;
+using Break = std::shared_ptr<Break_>;
+
+class Continue_;
+using Continue = std::shared_ptr<Continue_>;
+
+class While_;
+using While = std::shared_ptr<While_>;
+
+class DoWhile_;
+using DoWhile = std::shared_ptr<DoWhile_>;
+
+class For_;
+using For = std::shared_ptr<For_>;
+
+using ForInit = std::variant<Declaration, Expr>;
+
 class Compound_;
 using Compound = std::shared_ptr<Compound_>;
 
-using Statement = std::variant<Return, Expr, If, Null, Goto, Label, Compound>;
+using Statement = std::variant<Return, Expr, If, Null, Goto, Label, Break, Continue, While, DoWhile, For, Compound>;
 
 using BlockItem = std::variant<Statement, Declaration>;
 

@@ -104,21 +104,28 @@ ast::Declaration Parser::declaration() {
     return decl;
 }
 
+using StatementParselet = std::function<ast::Statement( Parser* )>;
+const std::map<TokenType, StatementParselet> statement_map {
+    { TokenType::RETURN, []( Parser* p ) -> ast::Statement { return p->ret(); } },
+    { TokenType::IF, []( Parser* p ) -> ast::Statement { return p->if_stat(); } },
+    { TokenType::GOTO, []( Parser* p ) -> ast::Statement { return p->goto_stat(); } },
+    { TokenType::L_BRACE, []( Parser* p ) -> ast::Statement { return p->compound(); } },
+    { TokenType::SEMICOLON, []( Parser* p ) -> ast::Statement { return p->null(); } },
+    { TokenType::BREAK, []( Parser* p ) -> ast::Statement { return p->break_stat(); } },
+    { TokenType::CONTINUE, []( Parser* p ) -> ast::Statement { return p->continue_stat(); } },
+    { TokenType::WHILE, []( Parser* p ) -> ast::Statement { return p->while_stat(); } },
+    { TokenType::DO, []( Parser* p ) -> ast::Statement { return p->do_while_stat(); } },
+    { TokenType::FOR, []( Parser* p ) -> ast::Statement { return p->for_stat(); } },
+};
+
 ast::Statement Parser::statement() {
     spdlog::debug( "statement" );
     ast::Statement statement;
+
     auto           token = lexer.peek_token();
-    if ( token.tok == TokenType::RETURN ) {
-        statement = ret();
-    } else if ( token.tok == TokenType::IF ) {
-        statement = if_stat();
-    } else if ( token.tok == TokenType::GOTO ) {
-        statement = goto_stat();
-    } else if ( token.tok == TokenType::L_BRACE ) {
-        statement = compound();
-    } else if ( token.tok == TokenType::SEMICOLON ) {
-        expect_token( TokenType::SEMICOLON );
-        statement = make_AST<ast::Null_>();
+    if ( statement_map.contains( token.tok ) ) {
+        // Use the parselet for the statement
+        statement = statement_map.at( token.tok )( this );
     } else {
         // Handle label
         if ( token.tok == TokenType::IDENTIFIER && lexer.peek_token( 1 ).tok == TokenType::COLON ) {
@@ -193,6 +200,84 @@ ast::Label Parser::label() {
     return label;
 }
 
+ast::Break Parser::break_stat() {
+    spdlog::debug( "break" );
+    expect_token( TokenType::BREAK );
+    expect_token( TokenType::SEMICOLON );
+    return make_AST<ast::Break_>();
+}
+
+ast::Continue Parser::continue_stat() {
+    spdlog::debug( "continue" );
+    expect_token( TokenType::CONTINUE );
+    expect_token( TokenType::SEMICOLON );
+    return make_AST<ast::Continue_>();
+}
+
+ast::While Parser::while_stat() {
+    spdlog::debug( "while" );
+    auto while_stat = make_AST<ast::While_>();
+    expect_token( TokenType::WHILE );
+    expect_token( TokenType::L_PAREN );
+    while_stat->condition = expr();
+    expect_token( TokenType::R_PAREN );
+    while_stat->body = statement();
+    return while_stat;
+}
+
+ast::DoWhile Parser::do_while_stat() {
+    spdlog::debug( "do while" );
+    auto do_while_stat = make_AST<ast::DoWhile_>();
+    expect_token( TokenType::DO );
+    do_while_stat->body = statement();
+    expect_token( TokenType::WHILE );
+    expect_token( TokenType::L_PAREN );
+    do_while_stat->condition = expr();
+    expect_token( TokenType::R_PAREN );
+    expect_token( TokenType::SEMICOLON );
+    return do_while_stat;
+}
+
+ast::For Parser::for_stat() {
+    spdlog::debug( "for" );
+    auto for_stat = make_AST<ast::For_>();
+    expect_token( TokenType::FOR );
+    expect_token( TokenType::L_PAREN );
+
+    // Init
+    auto token = lexer.peek_token();
+    if ( token.tok != TokenType::SEMICOLON ) {
+        if ( token.tok == TokenType::INT ) {
+            // Declaration
+            for_stat->init = declaration();
+        } else {
+            // Expression
+            for_stat->init = expr();
+            expect_token( TokenType::SEMICOLON );
+        }
+    }
+    else {
+        // If there is no init, we expect a semicolon
+        expect_token( TokenType::SEMICOLON );
+    }
+
+    spdlog::debug( "for - condition" );
+    // Condition
+    if ( lexer.peek_token().tok != TokenType::SEMICOLON ) {
+        for_stat->condition = expr();
+    }
+    expect_token( TokenType::SEMICOLON );
+
+    // Increment
+    if ( lexer.peek_token().tok != TokenType::R_PAREN ) {
+        for_stat->increment = expr();
+    }
+    expect_token( TokenType::R_PAREN );
+
+    for_stat->body = statement();
+    return for_stat;
+}
+
 ast::Return Parser::ret() {
     spdlog::debug( "ret" );
     auto ret = make_AST<ast::Return_>();
@@ -200,6 +285,11 @@ ast::Return Parser::ret() {
     ret->expr = expr();
     expect_token( TokenType::SEMICOLON );
     return ret;
+}
+
+ast::Null Parser::null() {
+    expect_token( TokenType::SEMICOLON );
+    return make_AST<ast::Null_>();
 }
 
 using PrefixParselet = std::function<ast::Expr( Parser* )>;

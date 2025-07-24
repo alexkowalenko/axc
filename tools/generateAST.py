@@ -22,6 +22,11 @@ if __name__ == "__main__":
             "If": [("Expr", "condition", False), ("Statement", "then", False), ("std::optional<Statement>", "else_stat", False)],
             "Goto": [("std::string", "label", False)],
             "Label": [("std::string", "label", False)],
+            "Break": [],  # Break statement
+            "Continue": [],  # Continue statement
+            "While": [("Expr", "condition", False), ("Statement", "body", False)],
+            "DoWhile": [("Statement", "body", False), ("Expr", "condition", False)],
+            "For": [("std::optional<ForInit>", "init", False), ("std::optional<Expr>", "condition", False), ("std::optional<Expr>", "increment", False), ("Statement", "body", False)],
             "Compound": [("std::vector<BlockItem>", "block_items", False)],
             "UnaryOp": [("TokenType", "op", False), ("Expr", "operand", False)],
             "BinaryOp": [("TokenType", "op", False), ("Expr", "left", False), ("Expr", "right", False)],
