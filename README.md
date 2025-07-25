@@ -59,4 +59,5 @@ Implementing a C compiler in C++ 23, following the book Nora Sandler, _Writing a
 - [x] Lexer.
 - [x] Parser.
 - [x] Semantic Analysis.
-- [ ] TAC intermediate.
+- [x] TAC intermediate.
+- [ ] Extra: switch statements

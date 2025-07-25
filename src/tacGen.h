@@ -47,6 +47,8 @@ class TacGen {
     tac::Constant constant( ast::Constant ast );
 
     tac::Label generate_label( std::shared_ptr<ast::Base> b, std::string_view name );
+    tac::Label generate_loop_break( std::shared_ptr<ast::Base> b );
+    tac::Label generate_loop_continue( std::shared_ptr<ast::Base> b);
 
     SymbolTable& symbol_table;
     size_t       label_count {};

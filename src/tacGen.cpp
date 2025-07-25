@@ -119,23 +119,101 @@ void TacGen::label( ast::Label ast, std::vector<tac::Instruction>& instructions 
 }
 
 void TacGen::break_stat( const ast::Break ast, std::vector<tac::Instruction>& instructions ) {
-    spdlog::debug( "tac::break_stat" );
+    spdlog::debug( "tac::break_stat: {}", ast->ast_label );
+    auto jump = mk_node<tac::Jump_>( ast, "break_" + ast->ast_label );
+    instructions.push_back( jump );
 }
 
 void TacGen::continue_stat( const ast::Continue ast, std::vector<tac::Instruction>& instructions ) {
-    spdlog::debug( "tac::continue_stat" );
+    spdlog::debug( "tac::continue_stat: {}", ast->ast_label );
+    auto jump = mk_node<tac::Jump_>( ast, "continue_" + ast->ast_label );
+    instructions.push_back( jump );
 }
 
 void TacGen::while_stat( const ast::While ast, std::vector<tac::Instruction>& instructions ) {
-    spdlog::debug( "tac::while_stat" );
+    spdlog::debug( "tac::while_stat: {}", ast->ast_label );
+
+    // Label(continue_label)
+    auto continue_label = generate_loop_continue( ast );
+    instructions.push_back( continue_label );
+
+    auto break_label = generate_loop_break( ast );
+
+    // Instructs for condition
+    auto c = expr( ast->condition, instructions );
+
+    // JumpIfZero(c, jump_label)
+    auto jump = mk_node<tac::JumpIfZero_>( ast, c, break_label->name );
+    instructions.push_back( jump );
+
+    // Instructs for body
+    statement( ast->body, instructions );
+    // Jump(continue_label)
+    instructions.push_back( mk_node<tac::Jump_>( ast, continue_label->name ) );
+    // Label(break_label)
+    instructions.push_back( generate_loop_break( ast ) );
 }
 
 void TacGen::do_while_stat( const ast::DoWhile ast, std::vector<tac::Instruction>& instructions ) {
-    spdlog::debug( "tac::while_stat" );
+    spdlog::debug( "tac::do_stat: {}", ast->ast_label );
+    // Label(start)
+    auto start = generate_label( ast, "do_while_start" );
+    instructions.push_back( start );
+
+    // Instructs for body
+    statement( ast->body, instructions );
+
+    instructions.push_back( generate_loop_continue( ast ) );
+    // Instructs for condition
+    auto c = expr( ast->condition, instructions );
+
+    // JumpIfNotZero(c, jump_label)
+    auto jump = mk_node<tac::JumpIfNotZero_>( ast, c, start->name );
+    instructions.push_back( jump );
+    instructions.push_back( generate_loop_break( ast ) );
 }
 
 void TacGen::for_stat( const ast::For ast, std::vector<tac::Instruction>& instructions ) {
-    spdlog::debug( "tac::for_stat" );
+    spdlog::debug( "tac::for_stat: {}", ast->ast_label );
+    auto break_label = generate_loop_break( ast );
+
+    // Instructions for init
+    if ( ast->init ) {
+        std::visit(
+            overloaded { [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
+                         [ this, &instructions ]( ast::Declaration d ) -> void { declaration( d, instructions ); } },
+            ast->init.value() );
+    }
+
+    // Label(start)
+    auto start = generate_label( ast, "while_start" );
+    instructions.push_back( start );
+
+    if ( ast->condition ) {
+        // Instructs for condition
+        auto c = expr( ast->condition.value(), instructions );
+
+        // JumpIfZero(c, break_label)
+        auto jump = mk_node<tac::JumpIfZero_>( ast, c, break_label->name );
+        instructions.push_back( jump );
+    }
+
+    // Instructs for body
+    statement( ast->body, instructions );
+
+    // Label(continue_label)
+    auto continue_label = generate_loop_continue( ast );
+    instructions.push_back( continue_label );
+    if ( ast->increment ) {
+        // Instructs for increment
+        expr( ast->increment.value(), instructions );
+    }
+
+    // Jump(start)
+    auto jump = mk_node<tac::Jump_>( ast, start->name );
+    instructions.push_back( jump );
+    // Label(break_label)
+    instructions.push_back( break_label );
 }
 
 void TacGen::compound( ast::Compound ast, std::vector<tac::Instruction>& instructions ) {
@@ -469,4 +547,12 @@ tac::Label TacGen::generate_label( const std::shared_ptr<ast::Base> b, std::stri
 tac::Constant TacGen::constant( ast::Constant ast ) {
     spdlog::debug( "tac::constant: {}", ast->value );
     return mk_node<tac::Constant_>( ast, ast->value );
+}
+
+tac::Label TacGen::generate_loop_break( std::shared_ptr<ast::Base> b ) {
+    return mk_node<tac::Label_>( b, std::format( "break_{:s}", b->ast_label ) );
+};
+
+tac::Label TacGen::generate_loop_continue( std::shared_ptr<ast::Base> b ) {
+    return mk_node<tac::Label_>( b, std::format( "continue_{:s}", b->ast_label ) );
 }
