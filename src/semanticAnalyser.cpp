@@ -10,6 +10,8 @@
 
 #include "semanticAnalyser.h"
 
+#include <set>
+
 #include "ast/includes.h"
 #include "common.h"
 #include "exception.h"
@@ -85,6 +87,7 @@ void SemanticAnalyser::visit_Goto( const ast::Goto ast ) {
 }
 
 void SemanticAnalyser::visit_Label( const ast::Label ast ) {
+    spdlog::debug( "Label: {}", ast->label );
     if ( labels.contains( ast->label ) && labels[ ast->label ] == true ) {
         throw SemanticException( ast->location, "Duplicate label in function: {}", ast->label );
     }
@@ -96,8 +99,8 @@ void SemanticAnalyser::visit_Return( const ast::Return ast ) {
 }
 
 void SemanticAnalyser::visit_Break( const ast::Break ast ) {
-    if ( loop_count == 0 ) {
-        throw SemanticException( ast->location, "break statement not in loop" );
+    if ( loop_count == 0 && switch_count == 0 ) {
+        throw SemanticException( ast->location, "break statement not in loop or switch statement" );
     }
     loop_label( ast );
 }
@@ -110,7 +113,6 @@ void SemanticAnalyser::visit_Continue( const ast::Continue ast ) {
 }
 
 void SemanticAnalyser::visit_While( const ast::While ast ) {
-
     expr( ast->condition );
     new_loop_label( ast );
     statement( ast->body );
@@ -148,9 +150,65 @@ void SemanticAnalyser::visit_For( const ast::For ast ) {
     symbol_table = previous_table;
 }
 
-void SemanticAnalyser::visit_Switch( const ast::Switch ast ) {}
+void SemanticAnalyser::visit_Switch( const ast::Switch ast ) {
+    expr( ast->condition );
 
-void SemanticAnalyser::visit_Case( const ast::Case ast ) {}
+    new_switch_label( ast );
+    // Reset case set for each switch
+    std::set<ast::Constant> current_case_set;
+    case_set.push( current_case_set );
+
+    statement( ast->body );
+
+    // Clear default case tracking
+    if ( !last_default.empty() && last_default.top() == switch_count ) {
+        last_default.pop();
+    }
+    // Pop the case set for this switch
+    case_set.pop();
+}
+
+void SemanticAnalyser::visit_Case( const ast::Case ast ) {
+    spdlog::debug( "case: {}", ast->is_default ? "default" : "case" );
+
+    // Check if we are in a switch statement
+    if ( case_set.empty() ) {
+        throw SemanticException( ast->location, "'{}' statement not in switch", ast->is_default ? "default" : "case" );
+    }
+
+    if ( !ast->is_default ) {
+        // case:
+
+        // constant expressions for case
+        is_constant = false;
+        expr( ast->value );
+        if ( !is_constant ) {
+            throw SemanticException( ast->location, "Case value must be constant expression" );
+        }
+
+        // Check for duplicate case values
+        // Check only ast::Constant - skip expressions
+        if ( auto const_value = std::get_if<ast::Constant>( &ast->value ) ) {
+            if ( case_set.top().contains( *const_value ) ) {
+                throw SemanticException( ast->location, "Duplicate case value " );
+            }
+            case_set.top().insert( *const_value );
+        }
+
+    } else {
+        // default:
+        if ( !last_default.empty() && last_default.top() == switch_count ) {
+            throw SemanticException( ast->location, "Duplicate default case in switch statement" );
+        }
+        last_default.push( switch_count );
+    }
+
+    for ( const auto& item : ast->block_items ) {
+        std::visit( overloaded { [ this ]( ast::Declaration d ) -> void { d->accept( this ); },
+                                 [ this ]( ast::Statement s ) -> void { statement( s ); } },
+                    item );
+    }
+}
 
 void SemanticAnalyser::visit_Compound( const ast::Compound ast ) {
     // Create new symbol table and swap
@@ -173,7 +231,7 @@ void SemanticAnalyser::expr( const ast::Expr ast ) {
                              [ this ]( ast::Conditional b ) -> void { b->accept( this ); },
                              [ this ]( ast::Assign a ) -> void { a->accept( this ); },
                              [ this ]( ast::Var v ) -> void { v->accept( this ); },
-                             [ this ]( ast::Constant c ) -> void { ; } },
+                             [ this ]( ast::Constant c ) -> void { c->accept( this ); } },
                 ast );
 }
 
@@ -185,11 +243,24 @@ void SemanticAnalyser::visit_UnaryOp( const ast::UnaryOp ast ) {
         }
     }
     expr( ast->operand );
+
+    // Constant Analysis
+    if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
+        // Postfix increment/decrement is not constant
+        is_constant = false;
+    } else {
+        // Unary operators are constant
+        is_constant = true;
+    }
 }
 
 void SemanticAnalyser::visit_BinaryOp( const ast::BinaryOp ast ) {
     expr( ast->left );
+    bool left_constant = is_constant;
     expr( ast->right );
+    bool right_constant = is_constant;
+    // Constant Analysis
+    is_constant = left_constant && right_constant;
 }
 
 void SemanticAnalyser::visit_PostOp( const ast::PostOp ast ) {
@@ -198,12 +269,18 @@ void SemanticAnalyser::visit_PostOp( const ast::PostOp ast ) {
         throw SemanticException( ast->location, "Invalid lvalue: for {} ", ast->op );
     }
     expr( ast->operand );
+    // Constant Analysis - postfix operators are not constant
+    is_constant = false;
 }
 
 void SemanticAnalyser::visit_Conditional( const ast::Conditional ast ) {
     expr( ast->condition );
     expr( ast->then_expr );
+    bool left_constant = is_constant;
     expr( ast->else_expr );
+    bool right_constant = is_constant;
+    // Constant Analysis
+    is_constant = left_constant && right_constant;
 }
 
 void SemanticAnalyser::visit_Assign( const ast::Assign ast ) {
@@ -212,15 +289,26 @@ void SemanticAnalyser::visit_Assign( const ast::Assign ast ) {
     }
     expr( ast->left );
     expr( ast->right );
+    // Constant Analysis
+    is_constant = false; // Assignment is never constant
 }
 
 void SemanticAnalyser::visit_Var( const ast::Var ast ) {
     if ( auto name = symbol_table.find( ast->name ) ) {
         spdlog::debug( "Found var: {} for {}", name->name, ast->name );
         ast->name = name->name; // Change the name to the temporary.
+
+        // Constant Analysis
+        is_constant = false;
+
         return;
     }
     throw SemanticException( ast->location, "variable: {} not declared", ast->name );
+}
+
+void SemanticAnalyser::visit_Constant( ast::Constant ast ) {
+    // Constant Analysis
+    is_constant = true;
 }
 
 SymbolTable SemanticAnalyser::new_scope() {
@@ -236,4 +324,8 @@ void SemanticAnalyser::new_loop_label( std::shared_ptr<ast::Base> b ) {
 
 void SemanticAnalyser::loop_label( std::shared_ptr<ast::Base> b ) {
     b->ast_label = std::format( "loop.{}", loop_count );
+}
+
+void SemanticAnalyser::new_switch_label( std::shared_ptr<ast::Base> b ) {
+    b->ast_label = std::format( "switch.{}", ++switch_count );
 }

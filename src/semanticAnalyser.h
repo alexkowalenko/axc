@@ -11,10 +11,20 @@
 #pragma once
 
 #include <map>
+#include <stack>
+#include <set>
 
 #include "ast/base.h"
 #include "ast/visitor.h"
 #include "symbolTable.h"
+#include "ast/constant.h"
+
+template<>
+struct std::less<ast::Constant> {
+    bool operator()( const ast::Constant& lhs, const ast::Constant& rhs ) const {
+        return lhs->value < rhs->value;
+    }
+};
 
 class SemanticAnalyser : public ast::Visitor<void> {
   public:
@@ -48,16 +58,28 @@ class SemanticAnalyser : public ast::Visitor<void> {
     void visit_Conditional( ast::Conditional ast ) override;
     void visit_Assign( ast::Assign ast ) override;
     void visit_Var( ast::Var ast ) override;
-    void visit_Constant( ast::Constant ast ) override {};
+    void visit_Constant( ast::Constant ast ) override;
 
   private:
     SymbolTable new_scope();
     void        new_loop_label( std::shared_ptr<ast::Base> b );
+    void        new_switch_label( std::shared_ptr<ast::Base> b );
     void        loop_label( std::shared_ptr<ast::Base> b );
 
     SymbolTable&                symbol_table;
     // Map of goto labels and whether they have been defined
     std::map<std::string, bool> labels;
 
+    // Count of loops
     size_t loop_count { 0 };
+
+    // Count of switch statements
+    size_t switch_count { 0 };
+    std::stack<size_t> last_default;
+
+    // Stack of switch case sets to check for duplicate case values
+    std::stack<std::set<ast::Constant>> case_set;
+
+    // Constant analysis
+    bool   is_constant { false };
 };
