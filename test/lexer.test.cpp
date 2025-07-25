@@ -117,7 +117,6 @@ TEST( Lexer, Line ) { // NOLINT
     EXPECT_EQ( token.tok, TokenType::Eof );
 }
 
-
 TEST( Lexer, Peek ) { // NOLINT
     std::string        test = "void main() { return 2;}\n";
     std::istringstream is( test );
@@ -129,7 +128,7 @@ TEST( Lexer, Peek ) { // NOLINT
     // Peek at the next 2 tokens
     token = lex.peek_token();
     EXPECT_EQ( token.tok, TokenType::IDENTIFIER );
-    token = lex.peek_token(1);
+    token = lex.peek_token( 1 );
     EXPECT_EQ( token.tok, TokenType::L_PAREN );
 
     // Now get the next 2 tokens
@@ -184,6 +183,9 @@ TEST( Lexer, Keywords ) {
         { "do", TokenType::DO, "do" },
         { "break", TokenType::BREAK, "break" },
         { "continue", TokenType::CONTINUE, "continue" },
+        { "switch", TokenType::SWITCH, "switch" },
+        { "case", TokenType::CASE, "case" },
+        { "default", TokenType::DEFAULT, "default" },
     };
     test_Lexer( tests );
 }

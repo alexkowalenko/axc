@@ -48,6 +48,8 @@ void SemanticAnalyser::statement( const ast::Statement ast ) {
                              [ this ]( ast::While ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::DoWhile ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::For ast ) -> void { ast->accept( this ); },
+                             [ this ]( ast::Switch ast ) -> void { ast->accept( this ); },
+                             [ this ]( ast::Case ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Compound ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Expr e ) -> void { expr( e ); }, // expr
                              [ this ]( ast::Null ) -> void { ; } },
@@ -94,14 +96,14 @@ void SemanticAnalyser::visit_Return( const ast::Return ast ) {
 }
 
 void SemanticAnalyser::visit_Break( const ast::Break ast ) {
-    if (loop_count == 0) {
+    if ( loop_count == 0 ) {
         throw SemanticException( ast->location, "break statement not in loop" );
     }
     loop_label( ast );
 }
 
 void SemanticAnalyser::visit_Continue( const ast::Continue ast ) {
-    if (loop_count == 0) {
+    if ( loop_count == 0 ) {
         throw SemanticException( ast->location, "continue statement not in loop" );
     }
     loop_label( ast );
@@ -145,6 +147,10 @@ void SemanticAnalyser::visit_For( const ast::For ast ) {
     // Restore previous symbol table
     symbol_table = previous_table;
 }
+
+void SemanticAnalyser::visit_Switch( const ast::Switch ast ) {}
+
+void SemanticAnalyser::visit_Case( const ast::Case ast ) {}
 
 void SemanticAnalyser::visit_Compound( const ast::Compound ast ) {
     // Create new symbol table and swap

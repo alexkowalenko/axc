@@ -116,13 +116,16 @@ const std::map<TokenType, StatementParselet> statement_map {
     { TokenType::WHILE, []( Parser* p ) -> ast::Statement { return p->while_stat(); } },
     { TokenType::DO, []( Parser* p ) -> ast::Statement { return p->do_while_stat(); } },
     { TokenType::FOR, []( Parser* p ) -> ast::Statement { return p->for_stat(); } },
+    { TokenType::SWITCH, []( Parser* p ) -> ast::Statement { return p->switch_stat(); } },
+    { TokenType::CASE, []( Parser* p ) -> ast::Statement { return p->case_stat(); } },
+    { TokenType::DEFAULT, []( Parser* p ) -> ast::Statement { return p->case_stat(); } },
 };
 
 ast::Statement Parser::statement() {
     spdlog::debug( "statement" );
     ast::Statement statement;
 
-    auto           token = lexer.peek_token();
+    auto token = lexer.peek_token();
     if ( statement_map.contains( token.tok ) ) {
         // Use the parselet for the statement
         statement = statement_map.at( token.tok )( this );
@@ -255,8 +258,7 @@ ast::For Parser::for_stat() {
             for_stat->init = expr();
             expect_token( TokenType::SEMICOLON );
         }
-    }
-    else {
+    } else {
         // If there is no init, we expect a semicolon
         expect_token( TokenType::SEMICOLON );
     }
@@ -276,6 +278,55 @@ ast::For Parser::for_stat() {
 
     for_stat->body = statement();
     return for_stat;
+}
+
+ast::Switch Parser::switch_stat() {
+    spdlog::debug( "switch" );
+    auto switch_stat = make_AST<ast::Switch_>();
+    expect_token( TokenType::SWITCH );
+    expect_token( TokenType::L_PAREN );
+    switch_stat->condition = expr();
+    expect_token( TokenType::R_PAREN );
+    switch_stat->body = statement();
+    return switch_stat;
+}
+
+ast::Case Parser::case_stat() {
+    spdlog::debug( "case" );
+
+    auto case_stat = make_AST<ast::Case_>();
+    auto token = lexer.get_token();
+    spdlog::debug( "case: {}", to_string( token.tok ) );
+    if ( token.tok == TokenType::DEFAULT ) {
+        case_stat->is_default = true;
+    } else if ( token.tok == TokenType::CASE ) {
+        case_stat->is_default = false;
+        case_stat->value = expr();
+    } else {
+        throw ParseException( token.location, "Expected 'case' or 'default', got {}", token.tok );
+    }
+    expect_token( TokenType::COLON );
+
+    // Get block items
+    token = lexer.peek_token();
+    bool first = true;
+    while ( token.tok != TokenType::CASE && token.tok != TokenType::DEFAULT && token.tok != TokenType::R_BRACE ) {
+        spdlog::debug( "case: statement {}", to_string( token.tok ) );
+        if ( token.tok == TokenType::INT ) {
+            if ( first ) {
+                throw ParseException( lexer.get_location(), "Declaration not allowed in C17." );
+            }
+            ast::BlockItem block = declaration();
+            case_stat->block_items.push_back( block );
+        } else {
+            ast::BlockItem block = statement();
+            case_stat->block_items.push_back( block );
+        }
+        first = false;
+        token = lexer.peek_token();
+    }
+
+    return case_stat;
 }
 
 ast::Return Parser::ret() {

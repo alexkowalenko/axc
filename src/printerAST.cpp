@@ -53,9 +53,11 @@ std::string PrinterAST::statement( const ast::Statement ast ) {
                                     [ this ]( ast::While ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::DoWhile ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::For ast ) -> std::string { return ast->accept( this ); },
+                                    [ this ]( ast::Switch ast ) -> std::string { return ast->accept( this ); },
+                                    [ this ]( ast::Case ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Compound ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Expr e ) -> std::string { return expr( e ) + ";"; },
-                                    [ this ]( ast::Null ) -> std::string { return ""; } },
+                                    [ this ]( ast::Null ) -> std::string { return ";"; } },
                        ast );
 }
 
@@ -124,6 +126,26 @@ std::string PrinterAST::visit_For( const ast::For ast ) {
     }
     buf += ")" + new_line;
     buf += indent + statement( ast->body ) + new_line;
+    return buf;
+}
+
+std::string PrinterAST::visit_Switch( const ast::Switch ast ) {
+    std::string buf = "switch(" + expr( ast->condition ) + ") ";
+    buf += statement( ast->body );
+    return buf;
+}
+
+std::string PrinterAST::visit_Case( const ast::Case ast ) {
+    std::string buf;
+    if ( ast->is_default ) {
+        buf = "default:";
+    } else {
+        buf = "case " + expr( ast->value ) + ":";
+    }
+
+    for ( auto b : ast->block_items ) {
+        buf += indent + indent + block_item( b ) + new_line;
+    }
     return buf;
 }
 

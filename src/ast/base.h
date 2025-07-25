@@ -24,7 +24,7 @@ class Base {
     explicit Base( Location loc ) : location( std::move( loc ) ) {}
     virtual ~Base() = default;
 
-    Location location;
+    Location    location;
     std::string ast_label {};
 };
 
@@ -89,7 +89,14 @@ using ForInit = std::variant<Declaration, Expr>;
 class Compound_;
 using Compound = std::shared_ptr<Compound_>;
 
-using Statement = std::variant<Return, Expr, If, Null, Goto, Label, Break, Continue, While, DoWhile, For, Compound>;
+class Switch_;
+using Switch = std::shared_ptr<Switch_>;
+
+class Case_;
+using Case = std::shared_ptr<Case_>;
+
+using Statement =
+    std::variant<Return, Expr, If, Null, Goto, Label, Break, Continue, While, DoWhile, For, Switch, Case, Compound>;
 
 using BlockItem = std::variant<Statement, Declaration>;
 

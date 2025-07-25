@@ -39,6 +39,8 @@ class PrinterAST : public ast::Visitor<std::string> {
     std::string visit_DoWhile( const ast::DoWhile ast ) override;
     std::string for_init( ast::ForInit ast );
     std::string visit_For( const ast::For ast ) override;
+    std::string visit_Switch( const ast::Switch ast ) override;
+    std::string visit_Case( const ast::Case ast ) override;
     std::string visit_Compound( const ast::Compound ast ) override;
     std::string expr(  ast::Expr ast );
     std::string visit_UnaryOp(  ast::UnaryOp ast ) override;

@@ -46,6 +46,8 @@ class Parser {
     ast::While       while_stat();
     ast::DoWhile     do_while_stat();
     ast::For         for_stat();
+    ast::Switch      switch_stat();
+    ast::Case        case_stat();
     ast::Return      ret();
     ast::Null        null();
 

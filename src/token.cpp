@@ -106,18 +106,34 @@ const char* to_string( const TokenType l ) {
         return "<null>";
 
     // Keywords
-    case IF :
-        return "if";
+    case BREAK :
+        return "break";
+    case CASE :
+        return "case";
+    case CONTINUE :
+        return "continue";
+    case DEFAULT :
+        return "default";
+    case DO :
+        return "do";
     case ELSE :
         return "else";
+    case FOR :
+        return "for";
     case GOTO :
         return "goto";
+    case IF :
+        return "if";
     case INT :
         return "int";
     case RETURN :
         return "return";
+    case SWITCH :
+        return "switch";
     case VOID :
         return "void";
+    case WHILE :
+        return "while";
     default :
         return "INTERNAL-ERROR";
     }

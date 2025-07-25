@@ -65,7 +65,9 @@ enum class TokenType : std::uint8_t {
 
     // Keywords
     BREAK,
+    CASE,
     CONTINUE,
+    DEFAULT,
     DO,
     ELSE,
     FOR,
@@ -73,6 +75,7 @@ enum class TokenType : std::uint8_t {
     IF,
     INT,
     RETURN,
+    SWITCH,
     VOID,
     WHILE,
 };

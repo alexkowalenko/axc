@@ -1,6 +1,7 @@
 assign.h
 binaryop.h
 break.h
+case.h
 compound.h
 constant.h
 continue.h
@@ -18,6 +19,7 @@ program.h
 postop.h
 return.h
 statement.h
+switch.h
 visitor.h
 while.h
 unaryop.h

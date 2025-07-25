@@ -38,6 +38,8 @@ class SemanticAnalyser : public ast::Visitor<void> {
     void visit_DoWhile( const ast::DoWhile ast ) override;
     void for_init( ast::ForInit ast );
     void visit_For( const ast::For ast ) override;
+    void visit_Switch( const ast::Switch ast ) override;
+    void visit_Case( const ast::Case ast ) override;
     void visit_Compound( const ast::Compound ast ) override;
     void expr( ast::Expr ast );
     void visit_UnaryOp( ast::UnaryOp ast ) override;

@@ -59,6 +59,7 @@ void TacGen::statement( const ast::Statement ast, std::vector<tac::Instruction>&
                      [ this, &instructions ]( ast::While c ) -> void { while_stat( c, instructions ); },
                      [ this, &instructions ]( ast::DoWhile c ) -> void { do_while_stat( c, instructions ); },
                      [ this, &instructions ]( ast::For c ) -> void { for_stat( c, instructions ); },
+                     [ this ]( ast::Switch c ) -> void {}, [ this ]( ast::Case c ) -> void {},
                      [ this, &instructions ]( ast::Compound c ) -> void { compound( c, instructions ); },
                      [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
                      [ this ]( ast::Null ) -> void { ; } },

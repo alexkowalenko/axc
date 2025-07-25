@@ -17,13 +17,14 @@
 #include "exception.h"
 
 const std::map<std::string, TokenType> keywords = {
+    //
     { "int", TokenType::INT },     { "return", TokenType::RETURN },
     { "void", TokenType::VOID },   { "if", TokenType::IF },
     { "else", TokenType::ELSE },   { "goto", TokenType::GOTO },
     { "break", TokenType::BREAK }, { "continue", TokenType::CONTINUE },
     { "for", TokenType::FOR },     { "while", TokenType::WHILE },
-    { "do", TokenType::DO },
-};
+    { "do", TokenType::DO },       { "switch", TokenType::SWITCH },
+    { "case", TokenType::CASE },   { "default", TokenType::DEFAULT } };
 
 Lexer::Lexer( std::istream const& s ) {
     std::stringstream buffer;
