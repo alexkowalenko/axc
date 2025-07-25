@@ -25,6 +25,7 @@ class Base {
     virtual ~Base() = default;
 
     Location location;
+    std::string ast_label {};
 };
 
 class Declaration_;

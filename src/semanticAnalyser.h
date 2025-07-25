@@ -49,9 +49,13 @@ class SemanticAnalyser : public ast::Visitor<void> {
     void visit_Constant( ast::Constant ast ) override {};
 
   private:
-
     SymbolTable new_scope();
+    void        new_loop_label( std::shared_ptr<ast::Base> b );
+    void        loop_label( std::shared_ptr<ast::Base> b );
 
-    SymbolTable& symbol_table;
+    SymbolTable&                symbol_table;
+    // Map of goto labels and whether they have been defined
     std::map<std::string, bool> labels;
+
+    size_t loop_count { 0 };
 };

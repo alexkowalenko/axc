@@ -93,16 +93,29 @@ void SemanticAnalyser::visit_Return( const ast::Return ast ) {
     expr( ast->expr );
 }
 
-void SemanticAnalyser::visit_Break( const ast::Break ast ) {}
+void SemanticAnalyser::visit_Break( const ast::Break ast ) {
+    if (loop_count == 0) {
+        throw SemanticException( ast->location, "break statement not in loop" );
+    }
+    loop_label( ast );
+}
 
-void SemanticAnalyser::visit_Continue( const ast::Continue ast ) {}
+void SemanticAnalyser::visit_Continue( const ast::Continue ast ) {
+    if (loop_count == 0) {
+        throw SemanticException( ast->location, "continue statement not in loop" );
+    }
+    loop_label( ast );
+}
 
 void SemanticAnalyser::visit_While( const ast::While ast ) {
+
     expr( ast->condition );
+    new_loop_label( ast );
     statement( ast->body );
 }
 
 void SemanticAnalyser::visit_DoWhile( const ast::DoWhile ast ) {
+    new_loop_label( ast );
     statement( ast->body );
     expr( ast->condition );
 }
@@ -114,6 +127,10 @@ void SemanticAnalyser::for_init( ast::ForInit ast ) {
 }
 
 void SemanticAnalyser::visit_For( const ast::For ast ) {
+    // Create new symbol table and swap
+    auto previous_table = symbol_table;
+    symbol_table = new_scope();
+
     if ( ast->init ) {
         for_init( ast->init.value() );
     }
@@ -123,11 +140,14 @@ void SemanticAnalyser::visit_For( const ast::For ast ) {
     if ( ast->increment ) {
         expr( ast->increment.value() );
     }
+    new_loop_label( ast );
     statement( ast->body );
+    // Restore previous symbol table
+    symbol_table = previous_table;
 }
 
 void SemanticAnalyser::visit_Compound( const ast::Compound ast ) {
-    // Create new map and swap
+    // Create new symbol table and swap
     auto previous_table = symbol_table;
     symbol_table = new_scope();
 
@@ -136,6 +156,7 @@ void SemanticAnalyser::visit_Compound( const ast::Compound ast ) {
                                  [ this ]( ast::Statement s ) -> void { statement( s ); } },
                     item );
     }
+    // Restore previous symbol table
     symbol_table = previous_table;
 }
 
@@ -201,4 +222,12 @@ SymbolTable SemanticAnalyser::new_scope() {
     new_table.copy( symbol_table );
     new_table.reset_current_block();
     return new_table;
+}
+
+void SemanticAnalyser::new_loop_label( std::shared_ptr<ast::Base> b ) {
+    b->ast_label = std::format( "loop.{}", ++loop_count );
+}
+
+void SemanticAnalyser::loop_label( std::shared_ptr<ast::Base> b ) {
+    b->ast_label = std::format( "loop.{}", loop_count );
 }
