@@ -59,7 +59,8 @@ void TacGen::statement( const ast::Statement ast, std::vector<tac::Instruction>&
                      [ this, &instructions ]( ast::While c ) -> void { while_stat( c, instructions ); },
                      [ this, &instructions ]( ast::DoWhile c ) -> void { do_while_stat( c, instructions ); },
                      [ this, &instructions ]( ast::For c ) -> void { for_stat( c, instructions ); },
-                     [ this ]( ast::Switch c ) -> void {}, [ this ]( ast::Case c ) -> void {},
+                     [ this, &instructions ]( ast::Switch c ) -> void { switch_stat( c, instructions ); },
+                     [ this, &instructions ]( ast::Case c ) -> void {case_stat( c, instructions ); },
                      [ this, &instructions ]( ast::Compound c ) -> void { compound( c, instructions ); },
                      [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
                      [ this ]( ast::Null ) -> void { ; } },
@@ -215,6 +216,63 @@ void TacGen::for_stat( const ast::For ast, std::vector<tac::Instruction>& instru
     instructions.push_back( jump );
     // Label(break_label)
     instructions.push_back( break_label );
+}
+
+void TacGen::switch_stat( const ast::Switch ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::switch_stat: {}", ast->ast_label );
+
+    // Instruction for condition
+    auto   c = expr( ast->condition, instructions );
+
+    for ( auto case_item : ast->cases ) {
+        spdlog::debug( "tac::switch_stat: case {}", case_item->ast_label );
+        // Generate label for case
+        auto case_label = generate_label( case_item, std::format( "{}.case", case_item->ast_label) );
+        // Relabel the case item
+        case_item->ast_label = case_label->name;
+
+        if (case_item->is_default) {
+            // default:
+            auto jump = mk_node<tac::Jump_>( ast, case_item->ast_label );
+            instructions.push_back( jump );
+        }
+        else {
+            // case <value>:
+            // Instructions for case value
+            auto r = expr( case_item->value, instructions );
+
+            // BinOp(EQ, c, r)
+            auto result = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+            auto case_cmp = mk_node<tac::Binary_>( ast, tac::BinaryOpType::Equal, c, r, result );
+            instructions.push_back( case_cmp );
+
+            auto jump = mk_node<tac::JumpIfNotZero_>( ast, result, case_label->name );
+            instructions.push_back( jump );
+        }
+    }
+
+    auto end_label = generate_loop_break( ast );
+    auto jump = mk_node<tac::Jump_>( ast, end_label->name );
+    instructions.push_back( jump );
+
+    statement( ast->body, instructions );
+
+    // Generate end label for break statements
+    instructions.push_back( end_label );
+}
+
+void TacGen::case_stat( const ast::Case ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::case_stat: {}", ast->ast_label );
+    auto label = mk_node<tac::Label_>( ast, ast->ast_label );
+    instructions.push_back( label );
+
+    for ( auto b : ast->block_items ) {
+        spdlog::debug( "tac::case_stat: block" );
+        std::visit(
+            overloaded { [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
+                         [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
+            b );
+    }
 }
 
 void TacGen::compound( ast::Compound ast, std::vector<tac::Instruction>& instructions ) {

@@ -21,17 +21,17 @@ std::string PrinterTAC::visit_Program( const tac::Program ast ) {
 }
 
 std::string PrinterTAC::visit_FunctionDef( const tac::FunctionDef ast ) {
-    std::string buf = std::format( "Function({})\n", ast->name );
+    std::string buf = std::format( "Function: {}\n", ast->name );
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
         buf += std::visit( overloaded {
-                               [ this ]( tac::Return r ) -> std::string { return r->accept( this ); },
-                               [ this ]( tac::Unary r ) -> std::string { return r->accept( this ); },
-                               [ this ]( tac::Binary r ) -> std::string { return r->accept( this ); },
-                               [ this ]( tac::Copy r ) -> std::string { return r->accept( this ); },
-                               [ this ]( tac::Jump r ) -> std::string { return r->accept( this ); },
-                               [ this ]( tac::JumpIfZero r ) -> std::string { return r->accept( this ); },
-                               [ this ]( tac::JumpIfNotZero r ) -> std::string { return r->accept( this ); },
+                               [ this ]( tac::Return r ) -> std::string { return indent +  r->accept( this ); },
+                               [ this ]( tac::Unary r ) -> std::string { return indent + r->accept( this ); },
+                               [ this ]( tac::Binary r ) -> std::string { return indent + r->accept( this ); },
+                               [ this ]( tac::Copy r ) -> std::string { return  indent + r->accept( this ); },
+                               [ this ]( tac::Jump r ) -> std::string { return  indent + r->accept( this ); },
+                               [ this ]( tac::JumpIfZero r ) -> std::string { return  indent + r->accept( this ); },
+                               [ this ]( tac::JumpIfNotZero r ) -> std::string { return  indent + r->accept( this ); },
                                [ this ]( tac::Label r ) -> std::string { return r->accept( this ); },
 
                            },
@@ -48,11 +48,11 @@ std::string PrinterTAC::value( const tac::Value ast ) {
 }
 
 std::string PrinterTAC::visit_Return( const tac::Return ast ) {
-    return std::format( "Return({})", value( ast->value ) );
+    return std::format( "Return {} ", value( ast->value ) );
 }
 
 std::string PrinterTAC::visit_Unary( const tac::Unary ast ) {
-    std::string buf = "Unary(";
+    std::string buf = "Unary ";
     switch ( ast->op ) {
     case tac::UnaryOpType::Negate :
         buf += "Negate ";
@@ -66,12 +66,12 @@ std::string PrinterTAC::visit_Unary( const tac::Unary ast ) {
     default :
         break;
     }
-    buf += std::format( "{} {})", value( ast->src ), value( ast->dst ) );
+    buf += std::format( "{} {}", value( ast->src ), value( ast->dst ) );
     return buf;
 }
 
 std::string PrinterTAC::visit_Binary( const tac::Binary ast ) {
-    std::string buf = "Binary(";
+    std::string buf = "Binary ";
     switch ( ast->op ) {
     case tac::BinaryOpType::Add :
         buf += "Add ";
@@ -130,32 +130,32 @@ std::string PrinterTAC::visit_Binary( const tac::Binary ast ) {
     default :
         break;
     }
-    buf += std::format( "{} {} {})", value( ast->src1 ), value( ast->src2 ), value( ast->dst ) );
+    buf += std::format( "{} {} {}", value( ast->src1 ), value( ast->src2 ), value( ast->dst ) );
     return buf;
 }
 
 std::string PrinterTAC::visit_Copy( const tac::Copy ast ) {
-    return std::format( "Copy({:s}, {:s})", value( ast->src ), value( ast->dst ) );
+    return std::format( "Copy {:s}, {:s}", value( ast->src ), value( ast->dst ) );
 }
 
 std::string PrinterTAC::visit_Jump( const tac::Jump ast ) {
-    return std::format( "Jump({:s})", ast->target );
+    return std::format( "Jump {:s}", ast->target );
 }
 
 std::string PrinterTAC::visit_JumpIfZero( const tac::JumpIfZero ast ) {
-    return std::format( "JumpIfZero({:s} -> {:s})", value( ast->condition ), ast->target );
+    return std::format( "JumpIfZero {:s} -> {:s}", value( ast->condition ), ast->target );
 }
 
 std::string PrinterTAC::visit_JumpIfNotZero( const tac::JumpIfNotZero ast ) {
-    return std::format( "JumpIfNotZero({:s} -> {:s})", value( ast->condition ), ast->target );
+    return std::format( "JumpIfNotZero {:s} -> {:s}", value( ast->condition ), ast->target );
 }
 
 std::string PrinterTAC::visit_Label( const tac::Label ast ) {
-    return std::format( "Label({:s})", ast->name );
+    return std::format( "Label: {:s}", ast->name );
 }
 
 std::string PrinterTAC::visit_Constant( const tac::Constant ast ) {
-    return std::format( "Constant({:d})", ast->value );
+    return std::format( "Constant( {:d})", ast->value );
 }
 
 std::string PrinterTAC::visit_Variable( const tac::Variable ast ) {

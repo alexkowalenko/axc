@@ -27,7 +27,7 @@ if __name__ == "__main__":
             "While": [("Expr", "condition", False), ("Statement", "body", False)],
             "DoWhile": [("Statement", "body", False), ("Expr", "condition", False)],
             "For": [("std::optional<ForInit>", "init", False), ("std::optional<Expr>", "condition", False), ("std::optional<Expr>", "increment", False), ("Statement", "body", False)],
-            "Switch": [("Expr", "condition", False), ("Statement", "body", False)],
+            "Switch": [("Expr", "condition", False), ("Statement", "body", False), ("std::vector<Case>", "cases", False)],
             "Case": [("Expr", "value", False), ("std::vector<BlockItem>", "block_items", False), ("bool", "is_default", False)],
             "Compound": [("std::vector<BlockItem>", "block_items", False)],
             "UnaryOp": [("TokenType", "op", False), ("Expr", "operand", False)],

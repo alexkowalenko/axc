@@ -102,7 +102,11 @@ void SemanticAnalyser::visit_Break( const ast::Break ast ) {
     if ( loop_count == 0 && switch_count == 0 ) {
         throw SemanticException( ast->location, "break statement not in loop or switch statement" );
     }
-    loop_label( ast );
+    if (last_break == TokenType::SWITCH) {
+        switch_label( ast );
+    } else {
+        loop_label( ast );
+    }
 }
 
 void SemanticAnalyser::visit_Continue( const ast::Continue ast ) {
@@ -113,12 +117,14 @@ void SemanticAnalyser::visit_Continue( const ast::Continue ast ) {
 }
 
 void SemanticAnalyser::visit_While( const ast::While ast ) {
+    last_break = TokenType::WHILE;
     expr( ast->condition );
     new_loop_label( ast );
     statement( ast->body );
 }
 
 void SemanticAnalyser::visit_DoWhile( const ast::DoWhile ast ) {
+    last_break = TokenType::DO;
     new_loop_label( ast );
     statement( ast->body );
     expr( ast->condition );
@@ -131,6 +137,7 @@ void SemanticAnalyser::for_init( ast::ForInit ast ) {
 }
 
 void SemanticAnalyser::visit_For( const ast::For ast ) {
+    last_break = TokenType::FOR;
     // Create new symbol table and swap
     auto previous_table = symbol_table;
     symbol_table = new_scope();
@@ -151,12 +158,16 @@ void SemanticAnalyser::visit_For( const ast::For ast ) {
 }
 
 void SemanticAnalyser::visit_Switch( const ast::Switch ast ) {
+    last_break = TokenType::SWITCH;
     expr( ast->condition );
 
     new_switch_label( ast );
     // Reset case set for each switch
     std::set<ast::Constant> current_case_set;
     case_set.push( current_case_set );
+
+    // Add the current switch to the switch stack
+    switch_stack.push( ast );
 
     statement( ast->body );
 
@@ -166,6 +177,8 @@ void SemanticAnalyser::visit_Switch( const ast::Switch ast ) {
     }
     // Pop the case set for this switch
     case_set.pop();
+    // Pop the switch stack
+    switch_stack.pop();
 }
 
 void SemanticAnalyser::visit_Case( const ast::Case ast ) {
@@ -202,6 +215,9 @@ void SemanticAnalyser::visit_Case( const ast::Case ast ) {
         }
         last_default.push( switch_count );
     }
+    switch_label( ast );
+    // Add the case to the current switch
+    switch_stack.top()->cases.push_back( ast );
 
     for ( const auto& item : ast->block_items ) {
         std::visit( overloaded { [ this ]( ast::Declaration d ) -> void { d->accept( this ); },
@@ -328,4 +344,8 @@ void SemanticAnalyser::loop_label( std::shared_ptr<ast::Base> b ) {
 
 void SemanticAnalyser::new_switch_label( std::shared_ptr<ast::Base> b ) {
     b->ast_label = std::format( "switch.{}", ++switch_count );
+}
+
+void SemanticAnalyser::switch_label( std::shared_ptr<ast::Base> b ) {
+    b->ast_label = std::format( "switch.{}", switch_count );
 }

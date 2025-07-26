@@ -63,8 +63,9 @@ class SemanticAnalyser : public ast::Visitor<void> {
   private:
     SymbolTable new_scope();
     void        new_loop_label( std::shared_ptr<ast::Base> b );
-    void        new_switch_label( std::shared_ptr<ast::Base> b );
     void        loop_label( std::shared_ptr<ast::Base> b );
+    void        new_switch_label( std::shared_ptr<ast::Base> b );
+    void        switch_label( std::shared_ptr<ast::Base> b );
 
     SymbolTable&                symbol_table;
     // Map of goto labels and whether they have been defined
@@ -79,6 +80,12 @@ class SemanticAnalyser : public ast::Visitor<void> {
 
     // Stack of switch case sets to check for duplicate case values
     std::stack<std::set<ast::Constant>> case_set;
+
+    // Stack of Switch ASTs to attach Case AST to
+    std::stack<ast::Switch> switch_stack;
+
+    // Last break is switch or loop
+    TokenType last_break { TokenType::Null };
 
     // Constant analysis
     bool   is_constant { false };

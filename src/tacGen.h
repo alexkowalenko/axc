@@ -36,6 +36,8 @@ class TacGen {
     void       do_while_stat( const ast::DoWhile ast, std::vector<tac::Instruction>& instructions );
     void       for_stat( const ast::For ast, std::vector<tac::Instruction>& instructions );
     void       compound( ast::Compound ast, std::vector<tac::Instruction>& instructions );
+    void       switch_stat( const ast::Switch ast, std::vector<tac::Instruction>& instructions );
+    void       case_stat( const ast::Case ast, std::vector<tac::Instruction>& instructions );
     tac::Value expr( ast::Expr ast, std::vector<tac::Instruction>& instructions );
 
     tac::Value    unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instructions );
