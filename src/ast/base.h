@@ -66,9 +66,6 @@ using Expr = std::variant<Constant, UnaryOp, BinaryOp, PostOp, Conditional, Var,
 class Goto_;
 using Goto = std::shared_ptr<Goto_>;
 
-class Label_;
-using Label = std::shared_ptr<Label_>;
-
 class Break_;
 using Break = std::shared_ptr<Break_>;
 
@@ -95,8 +92,11 @@ using Switch = std::shared_ptr<Switch_>;
 class Case_;
 using Case = std::shared_ptr<Case_>;
 
-using Statement =
-    std::variant<Return, Expr, If, Null, Goto, Label, Break, Continue, While, DoWhile, For, Switch, Case, Compound>;
+using StatementItem =
+    std::variant<Return, Expr, If, Null, Goto, Break, Continue, While, DoWhile, For, Switch, Case, Compound>;
+
+class Statement_;
+using Statement = std::shared_ptr<Statement_>;
 
 using BlockItem = std::variant<Statement, Declaration>;
 

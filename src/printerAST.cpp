@@ -31,7 +31,7 @@ std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef ast ) {
 
 std::string PrinterAST::block_item( const ast::BlockItem ast ) {
     return std::visit( overloaded { [ this ]( ast::Declaration ast ) -> std::string { return ast->accept( this ); },
-                                    [ this ]( ast::Statement ast ) -> std::string { return statement( ast ); } },
+                                    [ this ]( ast::Statement ast ) -> std::string { return ast->accept( this ); } },
                        ast );
 }
 
@@ -43,11 +43,22 @@ std::string PrinterAST::visit_Declaration( const ast::Declaration ast ) {
     return buf + ";";
 }
 
-std::string PrinterAST::statement( const ast::Statement ast ) {
+std::string PrinterAST::visit_Statement( const ast::Statement ast ) {
+    std::string buf;
+    if ( ast->label ) {
+        buf = ast->label.value()->accept( this );
+    }
+
+    if ( ast->statement ) {
+        buf += " " + statement( ast->statement.value() );
+    }
+    return buf;
+}
+
+std::string PrinterAST::statement( const ast::StatementItem ast ) {
     return std::visit( overloaded { [ this ]( ast::Return ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::If ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Goto ast ) -> std::string { return ast->accept( this ); },
-                                    [ this ]( ast::Label ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Break ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Continue ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::While ast ) -> std::string { return ast->accept( this ); },
@@ -63,10 +74,10 @@ std::string PrinterAST::statement( const ast::Statement ast ) {
 
 std::string PrinterAST::visit_If( const ast::If ast ) {
     std::string buf = std::format( "if({})\n", expr( ast->condition ) );
-    buf += indent + statement( ast->then ) + "\n";
+    buf += indent + ast->then->accept( this ) + "\n";
     if ( ast->else_stat ) {
         buf += "else\n";
-        buf += indent + statement( ast->else_stat.value() ) + "\n";
+        buf += indent + ast->else_stat.value()->accept( this ) + "\n";
     }
     return buf;
 }
@@ -93,13 +104,13 @@ std::string PrinterAST::visit_Continue( const ast::Continue ast ) {
 
 std::string PrinterAST::visit_While( const ast::While ast ) {
     std::string buf = "while(" + expr( ast->condition ) + ")" + new_line;
-    buf += indent + statement( ast->body ) + new_line;
+    buf += indent + ast->body->accept( this ) + new_line;
     return buf;
 }
 
 std::string PrinterAST::visit_DoWhile( const ast::DoWhile ast ) {
     std::string buf = "do" + new_line;
-    buf += indent + statement( ast->body ) + new_line;
+    buf += indent + ast->body->accept( this ) + new_line;
     buf += "while(" + expr( ast->condition ) + ");";
     return buf;
 }
@@ -125,13 +136,13 @@ std::string PrinterAST::visit_For( const ast::For ast ) {
         buf += expr( ast->increment.value() );
     }
     buf += ")" + new_line;
-    buf += indent + statement( ast->body ) + new_line;
+    buf += indent + ast->body->accept( this ) + new_line;
     return buf;
 }
 
 std::string PrinterAST::visit_Switch( const ast::Switch ast ) {
     std::string buf = "switch(" + expr( ast->condition ) + ") ";
-    buf += statement( ast->body );
+    buf += ast->body->accept( this );
     return buf;
 }
 

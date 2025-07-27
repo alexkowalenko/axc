@@ -36,7 +36,8 @@ class SemanticAnalyser : public ast::Visitor<void> {
     void visit_Program( ast::Program ast ) override;
     void visit_FunctionDef( ast::FunctionDef ast ) override;
     void visit_Declaration( ast::Declaration ast ) override;
-    void statement( ast::Statement ast );
+    void visit_Statement( const ast::Statement ast ) override;
+    void statement( ast::StatementItem ast );
     void visit_If( ast::If ast ) override;
     void visit_Goto( ast::Goto ast ) override;
     void visit_Label( ast::Label ast ) override;

@@ -27,7 +27,8 @@ class PrinterAST : public ast::Visitor<std::string> {
     std::string visit_FunctionDef(  ast::FunctionDef ast ) override;
     std::string block_item( ast::BlockItem ast);
     std::string visit_Declaration(  ast::Declaration ast ) override;
-    std::string statement(  ast::Statement ast );
+    std::string visit_Statement( const ast::Statement ast ) override;
+    std::string statement(  ast::StatementItem ast );
     std::string visit_If(  ast::If ast ) override;
     std::string visit_Return(  ast::Return ast ) override;
     std::string visit_Null(  ast::Null ast ) override;
@@ -49,7 +50,8 @@ class PrinterAST : public ast::Visitor<std::string> {
     std::string visit_Conditional(  ast::Conditional ast ) override;
     std::string visit_Assign(  ast::Assign ast ) override;
     std::string visit_Constant(  ast::Constant ast ) override;
-    std::string visit_Var(  ast::Var ast ) override;
+    std::string visit_Var( ast::Var ast ) override;
+
 
     std::string indent { "  " };
     std::string new_line { "\n" };

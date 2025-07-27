@@ -49,22 +49,29 @@ void TacGen::declaration( ast::Declaration ast, std::vector<tac::Instruction>& i
 
 void TacGen::statement( const ast::Statement ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::statement" );
-    return std::visit(
-        overloaded { [ this, &instructions ]( ast::Return ast ) -> void { ret( ast, instructions ); },
-                     [ this, &instructions ]( ast::If ast ) -> void { if_stat( ast, instructions ); },
-                     [ this, &instructions ]( ast::Goto g ) -> void { goto_stat( g, instructions ); },
-                     [ this, &instructions ]( ast::Label l ) -> void { label( l, instructions ); },
-                     [ this, &instructions ]( ast::Break c ) -> void { break_stat( c, instructions ); },
-                     [ this, &instructions ]( ast::Continue c ) -> void { continue_stat( c, instructions ); },
-                     [ this, &instructions ]( ast::While c ) -> void { while_stat( c, instructions ); },
-                     [ this, &instructions ]( ast::DoWhile c ) -> void { do_while_stat( c, instructions ); },
-                     [ this, &instructions ]( ast::For c ) -> void { for_stat( c, instructions ); },
-                     [ this, &instructions ]( ast::Switch c ) -> void { switch_stat( c, instructions ); },
-                     [ this, &instructions ]( ast::Case c ) -> void {case_stat( c, instructions ); },
-                     [ this, &instructions ]( ast::Compound c ) -> void { compound( c, instructions ); },
-                     [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
-                     [ this ]( ast::Null ) -> void { ; } },
-        ast );
+
+    if ( ast->label ) {
+        label( ast->label.value(), instructions );
+    }
+
+    if ( ast->statement ) {
+        // Process the statement
+        std::visit(
+            overloaded { [ this, &instructions ]( ast::Return ast ) -> void { ret( ast, instructions ); },
+                         [ this, &instructions ]( ast::If ast ) -> void { if_stat( ast, instructions ); },
+                         [ this, &instructions ]( ast::Goto g ) -> void { goto_stat( g, instructions ); },
+                         [ this, &instructions ]( ast::Break c ) -> void { break_stat( c, instructions ); },
+                         [ this, &instructions ]( ast::Continue c ) -> void { continue_stat( c, instructions ); },
+                         [ this, &instructions ]( ast::While c ) -> void { while_stat( c, instructions ); },
+                         [ this, &instructions ]( ast::DoWhile c ) -> void { do_while_stat( c, instructions ); },
+                         [ this, &instructions ]( ast::For c ) -> void { for_stat( c, instructions ); },
+                         [ this, &instructions ]( ast::Switch c ) -> void { switch_stat( c, instructions ); },
+                         [ this, &instructions ]( ast::Case c ) -> void { case_stat( c, instructions ); },
+                         [ this, &instructions ]( ast::Compound c ) -> void { compound( c, instructions ); },
+                         [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
+                         [ this ]( ast::Null ) -> void { ; } },
+            ast->statement.value() );
+    }
 }
 
 void TacGen::ret( ast::Return ast, std::vector<tac::Instruction>& instructions ) {
@@ -222,21 +229,20 @@ void TacGen::switch_stat( const ast::Switch ast, std::vector<tac::Instruction>& 
     spdlog::debug( "tac::switch_stat: {}", ast->ast_label );
 
     // Instruction for condition
-    auto   c = expr( ast->condition, instructions );
+    auto c = expr( ast->condition, instructions );
 
     for ( auto case_item : ast->cases ) {
         spdlog::debug( "tac::switch_stat: case {}", case_item->ast_label );
         // Generate label for case
-        auto case_label = generate_label( case_item, std::format( "{}.case", case_item->ast_label) );
+        auto case_label = generate_label( case_item, std::format( "{}.case", case_item->ast_label ) );
         // Relabel the case item
         case_item->ast_label = case_label->name;
 
-        if (case_item->is_default) {
+        if ( case_item->is_default ) {
             // default:
             auto jump = mk_node<tac::Jump_>( ast, case_item->ast_label );
             instructions.push_back( jump );
-        }
-        else {
+        } else {
             // case <value>:
             // Instructions for case value
             auto r = expr( case_item->value, instructions );
@@ -279,10 +285,10 @@ void TacGen::compound( ast::Compound ast, std::vector<tac::Instruction>& instruc
     spdlog::debug( "tac::compound:" );
     for ( auto b : ast->block_items ) {
         spdlog::debug( "tac::functionDef: block" );
-        std::visit(
-            overloaded { [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
-                         [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
-            b );
+        std::visit( overloaded {
+                        [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
+                        [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
+                    b );
     }
 }
 

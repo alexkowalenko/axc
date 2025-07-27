@@ -25,7 +25,7 @@ class TacGen {
     tac::FunctionDef functionDef( ast::FunctionDef ast );
 
     void       declaration( ast::Declaration ast, std::vector<tac::Instruction>& instructions );
-    void       statement( ast::Statement ast, std::vector<tac::Instruction>& instructions );
+    void       statement( ast::Statement, std::vector<tac::Instruction>& instructions );
     void       ret( ast::Return ast, std::vector<tac::Instruction>& instructions );
     void       if_stat( ast::If ast, std::vector<tac::Instruction>& instructions );
     void       goto_stat( ast::Goto ast, std::vector<tac::Instruction>& instructions );

@@ -17,6 +17,7 @@ if __name__ == "__main__":
             "Program": [("FunctionDef", "function", False)],
             "FunctionDef": [("std::string", "name", False), ("Compound", "block", False)],
             "Declaration": [("std::string", "name", False), ("std::optional<Expr>", "init", False)],
+            "Statement": [("std::optional<Label>", "label", False), ("std::optional<StatementItem>", "statement", False)],
             "Null": [], # Null statement
             "Return": [("Expr", "expr", False)],
             "If": [("Expr", "condition", False), ("Statement", "then", False), ("std::optional<Statement>", "else_stat", False)],

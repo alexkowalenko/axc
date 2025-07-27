@@ -104,41 +104,49 @@ ast::Declaration Parser::declaration() {
     return decl;
 }
 
-using StatementParselet = std::function<ast::Statement( Parser* )>;
+using StatementParselet = std::function<ast::StatementItem( Parser* )>;
 const std::map<TokenType, StatementParselet> statement_map {
-    { TokenType::RETURN, []( Parser* p ) -> ast::Statement { return p->ret(); } },
-    { TokenType::IF, []( Parser* p ) -> ast::Statement { return p->if_stat(); } },
-    { TokenType::GOTO, []( Parser* p ) -> ast::Statement { return p->goto_stat(); } },
-    { TokenType::L_BRACE, []( Parser* p ) -> ast::Statement { return p->compound(); } },
-    { TokenType::SEMICOLON, []( Parser* p ) -> ast::Statement { return p->null(); } },
-    { TokenType::BREAK, []( Parser* p ) -> ast::Statement { return p->break_stat(); } },
-    { TokenType::CONTINUE, []( Parser* p ) -> ast::Statement { return p->continue_stat(); } },
-    { TokenType::WHILE, []( Parser* p ) -> ast::Statement { return p->while_stat(); } },
-    { TokenType::DO, []( Parser* p ) -> ast::Statement { return p->do_while_stat(); } },
-    { TokenType::FOR, []( Parser* p ) -> ast::Statement { return p->for_stat(); } },
-    { TokenType::SWITCH, []( Parser* p ) -> ast::Statement { return p->switch_stat(); } },
-    { TokenType::CASE, []( Parser* p ) -> ast::Statement { return p->case_stat(); } },
-    { TokenType::DEFAULT, []( Parser* p ) -> ast::Statement { return p->case_stat(); } },
+    { TokenType::RETURN, []( Parser* p ) -> ast::StatementItem { return p->ret(); } },
+    { TokenType::IF, []( Parser* p ) -> ast::StatementItem { return p->if_stat(); } },
+    { TokenType::GOTO, []( Parser* p ) -> ast::StatementItem { return p->goto_stat(); } },
+    { TokenType::L_BRACE, []( Parser* p ) -> ast::StatementItem { return p->compound(); } },
+    { TokenType::SEMICOLON, []( Parser* p ) -> ast::StatementItem { return p->null(); } },
+    { TokenType::BREAK, []( Parser* p ) -> ast::StatementItem { return p->break_stat(); } },
+    { TokenType::CONTINUE, []( Parser* p ) -> ast::StatementItem { return p->continue_stat(); } },
+    { TokenType::WHILE, []( Parser* p ) -> ast::StatementItem { return p->while_stat(); } },
+    { TokenType::DO, []( Parser* p ) -> ast::StatementItem { return p->do_while_stat(); } },
+    { TokenType::FOR, []( Parser* p ) -> ast::StatementItem { return p->for_stat(); } },
+    { TokenType::SWITCH, []( Parser* p ) -> ast::StatementItem { return p->switch_stat(); } },
+    { TokenType::CASE, []( Parser* p ) -> ast::StatementItem { return p->case_stat(); } },
+    { TokenType::DEFAULT, []( Parser* p ) -> ast::StatementItem { return p->case_stat(); } },
 };
 
 ast::Statement Parser::statement() {
     spdlog::debug( "statement" );
-    ast::Statement statement;
+    ast::Statement stat = make_AST<ast::Statement_>();
 
     auto token = lexer.peek_token();
+
+    // Check if the token is a label
+    if ( token.tok == TokenType::IDENTIFIER && lexer.peek_token( 1 ).tok == TokenType::COLON ) {
+        stat->label = label();
+        token = lexer.peek_token(); // Get the next token after the label
+    }
+
+    // Check if the next token is also a label, then finish this statement
+    if ( token.tok == TokenType::IDENTIFIER && lexer.peek_token( 1 ).tok == TokenType::COLON ) {
+        // This is just a label, so we just return the label
+        return stat;
+    }
+
     if ( statement_map.contains( token.tok ) ) {
         // Use the parselet for the statement
-        statement = statement_map.at( token.tok )( this );
+        stat->statement = statement_map.at( token.tok )( this );
     } else {
-        // Handle label
-        if ( token.tok == TokenType::IDENTIFIER && lexer.peek_token( 1 ).tok == TokenType::COLON ) {
-            statement = label();
-        } else {
-            statement = expr();
-            expect_token( TokenType::SEMICOLON );
-        }
+        stat->statement = expr();
+        expect_token( TokenType::SEMICOLON );
     }
-    return statement;
+    return stat;
 }
 
 ast::Compound Parser::compound() {
@@ -149,8 +157,6 @@ ast::Compound Parser::compound() {
     auto token = lexer.peek_token();
     while ( token.tok != TokenType::R_BRACE ) {
         if ( token.tok == TokenType::INT ) {
-            // Check for label - not valid in C17, but allowed in C23.
-            previous_label( compound );
 
             ast::BlockItem block = declaration();
             compound->block_items.push_back( block );
@@ -160,9 +166,6 @@ ast::Compound Parser::compound() {
         }
         token = lexer.peek_token();
     }
-
-    // Check label without statement - not valid in C17, but allowed in C23.
-    previous_label( compound );
 
     // }
     expect_token( TokenType::R_BRACE );
@@ -504,14 +507,4 @@ Token Parser::expect_token( TokenType expected ) {
         throw ParseException( token.location, "Expected: {} but found {}", expected, token );
     }
     return token;
-}
-
-void Parser::previous_label( ast::Compound compound ) {
-    // Check if the previous item was a label
-    if ( !compound->block_items.empty() && std::holds_alternative<ast::Statement>( compound->block_items.back() ) ) {
-        auto last_statement = std::get<ast::Statement>( compound->block_items.back() );
-        if ( std::holds_alternative<ast::Label>( last_statement ) ) {
-            throw ParseException( lexer.get_location(), "Label without statement is not allowed in C17." );
-        }
-    }
 }

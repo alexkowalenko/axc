@@ -40,11 +40,20 @@ void SemanticAnalyser::visit_FunctionDef( const ast::FunctionDef ast ) {
     }
 }
 
-void SemanticAnalyser::statement( const ast::Statement ast ) {
+void SemanticAnalyser::visit_Statement( const ast::Statement ast ) {
+    if ( ast->label ) {
+        ast->label.value()->accept( this );
+    }
+
+    if ( ast->statement ) {
+        statement( ast->statement.value() );
+    }
+}
+
+void SemanticAnalyser::statement( const ast::StatementItem ast ) {
     std::visit( overloaded { [ this ]( ast::Return ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::If ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Goto ast ) -> void { ast->accept( this ); },
-                             [ this ]( ast::Label ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Break ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Continue ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::While ast ) -> void { ast->accept( this ); },
@@ -73,9 +82,9 @@ void SemanticAnalyser::visit_Declaration( const ast::Declaration ast ) {
 
 void SemanticAnalyser::visit_If( const ast::If ast ) {
     expr( ast->condition );
-    statement( ast->then );
+    ast->then->accept( this );
     if ( ast->else_stat ) {
-        statement( ast->else_stat.value() );
+        ast->else_stat.value()->accept( this );
     }
 }
 
@@ -102,7 +111,7 @@ void SemanticAnalyser::visit_Break( const ast::Break ast ) {
     if ( loop_count == 0 && switch_count == 0 ) {
         throw SemanticException( ast->location, "break statement not in loop or switch statement" );
     }
-    if (last_break == TokenType::SWITCH) {
+    if ( last_break == TokenType::SWITCH ) {
         switch_label( ast );
     } else {
         loop_label( ast );
@@ -120,13 +129,13 @@ void SemanticAnalyser::visit_While( const ast::While ast ) {
     last_break = TokenType::WHILE;
     expr( ast->condition );
     new_loop_label( ast );
-    statement( ast->body );
+    ast->body->accept( this );
 }
 
 void SemanticAnalyser::visit_DoWhile( const ast::DoWhile ast ) {
     last_break = TokenType::DO;
     new_loop_label( ast );
-    statement( ast->body );
+    ast->body->accept( this );
     expr( ast->condition );
 }
 
@@ -152,7 +161,7 @@ void SemanticAnalyser::visit_For( const ast::For ast ) {
         expr( ast->increment.value() );
     }
     new_loop_label( ast );
-    statement( ast->body );
+    ast->body->accept( this );
     // Restore previous symbol table
     symbol_table = previous_table;
 }
@@ -169,7 +178,7 @@ void SemanticAnalyser::visit_Switch( const ast::Switch ast ) {
     // Add the current switch to the switch stack
     switch_stack.push( ast );
 
-    statement( ast->body );
+    ast->body->accept( this );
 
     // Clear default case tracking
     if ( !last_default.empty() && last_default.top() == switch_count ) {
@@ -207,7 +216,6 @@ void SemanticAnalyser::visit_Case( const ast::Case ast ) {
             }
             case_set.top().insert( *const_value );
         }
-
     } else {
         // default:
         if ( !last_default.empty() && last_default.top() == switch_count ) {
@@ -221,7 +229,7 @@ void SemanticAnalyser::visit_Case( const ast::Case ast ) {
 
     for ( const auto& item : ast->block_items ) {
         std::visit( overloaded { [ this ]( ast::Declaration d ) -> void { d->accept( this ); },
-                                 [ this ]( ast::Statement s ) -> void { statement( s ); } },
+                                 [ this ]( ast::Statement s ) -> void { s->accept( this ); } },
                     item );
     }
 }
@@ -233,7 +241,7 @@ void SemanticAnalyser::visit_Compound( const ast::Compound ast ) {
 
     for ( const auto& item : ast->block_items ) {
         std::visit( overloaded { [ this ]( ast::Declaration d ) -> void { d->accept( this ); },
-                                 [ this ]( ast::Statement s ) -> void { statement( s ); } },
+                                 [ this ]( ast::Statement s ) -> void { s->accept( this ); } },
                     item );
     }
     // Restore previous symbol table

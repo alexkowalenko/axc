@@ -71,7 +71,6 @@ class Parser {
 
 
     Token expect_token( TokenType expected );
-    void previous_label(ast::Compound funct);
 
     Lexer& lexer;
 };
