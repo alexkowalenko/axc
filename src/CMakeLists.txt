@@ -23,7 +23,7 @@ add_generator(AST ast ${AST_HEADER})
 add_generator(TAC tac ${TAC_HEADER})
 
 add_generator(X86_AT  machine/x86_64/x86_at ${X86_HEADER})
-add_generator(ARM_AT  machine/arm64/arm64_at ${ARM64_HEADER})
+add_generator(ARM64_AT  machine/arm64/arm64_at ${ARM64_HEADER})
 
 add_library(compiler STATIC
         token.cpp
@@ -40,8 +40,9 @@ add_library(compiler STATIC
         codeGen.cpp
         # ASTs
         ${AST_HEADER}
-        ${AT_HEADER}
         ${TAC_HEADER}
+        ${X86_HEADER}
+        ${ARM64_HEADER}
 )
 
 target_link_libraries(compiler
