@@ -10,6 +10,7 @@ target_link_libraries(axc_comp PRIVATE
         argparse
         compiler
         x86
+        arm64
 )
 
 install(TARGETS axc_comp DESTINATION bin)

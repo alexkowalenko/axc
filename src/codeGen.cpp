@@ -10,6 +10,7 @@
 
 #include "codeGen.h"
 #include "exception.h"
+#include "machine/arm64/arm64CodeGen.h"
 #include "machine/x86_64/x86_64CodeGen.h"
 
 std::unique_ptr<CodeGenerator> make_CodeGen( Option const& option ) {
@@ -17,8 +18,9 @@ std::unique_ptr<CodeGenerator> make_CodeGen( Option const& option ) {
     case Machine::X86_64 :
         return std::make_unique<X86_64CodeGen>( option );
     case Machine::AArch64 :
+        return std::make_unique<Arm64CodeGen>( option );
     default :
-        throw Exception( "Unsupported machine" );
+        throw CodeException( "Unsupported machine" );
     }
 }
 
@@ -35,17 +37,18 @@ void CodeGenerator::add_line( std::string line ) {
 void CodeGenerator::add_line( std::string instruct, std::string operands, int line_number ) {
     std::string line;
     if ( line_number > 0 ) {
-        line = std::format( "\t{}\t{}\t\t\t\t # line {}", instruct, operands, line_number );
+        line = std::format( "\t{}\t{}\t\t\t\t {} line {}", instruct, operands, comment_prefix, line_number );
     } else {
         line = std::format( "\t{}\t{}", instruct, operands );
     }
     add_line( line );
 }
 
-void CodeGenerator::add_line( std::string instruct, std::string operand1, std::string operand2, int line_number) {
+void CodeGenerator::add_line( std::string instruct, std::string operand1, std::string operand2, int line_number ) {
     std::string line;
     if ( line_number > 0 ) {
-        line = std::format( "\t{}\t{}, {}\t\t\t\t # line {}", instruct, operand1, operand2, line_number );
+        line =
+            std::format( "\t{}\t{}, {}\t\t\t\t {} line {}", instruct, operand1, operand2, comment_prefix, line_number );
     } else {
         line = std::format( "\t{}\t{}, {}", instruct, operand1, operand2 );
     }

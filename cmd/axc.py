@@ -23,7 +23,7 @@ def main():
     app.add_argument('-t', '--tacky', help='run the lexer, parser, semantic and tac generator', action='store_true')
     app.add_argument('-c', '--codegen', help='run the lexer, parser, semantic, tac and code generator, no output.',action='store_true')
     app.add_argument('-s', '--silent', help='silent operation (no logging)', action='store_true')
-    app.add_argument('-m', '--machine', help='machine Architecture.', choices=['x86_64', 'aarch64'] )
+    app.add_argument('-m', '--machine', help='machine Architecture.', choices=["x86_64", "amd64", "aarch64", "arm64"] )
     app.add_argument('filename', help='File to be compile.')
     args = app.parse_args()
 
@@ -35,7 +35,7 @@ def main():
 
     # Run the preprocessor on the file
     temp_file = tempfile.NamedTemporaryFile(delete=False)
-    cmd = f"{clang_path} -E -P {file_name} -o {temp_file.name}"
+    cmd = f"{clang_path} -E -P {file_name} -o {temp_file.name}.s"
     print(cmd)
     result = subprocess.run(cmd, shell=True)
     if result.returncode != 0:
@@ -58,7 +58,7 @@ def main():
         options += " -s"
     if args.machine:
         options += f" -m {args.machine}"
-    cmd = f"{axc_path} {options} {temp_file.name}"
+    cmd = f"{axc_path} {options} {temp_file.name}.s"
     print(cmd)
     result = subprocess.run(cmd, shell=True)
     if result.returncode != 0:
@@ -71,7 +71,12 @@ def main():
 
     # Assemble the file
     if platform.system() == "Darwin":
-       cmd = f"{clang_path} --target=x86_64-apple-darwin {temp_file.name}.s -o {file_name_base}"
+        if args.machine == "x86_64" or args.machine == "amd64":
+            cmd = f"{clang_path} -target x86_64-apple-darwin {temp_file.name}.s -o {file_name_base}"
+        elif args.machine == "aarch64" or args.machine == "arm64":
+            cmd = f"{clang_path} -target arm64-apple-darwin {temp_file.name}.s -o {file_name_base}"
+        else:
+            cmd = f"{clang_path} --target=x86_64-apple-darwin {temp_file.name}.s -o {file_name_base}"
     else:
         cmd = f"{clang_path} {temp_file.name}.s -o {file_name_base}"
     print(cmd)

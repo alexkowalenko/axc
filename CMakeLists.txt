@@ -30,6 +30,7 @@ set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR})
 add_subdirectory(src)
 # Add the machine code generation directory
 add_subdirectory(src/machine/x86_64)
+add_subdirectory(src/machine/arm64)
 
 add_subdirectory(cmd)
 

@@ -1,0 +1,80 @@
+//
+// AXC - C Compiler
+//
+// Copyright (c) 2025.
+//
+
+//
+// Created by Alex Kowalenko on 28/7/2025.
+//
+
+#include "arm64CodeGen.h"
+
+#include <print>
+
+#include <spdlog/spdlog.h>
+
+#include "arm64_at/includes.h"
+#include "armAssemblyGen.h"
+#include "common.h"
+#include "exception.h"
+#include "printerARM64.h"
+
+Arm64CodeGen::Arm64CodeGen( Option const& option ) : CodeGenerator( option ) {
+    comment_prefix = "// ";
+}
+
+CodeGenBase Arm64CodeGen::run_codegen( tac::Program tac ) {
+    spdlog::info( "Run codegen," );
+    ARMAssemblyGen assembler;
+    auto           assembly = assembler.generate( tac );
+    PrinterARM64   assemblerPrinter;
+    auto           output = assemblerPrinter.print( assembly );
+    std::println( "Assembly Output: {}", to_string( option.machine ) );
+    std::println( "------------------------" );
+    std::println( "{:s}", output );
+    return std::static_pointer_cast<CodeGenBase_>( assembly );
+}
+
+void Arm64CodeGen::generate_output_file( CodeGenBase assembly ) {
+    spdlog::info( "Generate output file for {}.", to_string( option.machine ) );
+    // Generate Assembly code
+    generate( assembly );
+    std::println( "{} Assembly:", to_string( option.machine ) );
+    std::println( "---------------" );
+    std::println( "{:s}", get_output() );
+}
+
+void Arm64CodeGen::generate( CodeGenBase program ) {
+    auto arm64_program = std::dynamic_pointer_cast<arm64_at::Program_>( program );
+    if ( !arm64_program ) {
+        throw CodeException( Location {}, "Invalid program type for ARM64 code generation" );
+    }
+    make_output_file_name();
+
+    file.open( output, std::ios::out );
+    if ( !file.is_open() ) {
+        throw CodeException( arm64_program->location, "Cannot open file {}", output.string() );
+    }
+
+    arm64_program->accept( this );
+}
+
+void Arm64CodeGen::visit_Program( const arm64_at::Program ast ) {
+    add_line( std::format( "# file: {}", option.input_file ) );
+
+    add_line( "",".text" );
+
+    std::string name = "main";
+    if ( option.system == System::MacOS ) {
+        name = "_" + name;
+    }
+
+    add_line( ".global", name, ast->location.line );
+
+    add_line( "",".align 2" );
+    add_line( std::format( "{}:", name ) );
+    add_line( "", "ret" );
+
+    file.close();
+}

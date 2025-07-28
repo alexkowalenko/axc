@@ -12,7 +12,6 @@
 #include "codeGen.h"
 #include "exception.h"
 #include "lexer.h"
-#include "machine/x86_64/x86_at/base.h"
 #include "option.h"
 #include "parser.h"
 #include "printerAST.h"
@@ -20,10 +19,6 @@
 #include "semanticAnalyser.h"
 #include "symbolTable.h"
 #include "tacGen.h"
-#include "x86_64/assemblyFilterPseudo.h"
-#include "x86_64/assemblyFixInstruct.h"
-#include "x86_64/assemblyGen.h"
-#include "x86_64/printerAT.h"
 
 void setup_logging( Option const& options ) {
     spdlog::set_pattern( "[%H:%M:%S.%f] %^[%l]%$ %v" );
@@ -56,7 +51,7 @@ int do_args( int argc, char** argv, Option& options ) {
     app.add_argument( "-s", "--silent" ).help( "silent operation (no logging)." ).flag().store_into( options.silent );
     app.add_argument( "-m", "--machine" )
         .help( "Machine architecture" )
-        .choices( "x86_64", "aarch64" )
+        .choices( "x86_64", "amd64", "aarch64", "arm64" )
         .default_value( "x86_64" );
 
     bool lex { false };
@@ -106,9 +101,9 @@ int do_args( int argc, char** argv, Option& options ) {
         options.stage = Stages::All;
     }
 
-    if ( app.get( "machine" ) == "x86_64" ) {
+    if ( app.get( "machine" ) == "x86_64" || app.get( "machine" ) == "amd64" ) {
         options.machine = Machine::X86_64;
-    } else if ( app.get( "machine" ) == "aarch64" ) {
+    } else if ( app.get( "machine" ) == "aarch64" || app.get( "machine" ) == "arm64" ) {
         options.machine = Machine::AArch64;
     } else {
         options.machine = Machine::X86_64;
@@ -162,44 +157,6 @@ tac::Program run_tac( ast::Program program, SymbolTable& table ) {
     return tac;
 }
 
-CodeGenBase run_codegen( tac::Program tac ) {
-    spdlog::info( "Run codegen," );
-    AssemblyGen assembler;
-    auto        assembly = assembler.generate( tac );
-    PrinterAT   assemblerPrinter;
-    auto        output = assemblerPrinter.print( assembly );
-    std::println( "Assembly Output:" );
-    std::println( "---------------" );
-    std::println( "{:s}", output );
-
-    AssemblyFilterPseudo filter;
-    filter.filter( assembly );
-    output = assemblerPrinter.print( assembly );
-    std::println( "Filtered 1:" );
-    std::println( "----------" );
-    std::println( "{:s}", output );
-
-    AssemblyFixInstruct filter2;
-    filter2.set_number_stack_locations( filter.get_number_stack_locations() );
-    filter2.filter( assembly );
-    output = assemblerPrinter.print( assembly );
-    std::println( "Filtered 2:" );
-    std::println( "----------" );
-    std::println( "{:s}", output );
-    return std::static_pointer_cast<CodeGenBase_>( assembly );
-}
-
-void generate_output_file( CodeGenBase assembly, Option const& options ) {
-    spdlog::info( "Generate output file for {}.", to_string( options.machine ) );
-    auto codeGenerator = make_CodeGen( options );
-
-    // Generate Assembly code
-    codeGenerator->generate( assembly );
-    std::println( "X86_64 Assembly:" );
-    std::println( "---------------" );
-    std::println( "{:s}", codeGenerator->get_output() );
-}
-
 int main( int argc, char** argv ) {
     Option options;
 
@@ -244,13 +201,19 @@ int main( int argc, char** argv ) {
         }
 
         // Run Code Gen
-        auto assembly = run_codegen( tac );
+        auto codeGenerator = make_CodeGen( options );
+        if ( !codeGenerator ) {
+            throw CodeException( Location {}, "Cannot create code generator for machine: {}",
+                                 to_string( options.machine ) );
+        }
+
+        auto assembly = codeGenerator->run_codegen( tac );
 
         if ( ( options.stage & Stages::File ) == 0 ) {
             return EXIT_SUCCESS;
         }
 
-        generate_output_file( assembly, options );
+        codeGenerator->generate_output_file( assembly );
 
     } catch ( const LexicalException& e ) {
         std::println( "Lexical error: {}", e.get_message() );

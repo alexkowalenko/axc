@@ -160,6 +160,10 @@ std::string PrinterAST::visit_Case( const ast::Case ast ) {
     return buf;
 }
 
+std::string PrinterAST::visit_Return( const ast::Return ast ) {
+    return "return " + expr( ast->expr ) + ";";
+}
+
 std::string PrinterAST::visit_Compound( const ast::Compound ast ) {
     std::string buf = "{" + new_line;
     for ( auto b : ast->block_items ) {
@@ -178,10 +182,6 @@ std::string PrinterAST::expr( const ast::Expr ast ) {
                                     [ this ]( ast::Var v ) -> std::string { return v->accept( this ); },
                                     [ this ]( ast::Constant c ) -> std::string { return c->accept( this ); } },
                        ast );
-}
-
-std::string PrinterAST::visit_Return( const ast::Return ast ) {
-    return "return " + expr( ast->expr ) + ";";
 }
 
 std::string PrinterAST::visit_BinaryOp( const ast::BinaryOp ast ) {

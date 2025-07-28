@@ -12,6 +12,7 @@
 
 #include "codeGen.h"
 #include "x86_at/base.h"
+#include "x86_at/visitor.h"
 
 class X86_64CodeGen : public CodeGenerator, public x86_at::Visitor<void> {
   public:
@@ -19,6 +20,9 @@ class X86_64CodeGen : public CodeGenerator, public x86_at::Visitor<void> {
     ~X86_64CodeGen() override = default;
 
     void generate( CodeGenBase program ) override;
+
+    CodeGenBase run_codegen( tac::Program tac ) override;
+    void        generate_output_file( CodeGenBase assembly ) override;
 
     void visit_Program( const x86_at::Program ast ) override;
     void visit_FunctionDef( const x86_at::FunctionDef ast ) override;

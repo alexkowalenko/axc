@@ -10,10 +10,19 @@
 
 #include "x86_64CodeGen.h"
 
+#include <print>
+
+#include <spdlog/spdlog.h>
+
 #include "common.h"
 #include "exception.h"
 #include "x86_at/includes.h"
 #include "x86_common.h"
+
+#include "assemblyFilterPseudo.h"
+#include "assemblyFixInstruct.h"
+#include "assemblyGen.h"
+#include "printerAT.h"
 
 std::string to_lower( const std::string& s ) {
     std::string buf = s;
@@ -23,7 +32,8 @@ std::string to_lower( const std::string& s ) {
 
 std::string assemble_reg( x86_at::Register r ) {
     std::string name = to_lower( to_string( r->reg ) );
-    if ( r->reg == x86_at::RegisterName::AX || r->reg == x86_at::RegisterName::CX || r->reg == x86_at::RegisterName::DX ) {
+    if ( r->reg == x86_at::RegisterName::AX || r->reg == x86_at::RegisterName::CX ||
+         r->reg == x86_at::RegisterName::DX ) {
         if ( r->size == x86_at::RegisterSize::Long ) {
             return "e" + name + "x";
         }
@@ -44,11 +54,48 @@ X86_64CodeGen::X86_64CodeGen( Option const& option ) : CodeGenerator( option ) {
     }
 }
 
+CodeGenBase X86_64CodeGen::run_codegen( tac::Program tac ) {
+    spdlog::info( "Run codegen," );
+    AssemblyGen assembler;
+    auto        assembly = assembler.generate( tac );
+    PrinterAT   assemblerPrinter;
+    auto        output = assemblerPrinter.print( assembly );
+    std::println( "Assembly Output: {}", to_string( option.machine ) );
+    std::println( "-----------------------" );
+    std::println( "{:s}", output );
+
+    AssemblyFilterPseudo filter;
+    filter.filter( assembly );
+    output = assemblerPrinter.print( assembly );
+    std::println( "Filtered 1:" );
+    std::println( "----------" );
+    std::println( "{:s}", output );
+
+    AssemblyFixInstruct filter2;
+    filter2.set_number_stack_locations( filter.get_number_stack_locations() );
+    filter2.filter( assembly );
+    output = assemblerPrinter.print( assembly );
+    std::println( "Filtered 2:" );
+    std::println( "----------" );
+    std::println( "{:s}", output );
+    return std::static_pointer_cast<CodeGenBase_>( assembly );
+}
+
+void X86_64CodeGen::generate_output_file( CodeGenBase assembly ) {
+    spdlog::info( "Generate output file for {}.", to_string( option.machine ) );
+
+    // Generate Assembly code
+    generate( assembly );
+    std::println( "{} Assembly:", to_string( option.machine ) );
+    std::println( "---------------" );
+    std::println( "{:s}", get_output() );
+}
+
 void X86_64CodeGen::generate( CodeGenBase program ) {
 
     auto x86_program = std::dynamic_pointer_cast<x86_at::Program_>( program );
     if ( !x86_program ) {
-        throw CodeException( Location{}, "Invalid program type for x86_64 code generation" );
+        throw CodeException( Location {}, "Invalid program type for x86_64 code generation" );
     }
     make_output_file_name();
 

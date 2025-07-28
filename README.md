@@ -34,7 +34,8 @@ architectures, such as AArch64.
 - [X] Lexer.
 - [X] AST, Parser.
 - [X] Assembler Tree (AT), Code Generator.
-- [X] File output.
+- [X] File output X86_64 assembler code.
+- [ ] File output Arm64 assembler code.
 
 ## Chapter 2 Unary Operators
 - [X] Lexer.

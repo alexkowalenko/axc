@@ -6,7 +6,8 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 set(AST_HEADER ${PROJECT_SOURCE_DIR}/src/ast/includes.h)
 set(TAC_HEADER ${PROJECT_SOURCE_DIR}/src/tac/includes.h)
 
-set(AT_HEADER ${PROJECT_SOURCE_DIR}/src/machine/x86_64/x86_at/includes.h)
+set(X86_HEADER ${PROJECT_SOURCE_DIR}/src/machine/x86_64/x86_at/includes.h)
+set(ARM64_HEADER ${PROJECT_SOURCE_DIR}/src/machine/arm64/arm64_at/includes.h)
 
 macro(add_generator GEN DIR HEADER)
     add_custom_command(
@@ -21,7 +22,8 @@ endmacro()
 add_generator(AST ast ${AST_HEADER})
 add_generator(TAC tac ${TAC_HEADER})
 
-add_generator(X86_AT  machine/x86_64/x86_at ${AT_HEADER})
+add_generator(X86_AT  machine/x86_64/x86_at ${X86_HEADER})
+add_generator(ARM_AT  machine/arm64/arm64_at ${ARM64_HEADER})
 
 add_library(compiler STATIC
         token.cpp
