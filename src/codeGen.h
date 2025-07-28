@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "at/visitor.h"
+#include "machine/x86_64/x86_at/visitor.h"
 #include "option.h"
 
 #include <filesystem>
@@ -19,12 +19,21 @@
 #include <sstream>
 #include <string>
 
+
+class CodeGenBase_ {
+public:
+    CodeGenBase_() = default;
+    virtual ~CodeGenBase_() = default;
+};
+
+using CodeGenBase = std::shared_ptr<CodeGenBase_>;
+
 class CodeGenerator {
   public:
     CodeGenerator( Option const& option ) : option( option ) {};
     virtual ~CodeGenerator() = default;
 
-    virtual void generate( at::Program program ) = 0;
+    virtual void generate( CodeGenBase program ) = 0;
 
     std::string get_output();
 

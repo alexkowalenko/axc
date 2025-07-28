@@ -1,12 +1,14 @@
 
+include_directories(${PROJECT_SOURCE_DIR}/src)
+
 # Generate the various ASDL from definitions in the python files in the tool directory
 
 set(AST_HEADER ${PROJECT_SOURCE_DIR}/src/ast/includes.h)
-set(AT_HEADER ${PROJECT_SOURCE_DIR}/src/at/includes.h)
 set(TAC_HEADER ${PROJECT_SOURCE_DIR}/src/tac/includes.h)
 
-macro(add_generator GEN HEADER)
-    string(TOLOWER "${GEN}" DIR)
+set(AT_HEADER ${PROJECT_SOURCE_DIR}/src/machine/x86_64/x86_at/includes.h)
+
+macro(add_generator GEN DIR HEADER)
     add_custom_command(
             OUTPUT ${HEADER}
             COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/generate${GEN}.py ${PROJECT_SOURCE_DIR}/src/${DIR}
@@ -16,9 +18,10 @@ macro(add_generator GEN HEADER)
     )
 endmacro()
 
-add_generator(AST ${AST_HEADER})
-add_generator(AT  ${AT_HEADER})
-add_generator(TAC ${TAC_HEADER})
+add_generator(AST ast ${AST_HEADER})
+add_generator(TAC tac ${TAC_HEADER})
+
+add_generator(X86_AT  machine/x86_64/x86_at ${AT_HEADER})
 
 add_library(compiler STATIC
         token.cpp
@@ -33,12 +36,7 @@ add_library(compiler STATIC
         printerTAC.cpp
         # Code Gen
         codeGen.cpp
-        # Machine code
-        machine/assemblyGen.cpp
-        machine/assemblyFilterPseudo.cpp
-        machine/assemblyFixInstruct.cpp
-        machine/x86_64CodeGen.cpp
-        machine/printerAT.cpp
+        # ASTs
         ${AST_HEADER}
         ${AT_HEADER}
         ${TAC_HEADER}

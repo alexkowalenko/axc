@@ -10,21 +10,21 @@
 
 #pragma once
 
-#include "../at/base.h"
+#include "x86_at/base.h"
 
-inline std::string cond_code( at::CondCode code ) {
+inline std::string cond_code( x86_at::CondCode code ) {
     switch ( code ) {
-    case at::CondCode::E :
+    case x86_at::CondCode::E :
         return "e";
-    case at::CondCode::NE :
+    case x86_at::CondCode::NE :
         return "ne";
-    case at::CondCode::G :
+    case x86_at::CondCode::G :
         return "g";
-    case at::CondCode::GE :
+    case x86_at::CondCode::GE :
         return "ge";
-    case at::CondCode::L :
+    case x86_at::CondCode::L :
         return "l";
-    case at::CondCode::LE :
+    case x86_at::CondCode::LE :
         return "le";
     default :
         return "?";

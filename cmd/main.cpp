@@ -12,10 +12,7 @@
 #include "codeGen.h"
 #include "exception.h"
 #include "lexer.h"
-#include "machine/assemblyFilterPseudo.h"
-#include "machine/assemblyFixInstruct.h"
-#include "machine/assemblyGen.h"
-#include "machine/printerAT.h"
+#include "machine/x86_64/x86_at/base.h"
 #include "option.h"
 #include "parser.h"
 #include "printerAST.h"
@@ -23,6 +20,10 @@
 #include "semanticAnalyser.h"
 #include "symbolTable.h"
 #include "tacGen.h"
+#include "x86_64/assemblyFilterPseudo.h"
+#include "x86_64/assemblyFixInstruct.h"
+#include "x86_64/assemblyGen.h"
+#include "x86_64/printerAT.h"
 
 void setup_logging( Option const& options ) {
     spdlog::set_pattern( "[%H:%M:%S.%f] %^[%l]%$ %v" );
@@ -161,7 +162,7 @@ tac::Program run_tac( ast::Program program, SymbolTable& table ) {
     return tac;
 }
 
-at::Program run_codegen( tac::Program tac ) {
+CodeGenBase run_codegen( tac::Program tac ) {
     spdlog::info( "Run codegen," );
     AssemblyGen assembler;
     auto        assembly = assembler.generate( tac );
@@ -185,10 +186,10 @@ at::Program run_codegen( tac::Program tac ) {
     std::println( "Filtered 2:" );
     std::println( "----------" );
     std::println( "{:s}", output );
-    return assembly;
+    return std::static_pointer_cast<CodeGenBase_>( assembly );
 }
 
-void generate_output_file( at::Program assembly, Option const& options ) {
+void generate_output_file( CodeGenBase assembly, Option const& options ) {
     spdlog::info( "Generate output file for {}.", to_string( options.machine ) );
     auto codeGenerator = make_CodeGen( options );
 

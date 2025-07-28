@@ -14,13 +14,15 @@
 #include <variant>
 #include <vector>
 
-#include "../token.h"
+#include "token.h"
+#include "codeGen.h"
 
-namespace at {
-class Base {
+namespace x86_at {
+
+class Base : public CodeGenBase_ {
   public:
     explicit Base( Location loc ) : location( std::move( loc ) ) {}
-    virtual ~Base() = default;
+    ~Base() override = default;
 
     Location location;
 };

@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     define_ast(
         output_dir,
-        "at",
+        "x86_at",
         {
             "Program": [("FunctionDef", "function", False)],
             "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False)],

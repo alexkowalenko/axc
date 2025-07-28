@@ -10,7 +10,7 @@
 
 #include "codeGen.h"
 #include "exception.h"
-#include "machine/x86_64CodeGen.h"
+#include "machine/x86_64/x86_64CodeGen.h"
 
 std::unique_ptr<CodeGenerator> make_CodeGen( Option const& option ) {
     switch ( option.machine ) {
