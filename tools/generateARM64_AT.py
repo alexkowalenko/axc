@@ -21,5 +21,12 @@ if __name__ == "__main__":
         output_dir,
         "arm64_at",
         {
-            "Program": [],
+            "Program": [("FunctionDef", "function", False)],
+            "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False)],
+            # Operations for Instructions
+            "Mov": [("Operand", "src", False), ("Operand", "dst", False) ],
+            "Ret": [],
+            # Operand types for Operand
+            "Imm": [("std::int32_t", "value", False)],
+            "Register": [("RegisterName", "reg", False)],
         })

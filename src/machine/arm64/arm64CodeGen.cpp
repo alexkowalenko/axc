@@ -61,20 +61,58 @@ void Arm64CodeGen::generate( CodeGenBase program ) {
 }
 
 void Arm64CodeGen::visit_Program( const arm64_at::Program ast ) {
-    add_line( std::format( "# file: {}", option.input_file ) );
+    add_line( std::format( "{} file: {}", comment_prefix, option.input_file ) );
 
-    add_line( "",".text" );
+    add_line( "\t.text" );
 
-    std::string name = "main";
+    ast->function->accept( this );
+
+    file.close();
+}
+
+void Arm64CodeGen::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
+    std::string name = ast->name;
     if ( option.system == System::MacOS ) {
         name = "_" + name;
     }
 
     add_line( ".global", name, ast->location.line );
 
-    add_line( "",".align 2" );
+    add_line( "\t.align 2" );
     add_line( std::format( "{}:", name ) );
-    add_line( "", "ret" );
 
-    file.close();
+    for ( auto const& instr : ast->instructions ) {
+
+        std::visit( overloaded { [ this ]( arm64_at::Mov v ) -> void { v->accept( this ); },
+                                 [ this ]( arm64_at::Ret r ) -> void { r->accept( this ); } },
+                    instr );
+    }
+}
+
+void Arm64CodeGen::visit_Mov( const arm64_at::Mov ast ) {
+    add_line( "mov", operand( ast->dst ), operand( ast->src ) );
+}
+
+void Arm64CodeGen::visit_Ret( const arm64_at::Ret ast ) {
+    add_line( "ret", "" );
+}
+
+std::string Arm64CodeGen::operand( const arm64_at::Operand& op ) {
+    return std::visit( overloaded { [ this ]( arm64_at::Imm v ) -> std::string {
+                                       v->accept( this );
+                                       return last_string;
+                                   },
+                                    [ this ]( arm64_at::Register r ) -> std::string {
+                                        r->accept( this );
+                                        return last_string;
+                                    } },
+                       op );
+}
+
+void Arm64CodeGen::visit_Imm( const arm64_at::Imm ast ) {
+    last_string = std::format( "#{}", ast->value );
+}
+
+void Arm64CodeGen::visit_Register( const arm64_at::Register ast ) {
+    last_string = std::format( "{}", to_string( ast->reg ) );
 }

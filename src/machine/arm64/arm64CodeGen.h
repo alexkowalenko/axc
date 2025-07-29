@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "arm64_at/base.h"
 #include "arm64_at/visitor.h"
 #include "codeGen.h"
 
@@ -20,8 +21,18 @@ class Arm64CodeGen : public CodeGenerator, public arm64_at::Visitor<void> {
 
     void generate( CodeGenBase program ) override;
 
-    void        visit_Program( const arm64_at::Program ast ) override;
-
     CodeGenBase run_codegen( tac::Program tac ) override;
     void        generate_output_file( CodeGenBase assembly ) override;
+
+    void visit_Program( const arm64_at::Program ast ) override;
+    void visit_FunctionDef( const arm64_at::FunctionDef ast ) override;
+    void visit_Mov( const arm64_at::Mov ast ) override;
+    void visit_Ret( const arm64_at::Ret ast ) override;
+
+    void visit_Imm( const arm64_at::Imm ast ) override;
+    void visit_Register( const arm64_at::Register ast ) override;
+
+  private:
+    std::string operand( const arm64_at::Operand& op );
+    std::string last_string;
 };
