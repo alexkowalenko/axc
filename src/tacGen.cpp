@@ -20,7 +20,9 @@
 
 tac::Program TacGen::generate( ast::Program ast ) {
     auto program = mk_node<tac::Program_>( ast );
-    program->function = functionDef( ast->function );
+    for ( auto f : ast->functions ) {
+        program->function = functionDef( f );
+    }
     return program;
 }
 
@@ -30,7 +32,9 @@ tac::FunctionDef TacGen::functionDef( ast::FunctionDef ast ) {
     function->name = ast->name;
 
     std::vector<tac::Instruction> instructions;
-    compound( ast->block, instructions );
+    if ( ast->block ) {
+        compound( ast->block.value(), instructions );
+    }
 
     // Add a return at the end of the function
     instructions.push_back( mk_node<tac::Return_>( ast, mk_node<tac::Constant_>( ast, 0 ) ) ); // Return 0
@@ -276,6 +280,7 @@ void TacGen::case_stat( const ast::Case ast, std::vector<tac::Instruction>& inst
         spdlog::debug( "tac::case_stat: block" );
         std::visit(
             overloaded { [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
+                         [ this ]( ast::FunctionDef ast ) -> void {},
                          [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
             b );
     }
@@ -285,10 +290,11 @@ void TacGen::compound( ast::Compound ast, std::vector<tac::Instruction>& instruc
     spdlog::debug( "tac::compound:" );
     for ( auto b : ast->block_items ) {
         spdlog::debug( "tac::functionDef: block" );
-        std::visit( overloaded {
-                        [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
-                        [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
-                    b );
+        std::visit(
+            overloaded { [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
+                         [ this ]( ast::FunctionDef ast ) -> void {},
+                         [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
+            b );
     }
 }
 
@@ -301,6 +307,7 @@ tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructi
             [ &instructions, this ]( ast::PostOp b ) -> tac::Value { return post( b, instructions ); },
             [ &instructions, this ]( ast::Conditional b ) -> tac::Value { return conditional( b, instructions ); },
             [ &instructions, this ]( ast::Assign a ) -> tac::Value { return assign( a, instructions ); },
+            [ this ]( ast::Call ) -> tac::Value {},
             [ this ]( ast::Var v ) -> tac::Value { return mk_node<tac::Variable_>( v, v->name ); },
             [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
         ast );

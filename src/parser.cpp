@@ -51,6 +51,7 @@ const std::map<TokenType, Precedence> precedence_map = {
     { TokenType::INCREMENT, Precedence::Postfix },
     { TokenType::DECREMENT, Precedence::Postfix },
     { TokenType::QUESTION, Precedence::Conditional },
+    { TokenType::L_PAREN, Precedence::FunctionCall },
 };
 
 constexpr Precedence get_precedence( const TokenType tok ) {
@@ -59,10 +60,45 @@ constexpr Precedence get_precedence( const TokenType tok ) {
 
 ast::Program Parser::parse() {
     auto program = make_AST<ast::Program_>();
-    program->function = functionDef();
+
+    auto token = lexer.peek_token();
+    while ( token.tok != TokenType::Eof ) {
+        program->functions.push_back( functionDef() );
+        token = lexer.peek_token();
+    }
     expect_token( TokenType::Eof );
     spdlog::debug( "Finish parse." );
     return program;
+}
+
+void Parser::function_params( ast::FunctionDef f ) {
+    spdlog::debug( "function_params" );
+    auto token = lexer.peek_token();
+    if ( token.tok == TokenType::VOID ) {
+        // void
+        expect_token( TokenType::VOID );
+        f->params.push_back( "void" );
+        return;
+    }
+    if ( token.tok == TokenType::R_PAREN ) {
+        // No parameters
+        return;
+    }
+    // Parameters
+    while ( token.tok != TokenType::R_PAREN ) {
+        expect_token( TokenType::INT );
+        auto param = expect_token( TokenType::IDENTIFIER );
+        f->params.push_back( param.value );
+
+        token = lexer.peek_token();
+        if ( token.tok == TokenType::COMMA ) {
+            expect_token( TokenType::COMMA );
+            token = lexer.peek_token();
+            if ( token.tok == TokenType::R_PAREN ) {
+                throw ParseException( lexer.get_location(), "Expecting another parameter, got ')'" );
+            }
+        }
+    }
 }
 
 ast::FunctionDef Parser::functionDef() {
@@ -77,11 +113,18 @@ ast::FunctionDef Parser::functionDef() {
 
     // ( void )
     expect_token( TokenType::L_PAREN );
-    expect_token( TokenType::VOID );
+    function_params( funct );
     expect_token( TokenType::R_PAREN );
 
-    funct->block = compound();
+    auto token = lexer.peek_token();
+    if ( token.tok == TokenType::SEMICOLON ) {
+        // Function declaration
+        expect_token( TokenType::SEMICOLON );
+        funct->block = std::nullopt; // No block for declaration
+        return funct;
+    }
 
+    funct->block = compound();
     return funct;
 }
 
@@ -143,6 +186,7 @@ ast::Statement Parser::statement() {
         // Use the parselet for the statement
         stat->statement = statement_map.at( token.tok )( this );
     } else {
+
         stat->statement = expr();
         expect_token( TokenType::SEMICOLON );
     }
@@ -158,8 +202,16 @@ ast::Compound Parser::compound() {
     while ( token.tok != TokenType::R_BRACE ) {
         if ( token.tok == TokenType::INT ) {
 
-            ast::BlockItem block = declaration();
-            compound->block_items.push_back( block );
+            // Check for function definition;
+            if ( lexer.peek_token( 1 ).tok == TokenType::IDENTIFIER &&
+                 lexer.peek_token( 2 ).tok == TokenType::L_PAREN ) {
+                // This is a function definition
+                compound->block_items.push_back( functionDef() );
+            } else {
+                // This is a declaration
+                ast::BlockItem block = declaration();
+                compound->block_items.push_back( block );
+            }
         } else {
             ast::BlockItem block = statement();
             compound->block_items.push_back( block );
@@ -392,6 +444,7 @@ const std::map<TokenType, InfixParselet> infix_map {
     { TokenType::INCREMENT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->postfixOp( left ); } },
     { TokenType::DECREMENT, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->postfixOp( left ); } },
     { TokenType::QUESTION, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->conditional( left ); } },
+    { TokenType::L_PAREN, []( Parser* p, ast::Expr left ) -> ast::Expr { return p->call( left ); } },
 };
 
 ast::Expr Parser::expr( const Precedence precedence ) {
@@ -420,6 +473,9 @@ ast::Expr Parser::factor() {
     token = lexer.peek_token();
     if ( token.tok == TokenType::INCREMENT || token.tok == TokenType::DECREMENT ) {
         return postfixOp( ast::Expr( left ) );
+    } else if ( token.tok == TokenType::L_PAREN ) {
+        // Function call
+        return call( ast::Expr( left ) );
     }
     return left;
 }
@@ -472,6 +528,36 @@ ast::Assign Parser::assign( ast::Expr left ) {
     op->op = token.tok;
     op->right = expr( static_cast<Precedence>( static_cast<int>( get_precedence( TokenType::EQUALS ) ) ) );
     return op;
+}
+
+ast::Call Parser::call( ast::Expr left ) {
+    spdlog::debug( "call()" );
+
+    auto token = expect_token( TokenType::L_PAREN );
+    auto call = make_AST<ast::Call_>();
+    if ( std::holds_alternative<ast::Var>( left ) ) {
+        call->function_name = std::get<ast::Var>( left )->name;
+    } else {
+        throw ParseException( token.location, "Expected variable for function call." );
+    }
+
+    token = lexer.peek_token();
+    while ( token.tok != TokenType::R_PAREN ) {
+        ast::Expr e = expr( Precedence::Lowest );
+        call->arguments.push_back( e );
+        token = lexer.peek_token();
+        if ( token.tok == TokenType::COMMA ) {
+            expect_token( TokenType::COMMA );
+            token = lexer.peek_token();
+            if ( token.tok == TokenType::R_PAREN ) {
+                throw ParseException( lexer.get_location(), "Expected another argument, got ')'" );
+            }
+        } else if ( token.tok != TokenType::R_PAREN ) {
+            throw ParseException( token.location, "Expected ',' or ')', got {}", to_string( token ) );
+        }
+    }
+    expect_token( TokenType::R_PAREN );
+    return call;
 }
 
 ast::Expr Parser::group() {

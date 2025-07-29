@@ -58,6 +58,7 @@ class SemanticAnalyser : public ast::Visitor<void> {
     void visit_PostOp( ast::PostOp ast ) override;
     void visit_Conditional( ast::Conditional ast ) override;
     void visit_Assign( ast::Assign ast ) override;
+    void visit_Call( const ast::Call ast ) override;
     void visit_Var( ast::Var ast ) override;
     void visit_Constant( ast::Constant ast ) override;
 

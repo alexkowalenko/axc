@@ -14,8 +14,8 @@ if __name__ == "__main__":
         output_dir,
         "ast",
         {
-            "Program": [("FunctionDef", "function", False)],
-            "FunctionDef": [("std::string", "name", False), ("Compound", "block", False)],
+            "Program": [("std::vector<FunctionDef>", "functions", False)],
+            "FunctionDef": [("std::string", "name", False), ("std::vector<std::string>", "params", False), ("std::optional<Compound>", "block", False)],
             "Declaration": [("std::string", "name", False), ("std::optional<Expr>", "init", False)],
             "Statement": [("std::optional<Label>", "label", False), ("std::optional<StatementItem>", "statement", False)],
             "Null": [], # Null statement
@@ -36,6 +36,7 @@ if __name__ == "__main__":
             "PostOp": [("TokenType", "op", False), ("Expr", "operand", False)],
             "Conditional": [("Expr", "condition", False), ("Expr", "then_expr", False), ("Expr", "else_expr", False)],
             "Assign": [("TokenType", "op", False), ("Expr", "left", False), ("Expr", "right", False)],
+            "Call": [("std::string", "function_name", False), ("std::vector<Expr>", "arguments", False)],
             "Var": [("std::string", "name", False)],
             "Constant": [("std::int32_t", "value", False)],
          })

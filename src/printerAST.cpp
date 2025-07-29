@@ -10,6 +10,8 @@
 
 #include "printerAST.h"
 
+#include <string>
+
 #include "ast/includes.h"
 #include "common.h"
 
@@ -18,19 +20,38 @@ std::string PrinterAST::print( const ast::Program& ast ) {
 }
 
 std::string PrinterAST::visit_Program( const ast::Program ast ) {
-    std::string buf = to_string( TokenType::INT );
-    buf += " " + ast->function->accept( this );
+    std::string buf;
+    for ( const auto& f : ast->functions ) {
+        buf += f->accept( this ) + new_line + new_line;
+    }
     return buf;
 }
 
 std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef ast ) {
-    std::string buf = std::format( "{}({}) {}", ast->name, TokenType::VOID, new_line );
-    buf += ast->block->accept( this );
+    std::string buf = std::format( "{} {}(", to_string( TokenType::INT ), ast->name );
+    for ( const auto& p : ast->params ) {
+        if ( p == "void" ) {
+            buf += std::string( to_string( TokenType::VOID ) ) + ", ";
+        } else {
+            buf += std::string( to_string( TokenType::INT ) ) + " " + p + ", ";
+        }
+    }
+    if ( !ast->params.empty() ) {
+        buf.pop_back(); // Remove trailing space
+        buf.pop_back(); // Remove trailing comma
+    }
+    buf += ") ";
+    if ( ast->block ) {
+        buf += ast->block.value()->accept( this );
+    } else {
+        buf += ";"; // Function declaration
+    }
     return buf;
 }
 
 std::string PrinterAST::block_item( const ast::BlockItem ast ) {
     return std::visit( overloaded { [ this ]( ast::Declaration ast ) -> std::string { return ast->accept( this ); },
+                                    [ this ]( ast::FunctionDef ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Statement ast ) -> std::string { return ast->accept( this ); } },
                        ast );
 }
@@ -179,6 +200,7 @@ std::string PrinterAST::expr( const ast::Expr ast ) {
                                     [ this ]( ast::PostOp b ) -> std::string { return b->accept( this ); },
                                     [ this ]( ast::Conditional c ) -> std::string { return c->accept( this ); },
                                     [ this ]( ast::Assign a ) -> std::string { return a->accept( this ); },
+                                    [ this ]( ast::Call c ) -> std::string { return c->accept( this ); },
                                     [ this ]( ast::Var v ) -> std::string { return v->accept( this ); },
                                     [ this ]( ast::Constant c ) -> std::string { return c->accept( this ); } },
                        ast );
@@ -205,6 +227,19 @@ std::string PrinterAST::visit_UnaryOp( const ast::UnaryOp ast ) {
 
 std::string PrinterAST::visit_Assign( const ast::Assign ast ) {
     return std::format( "{} {} {}", expr( ast->left ), ast->op, expr( ast->right ) );
+}
+
+std::string PrinterAST::visit_Call( const ast::Call ast ) {
+    std::string buf = ast->function_name + "(";
+    for ( const auto& arg : ast->arguments ) {
+        buf += expr( arg ) + ", ";
+    }
+    if ( !ast->arguments.empty() ) {
+        buf.pop_back(); // Remove trailing space
+        buf.pop_back(); // Remove trailing comma
+    }
+    buf += ")";
+    return buf;
 }
 
 std::string PrinterAST::visit_Var( const ast::Var ast ) {

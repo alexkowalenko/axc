@@ -28,18 +28,6 @@ class Base {
     std::string ast_label {};
 };
 
-class Declaration_;
-using Declaration = std::shared_ptr<Declaration_>;
-
-class Null_;
-using Null = std::shared_ptr<Null_>;
-
-class Return_;
-using Return = std::shared_ptr<Return_>;
-
-class If_;
-using If = std::shared_ptr<If_>;
-
 class Constant_;
 using Constant = std::shared_ptr<Constant_>;
 
@@ -61,7 +49,22 @@ using Assign = std::shared_ptr<Assign_>;
 class Var_;
 using Var = std::shared_ptr<Var_>;
 
-using Expr = std::variant<Constant, UnaryOp, BinaryOp, PostOp, Conditional, Var, Assign>;
+class Call_;
+using Call = std::shared_ptr<Call_>;
+
+using Expr = std::variant<Constant, UnaryOp, BinaryOp, PostOp, Conditional, Var, Assign, Call>;
+
+class Declaration_;
+using Declaration = std::shared_ptr<Declaration_>;
+
+class Null_;
+using Null = std::shared_ptr<Null_>;
+
+class Return_;
+using Return = std::shared_ptr<Return_>;
+
+class If_;
+using If = std::shared_ptr<If_>;
 
 class Goto_;
 using Goto = std::shared_ptr<Goto_>;
@@ -98,6 +101,9 @@ using StatementItem =
 class Statement_;
 using Statement = std::shared_ptr<Statement_>;
 
-using BlockItem = std::variant<Statement, Declaration>;
+class FunctionDef_;
+using FunctionDef = std::shared_ptr<FunctionDef_>;
+
+using BlockItem = std::variant<Statement, Declaration, FunctionDef>;
 
 } // namespace ast

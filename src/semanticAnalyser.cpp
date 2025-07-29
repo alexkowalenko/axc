@@ -22,7 +22,9 @@ void SemanticAnalyser::analyse( const ast::Program ast ) {
 }
 
 void SemanticAnalyser::visit_Program( const ast::Program ast ) {
-    ast->function->accept( this );
+    for ( const auto& function : ast->functions ) {
+        function->accept( this );
+    }
 }
 
 void SemanticAnalyser::visit_FunctionDef( const ast::FunctionDef ast ) {
@@ -30,7 +32,9 @@ void SemanticAnalyser::visit_FunctionDef( const ast::FunctionDef ast ) {
     // Clear the labels for each function.
     labels.clear();
 
-    ast->block->accept( this );
+    if ( ast->block ) {
+        ast->block.value()->accept( this );
+    }
 
     // Check for labels that were used but not defined.
     for ( auto [ label, defined ] : labels ) {
@@ -229,6 +233,7 @@ void SemanticAnalyser::visit_Case( const ast::Case ast ) {
 
     for ( const auto& item : ast->block_items ) {
         std::visit( overloaded { [ this ]( ast::Declaration d ) -> void { d->accept( this ); },
+                                 [ this ]( ast::FunctionDef ) -> void {},
                                  [ this ]( ast::Statement s ) -> void { s->accept( this ); } },
                     item );
     }
@@ -241,6 +246,7 @@ void SemanticAnalyser::visit_Compound( const ast::Compound ast ) {
 
     for ( const auto& item : ast->block_items ) {
         std::visit( overloaded { [ this ]( ast::Declaration d ) -> void { d->accept( this ); },
+                                 [ this ]( ast::FunctionDef ) -> void {},
                                  [ this ]( ast::Statement s ) -> void { s->accept( this ); } },
                     item );
     }
@@ -254,6 +260,7 @@ void SemanticAnalyser::expr( const ast::Expr ast ) {
                              [ this ]( ast::PostOp b ) -> void { b->accept( this ); },
                              [ this ]( ast::Conditional b ) -> void { b->accept( this ); },
                              [ this ]( ast::Assign a ) -> void { a->accept( this ); },
+                             [ this ]( ast::Call c ) -> void { c->accept( this ); },
                              [ this ]( ast::Var v ) -> void { v->accept( this ); },
                              [ this ]( ast::Constant c ) -> void { c->accept( this ); } },
                 ast );
@@ -315,6 +322,19 @@ void SemanticAnalyser::visit_Assign( const ast::Assign ast ) {
     expr( ast->right );
     // Constant Analysis
     is_constant = false; // Assignment is never constant
+}
+
+void SemanticAnalyser::visit_Call( const ast::Call ast ) {
+    // Check if the function is declared
+    if ( !symbol_table.find( ast->function_name ) ) {
+        throw SemanticException( ast->location, "Function {} not declared", ast->function_name );
+    }
+
+    for ( const auto& arg : ast->arguments ) {
+        expr( arg );
+    }
+    // Constant Analysis
+    is_constant = false; // Function calls are not constant
 }
 
 void SemanticAnalyser::visit_Var( const ast::Var ast ) {

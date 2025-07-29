@@ -48,7 +48,8 @@ class PrinterAST : public ast::Visitor<std::string> {
     std::string visit_PostOp(  ast::PostOp ast ) override;
     std::string visit_BinaryOp(  ast::BinaryOp ast ) override;
     std::string visit_Conditional(  ast::Conditional ast ) override;
-    std::string visit_Assign(  ast::Assign ast ) override;
+    std::string visit_Assign( ast::Assign ast ) override;
+    std::string visit_Call( const ast::Call ast ) override;
     std::string visit_Constant(  ast::Constant ast ) override;
     std::string visit_Var( ast::Var ast ) override;
 

@@ -97,7 +97,7 @@ architectures, such as Aarch64.
 
 ## Chapter 9 Functions
 - [x] Lexer.
-- [ ] Parser.
+- [x] Parser.
 - [ ] Semantic Analysis.
 - [ ] TAC Intermediate.
 - [ ] Output: X86_64.
