@@ -72,6 +72,7 @@ TEST( Lexer, Basic ) { // NOLINT
         { ">>=", TokenType::COMPOUND_RIGHT_SHIFT, ">>=" },
         { "?", TokenType::QUESTION, "?" },
         { ":", TokenType::COLON, ":" },
+        { ",", TokenType::COMMA, "," },
 
         { "", TokenType::Eof, "" },
     };

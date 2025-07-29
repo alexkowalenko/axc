@@ -53,6 +53,8 @@ const char* to_string( const TokenType l ) {
         return "?";
     case COLON :
         return ":";
+    case COMMA :
+        return ",";
 
     case INCREMENT :
         return "++";

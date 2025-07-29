@@ -38,6 +38,7 @@ enum class TokenType : std::uint8_t {
     GREATER,
     QUESTION,
     COLON,
+    COMMA,
 
     INCREMENT,
     DECREMENT,

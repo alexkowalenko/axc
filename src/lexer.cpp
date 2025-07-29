@@ -249,6 +249,8 @@ Token Lexer::make_token() {
         return { TokenType::QUESTION, get_location() };
     case ':' :
         return { TokenType::COLON, get_location() };
+    case ',' :
+        return { TokenType::COMMA, get_location() };
     default :;
     };
     if ( std::isdigit( c ) ) {
