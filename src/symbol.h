@@ -10,8 +10,15 @@
 
 #pragma once
 
+enum class Linkage {
+    None,
+    Internal, // Only visible within the current translation unit
+    External, // Visible across translation units
+};
+
 class Symbol {
-public:
+  public:
     std::string name;
-    bool current_block { false };
+    Linkage     linkage { Linkage::None };
+    bool        current_scope { false };
 };

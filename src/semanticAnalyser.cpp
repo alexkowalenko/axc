@@ -23,17 +23,63 @@ void SemanticAnalyser::analyse( const ast::Program ast ) {
 
 void SemanticAnalyser::visit_Program( const ast::Program ast ) {
     for ( const auto& function : ast->functions ) {
+        // top level
+        nested_function = false;
         function->accept( this );
     }
 }
 
 void SemanticAnalyser::visit_FunctionDef( const ast::FunctionDef ast ) {
-
+    spdlog::debug( "Function: {}", ast->name );
     // Clear the labels for each function.
     labels.clear();
 
+    auto symbol = symbol_table.find( ast->name );
+    spdlog::debug( "symbol linkage: {:d} here: {}", static_cast<int>( symbol->linkage ), symbol->current_scope );
+    if ( symbol && symbol->linkage == Linkage::None && symbol->current_scope ) {
+        throw SemanticException( ast->location, "Duplicate declaration: {}", ast->name );
+    }
+
+    auto s = symbol ? *symbol : Symbol { .name = ast->name };
+
+    // check parameter names unique
+    std::set<std::string> param_names;
+    for ( const auto& param : ast->params ) {
+        if ( param_names.contains( param ) ) {
+            throw SemanticException( ast->location, "Duplicate parameter name: {}", param );
+        }
+        param_names.insert( param );
+    }
+
     if ( ast->block ) {
+
+        if ( nested_function ) {
+            throw SemanticException( ast->location, "Nested functions are not allowed" );
+        }
+
+        // Add symbol with function name to the symbol table.
+        s.linkage = Linkage::Internal;
+        symbol_table.put( ast->name, s );
+
+        // Create new scope
+        auto previous_table = symbol_table;
+        symbol_table = new_scope();
+
+        // Add parameters to the symbol table.
+        for ( const auto& param : ast->params ) {
+            symbol_table.put( param, Symbol { param, Linkage::None, true } );
+        }
+
+        nested_function = true;
         ast->block.value()->accept( this );
+
+        // Restore previous symbol table
+        symbol_table = previous_table;
+    } else {
+        // If there is no block, it is a function declaration.
+        s.linkage = Linkage::External;
+        s.current_scope = true;
+        symbol_table.put( ast->name, s );
     }
 
     // Check for labels that were used but not defined.
@@ -45,6 +91,7 @@ void SemanticAnalyser::visit_FunctionDef( const ast::FunctionDef ast ) {
 }
 
 void SemanticAnalyser::visit_Statement( const ast::Statement ast ) {
+    spdlog::debug( "Statement: {}" );
     if ( ast->label ) {
         ast->label.value()->accept( this );
     }
@@ -55,6 +102,7 @@ void SemanticAnalyser::visit_Statement( const ast::Statement ast ) {
 }
 
 void SemanticAnalyser::statement( const ast::StatementItem ast ) {
+    spdlog::debug( "statement: {}" );
     std::visit( overloaded { [ this ]( ast::Return ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::If ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Goto ast ) -> void { ast->accept( this ); },
@@ -65,19 +113,29 @@ void SemanticAnalyser::statement( const ast::StatementItem ast ) {
                              [ this ]( ast::For ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Switch ast ) -> void { ast->accept( this ); },
                              [ this ]( ast::Case ast ) -> void { ast->accept( this ); },
-                             [ this ]( ast::Compound ast ) -> void { ast->accept( this ); },
+                             [ this ]( ast::Compound ast ) -> void {
+                                 // Create new scope
+                                 auto previous_table = symbol_table;
+                                 symbol_table = new_scope();
+
+                                 ast->accept( this );
+
+                                 // Restore previous symbol table
+                                 symbol_table = previous_table;
+                             },
                              [ this ]( ast::Expr e ) -> void { expr( e ); }, // expr
                              [ this ]( ast::Null ) -> void { ; } },
                 ast );
 }
 
 void SemanticAnalyser::visit_Declaration( const ast::Declaration ast ) {
-    if ( auto symbol = symbol_table.find( ast->name ); symbol && symbol->current_block ) {
+    spdlog::debug( "Declaration: {}", ast->name );
+    if ( auto symbol = symbol_table.find( ast->name ); symbol && symbol->current_scope ) {
         throw SemanticException( ast->location, "Duplicate declaration: {}", ast->name );
     }
     auto unique_name = symbol_table.temp_name( ast->name );
     spdlog::debug( "Declaring variable: {} as {}", ast->name, unique_name );
-    symbol_table.put( ast->name, Symbol { unique_name, true } );
+    symbol_table.put( ast->name, Symbol { unique_name, Linkage::None, true } );
     ast->name = unique_name;
     if ( ast->init ) {
         expr( ast->init.value() );
@@ -233,25 +291,23 @@ void SemanticAnalyser::visit_Case( const ast::Case ast ) {
 
     for ( const auto& item : ast->block_items ) {
         std::visit( overloaded { [ this ]( ast::Declaration d ) -> void { d->accept( this ); },
-                                 [ this ]( ast::FunctionDef ) -> void {},
+                                 [ this ]( ast::FunctionDef f ) -> void {
+                                     throw SemanticException( f->location, "No functions in case blocks" );
+                                 },
                                  [ this ]( ast::Statement s ) -> void { s->accept( this ); } },
                     item );
     }
 }
 
 void SemanticAnalyser::visit_Compound( const ast::Compound ast ) {
-    // Create new symbol table and swap
-    auto previous_table = symbol_table;
-    symbol_table = new_scope();
+    spdlog::debug( "Compound" );
 
     for ( const auto& item : ast->block_items ) {
         std::visit( overloaded { [ this ]( ast::Declaration d ) -> void { d->accept( this ); },
-                                 [ this ]( ast::FunctionDef ) -> void {},
+                                 [ this ]( ast::FunctionDef f ) -> void { f->accept( this ); },
                                  [ this ]( ast::Statement s ) -> void { s->accept( this ); } },
                     item );
     }
-    // Restore previous symbol table
-    symbol_table = previous_table;
 }
 
 void SemanticAnalyser::expr( const ast::Expr ast ) {

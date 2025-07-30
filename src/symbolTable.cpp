@@ -29,6 +29,6 @@ void SymbolTable::copy( SymbolTable& other ) {
 
 void SymbolTable::reset_current_block() {
     for ( auto& [ _, symbol ] : table ) {
-        symbol.current_block = false;
+        symbol.current_scope = false;
     }
 }

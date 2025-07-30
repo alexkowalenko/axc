@@ -11,19 +11,16 @@
 #pragma once
 
 #include <map>
-#include <stack>
 #include <set>
+#include <stack>
 
 #include "ast/base.h"
+#include "ast/constant.h"
 #include "ast/visitor.h"
 #include "symbolTable.h"
-#include "ast/constant.h"
 
-template<>
-struct std::less<ast::Constant> {
-    bool operator()( const ast::Constant& lhs, const ast::Constant& rhs ) const {
-        return lhs->value < rhs->value;
-    }
+template <> struct std::less<ast::Constant> {
+    bool operator()( const ast::Constant& lhs, const ast::Constant& rhs ) const { return lhs->value < rhs->value; }
 };
 
 class SemanticAnalyser : public ast::Visitor<void> {
@@ -77,7 +74,7 @@ class SemanticAnalyser : public ast::Visitor<void> {
     size_t loop_count { 0 };
 
     // Count of switch statements
-    size_t switch_count { 0 };
+    size_t             switch_count { 0 };
     std::stack<size_t> last_default;
 
     // Stack of switch case sets to check for duplicate case values
@@ -90,5 +87,8 @@ class SemanticAnalyser : public ast::Visitor<void> {
     TokenType last_break { TokenType::Null };
 
     // Constant analysis
-    bool   is_constant { false };
+    bool is_constant { false };
+
+    // Nested function
+    bool nested_function { false };
 };

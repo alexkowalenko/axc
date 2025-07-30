@@ -21,9 +21,10 @@ def main():
     app.add_argument('-p', '--parse', help='run the lexer and parser.', action='store_true')
     app.add_argument('-v', '--validate', help='run the lexer, parser, and semantic analyser', action='store_true')
     app.add_argument('-t', '--tacky', help='run the lexer, parser, semantic and tac generator', action='store_true')
-    app.add_argument('-c', '--codegen', help='run the lexer, parser, semantic, tac and code generator, no output.',action='store_true')
+    app.add_argument('-g', '--codegen', help='run the lexer, parser, semantic, tac and code generator, no output.',action='store_true')
     app.add_argument('-s', '--silent', help='silent operation (no logging)', action='store_true')
     app.add_argument('-m', '--machine', help='machine Architecture.', choices=["x86_64", "amd64", "aarch64", "arm64"] )
+    app.add_argument('-c', help='Produce object file only.', action='store_true')
     app.add_argument('filename', help='File to be compile.')
     args = app.parse_args()
 
@@ -70,15 +71,22 @@ def main():
         sys.exit(0)
 
     # Assemble the file
+    target = ""
     if platform.system() == "Darwin":
         if args.machine == "x86_64" or args.machine == "amd64":
-            cmd = f"{clang_path} -target x86_64-apple-darwin {temp_file.name}.s -o {file_name_base}"
+            target = "--target=x86_64-apple-darwin"
         elif args.machine == "aarch64" or args.machine == "arm64":
-            cmd = f"{clang_path} -target arm64-apple-darwin {temp_file.name}.s -o {file_name_base}"
+            target = "--target=arm64-apple-darwin"
         else:
-            cmd = f"{clang_path} --target=x86_64-apple-darwin {temp_file.name}.s -o {file_name_base}"
+            target = "--target=x86_64-apple-darwin"
+
+    # Full compile or just binary
+    if args.c:
+        cmd = f"{clang_path} {target} {temp_file.name}.s -c -o {file_name_base}.o"
     else:
-        cmd = f"{clang_path} {temp_file.name}.s -o {file_name_base}"
+        cmd = f"{clang_path} {target} {temp_file.name}.s -o {file_name_base}"
+
+    # Running the command.
     print(cmd)
     result = subprocess.run(cmd, shell=True)
     if result.returncode != 0:
