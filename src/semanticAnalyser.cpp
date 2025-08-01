@@ -76,6 +76,17 @@ void SemanticAnalyser::visit_FunctionDef( ast::FunctionDef ast, SymbolTable& tab
 
     auto s = symbol.value_or( Symbol { .name = ast->name, .type = Type::FUNCTION } );
 
+    // Check if the function is defined as a nested function.
+    if ( auto f = function_table.find( ast->name ) ) {
+        spdlog::debug( "Function {} is defined as a nested function", ast->name );
+
+        // type check it
+        if ( f->number != ast->params.size() ) {
+            throw SemanticException( ast->location, "Function {} has {} parameters, but got {}", ast->name, f->number,
+                                     ast->params.size() );
+        }
+    }
+
     // check parameter names unique
     std::set<std::string> param_names;
     for ( const auto& param : ast->params ) {
@@ -116,6 +127,7 @@ void SemanticAnalyser::visit_FunctionDef( ast::FunctionDef ast, SymbolTable& tab
         s.linkage = Linkage::External;
         s.current_scope = true;
         table.put( ast->name, s );
+        function_table.put( ast->name, s );
     }
 
     // Check for labels that were used but not defined.

@@ -90,4 +90,6 @@ class SemanticAnalyser {
 
     // Nested function
     bool nested_function { false };
+    // Current function parameter
+    SymbolTable function_table;
 };
