@@ -10,6 +10,7 @@
 
 #include "semanticAnalyser.h"
 
+#include <algorithm>
 #include <set>
 
 #include "ast/includes.h"
@@ -17,30 +18,63 @@
 #include "exception.h"
 #include "spdlog/spdlog.h"
 
-void SemanticAnalyser::analyse( const ast::Program ast ) {
-    ast->accept( this );
+SemanticAnalyser::SemanticAnalyser() {};
+
+void SemanticAnalyser::analyse( const ast::Program ast, SymbolTable& table ) {
+    visit_Program( ast, table );
 }
 
-void SemanticAnalyser::visit_Program( const ast::Program ast ) {
+void SemanticAnalyser::visit_Program( const ast::Program ast, SymbolTable& table ) {
     for ( const auto& function : ast->functions ) {
         // top level
         nested_function = false;
-        function->accept( this );
+        visit_FunctionDef( function, table );
     }
 }
 
-void SemanticAnalyser::visit_FunctionDef( const ast::FunctionDef ast ) {
+void SemanticAnalyser::visit_FunctionDef( ast::FunctionDef ast, SymbolTable& table ) {
     spdlog::debug( "Function: {}", ast->name );
     // Clear the labels for each function.
     labels.clear();
 
-    auto symbol = symbol_table.find( ast->name );
+    // remove "void" parameters
+    ast->params.erase( std::remove( ast->params.begin(), ast->params.end(), "void" ), ast->params.end() );
+
+    auto symbol = table.find( ast->name );
     spdlog::debug( "symbol linkage: {:d} here: {}", static_cast<int>( symbol->linkage ), symbol->current_scope );
-    if ( symbol && symbol->linkage == Linkage::None && symbol->current_scope ) {
-        throw SemanticException( ast->location, "Duplicate declaration: {}", ast->name );
+    if ( symbol ) {
+
+        if ( symbol->type != Type::FUNCTION ) {
+            // Another symbol is already defined with the same name, but it is not a function.
+            symbol = std::nullopt;
+            spdlog::debug( "Symbol {} is not a function, reusing symbol", ast->name );
+        } else {
+            // Function with the same name already exists.
+            spdlog::debug( "Function {} already exists", ast->name );
+            if ( symbol->linkage == Linkage::None && symbol->current_scope ) {
+                throw SemanticException( ast->location, "Duplicate declaration: {}", ast->name );
+            }
+            if ( symbol->linkage == Linkage::Internal ) {
+                // If the function is internal, it should not be declared again.
+                throw SemanticException( ast->location, "Duplicate declaration: {}", ast->name );
+            }
+
+            if ( symbol->number != ast->params.size() ) {
+                // If the number of parameters does not match, we will throw an exception later.
+                spdlog::debug( "Function {} has {} parameters, but got {}", ast->name, symbol->number,
+                               ast->params.size() );
+            }
+
+            spdlog::debug( "count: {} ", ast->params.size() );
+
+            if ( symbol->number != ast->params.size() ) {
+                throw SemanticException( ast->location, "Function {} expects {} arguments, but got {}.", ast->name,
+                                         symbol->number, ast->params.size() );
+            }
+        }
     }
 
-    auto s = symbol ? *symbol : Symbol { .name = ast->name };
+    auto s = symbol.value_or( Symbol { .name = ast->name, .type = Type::FUNCTION } );
 
     // check parameter names unique
     std::set<std::string> param_names;
@@ -50,6 +84,7 @@ void SemanticAnalyser::visit_FunctionDef( const ast::FunctionDef ast ) {
         }
         param_names.insert( param );
     }
+    s.number = param_names.size();
 
     if ( ast->block ) {
 
@@ -59,27 +94,28 @@ void SemanticAnalyser::visit_FunctionDef( const ast::FunctionDef ast ) {
 
         // Add symbol with function name to the symbol table.
         s.linkage = Linkage::Internal;
-        symbol_table.put( ast->name, s );
+        table.put( ast->name, s );
 
         // Create new scope
-        auto previous_table = symbol_table;
-        symbol_table = new_scope();
+        auto new_table = new_scope( table );
 
         // Add parameters to the symbol table.
-        for ( const auto& param : ast->params ) {
-            symbol_table.put( param, Symbol { param, Linkage::None, true } );
+        for ( auto& param : ast->params ) {
+            auto unique_name = table.temp_name( param );
+            spdlog::debug( "Declaring param: {} as {}", param, unique_name );
+            new_table.put(
+                param,
+                Symbol { .name = unique_name, .linkage = Linkage::None, .type = Type::INT, .current_scope = true } );
+            param = unique_name;
         }
 
         nested_function = true;
-        ast->block.value()->accept( this );
-
-        // Restore previous symbol table
-        symbol_table = previous_table;
+        visit_Compound( ast->block.value(), new_table );
     } else {
         // If there is no block, it is a function declaration.
         s.linkage = Linkage::External;
         s.current_scope = true;
-        symbol_table.put( ast->name, s );
+        table.put( ast->name, s );
     }
 
     // Check for labels that were used but not defined.
@@ -90,63 +126,60 @@ void SemanticAnalyser::visit_FunctionDef( const ast::FunctionDef ast ) {
     }
 }
 
-void SemanticAnalyser::visit_Statement( const ast::Statement ast ) {
+void SemanticAnalyser::visit_Statement( const ast::Statement ast, SymbolTable& table ) {
     spdlog::debug( "Statement: {}" );
     if ( ast->label ) {
-        ast->label.value()->accept( this );
+        visit_Label( ast->label.value() );
     }
 
     if ( ast->statement ) {
-        statement( ast->statement.value() );
+        statement( ast->statement.value(), table );
     }
 }
 
-void SemanticAnalyser::statement( const ast::StatementItem ast ) {
+void SemanticAnalyser::statement( const ast::StatementItem ast, SymbolTable& table ) {
     spdlog::debug( "statement: {}" );
-    std::visit( overloaded { [ this ]( ast::Return ast ) -> void { ast->accept( this ); },
-                             [ this ]( ast::If ast ) -> void { ast->accept( this ); },
-                             [ this ]( ast::Goto ast ) -> void { ast->accept( this ); },
-                             [ this ]( ast::Break ast ) -> void { ast->accept( this ); },
-                             [ this ]( ast::Continue ast ) -> void { ast->accept( this ); },
-                             [ this ]( ast::While ast ) -> void { ast->accept( this ); },
-                             [ this ]( ast::DoWhile ast ) -> void { ast->accept( this ); },
-                             [ this ]( ast::For ast ) -> void { ast->accept( this ); },
-                             [ this ]( ast::Switch ast ) -> void { ast->accept( this ); },
-                             [ this ]( ast::Case ast ) -> void { ast->accept( this ); },
-                             [ this ]( ast::Compound ast ) -> void {
+    std::visit( overloaded { [ this, &table ]( ast::Return ast ) -> void { visit_Return( ast, table ); },
+                             [ this, &table ]( ast::If ast ) -> void { visit_If( ast, table ); },
+                             [ this ]( ast::Goto ast ) -> void { visit_Goto( ast ); },
+                             [ this, &table ]( ast::Break ast ) -> void { visit_Break( ast, table ); },
+                             [ this, &table ]( ast::Continue ast ) -> void { visit_Continue( ast, table ); },
+                             [ this, &table ]( ast::While ast ) -> void { visit_While( ast, table ); },
+                             [ this, &table ]( ast::DoWhile ast ) -> void { visit_DoWhile( ast, table ); },
+                             [ this, &table ]( ast::For ast ) -> void { visit_For( ast, table ); },
+                             [ this, &table ]( ast::Switch ast ) -> void { visit_Switch( ast, table ); },
+                             [ this, &table ]( ast::Case ast ) -> void { visit_Case( ast, table ); },
+                             [ this, &table ]( ast::Compound ast ) -> void {
                                  // Create new scope
-                                 auto previous_table = symbol_table;
-                                 symbol_table = new_scope();
+                                 auto new_table = new_scope( table );
 
-                                 ast->accept( this );
-
-                                 // Restore previous symbol table
-                                 symbol_table = previous_table;
+                                 visit_Compound( ast, new_table );
                              },
-                             [ this ]( ast::Expr e ) -> void { expr( e ); }, // expr
+                             [ this, &table ]( ast::Expr e ) -> void { expr( e, table ); }, // expr
                              [ this ]( ast::Null ) -> void { ; } },
                 ast );
 }
 
-void SemanticAnalyser::visit_Declaration( const ast::Declaration ast ) {
+void SemanticAnalyser::visit_Declaration( const ast::Declaration ast, SymbolTable& table ) {
     spdlog::debug( "Declaration: {}", ast->name );
-    if ( auto symbol = symbol_table.find( ast->name ); symbol && symbol->current_scope ) {
+    if ( auto symbol = table.find( ast->name ); symbol && symbol->current_scope ) {
         throw SemanticException( ast->location, "Duplicate declaration: {}", ast->name );
     }
-    auto unique_name = symbol_table.temp_name( ast->name );
+    auto unique_name = table.temp_name( ast->name );
     spdlog::debug( "Declaring variable: {} as {}", ast->name, unique_name );
-    symbol_table.put( ast->name, Symbol { unique_name, Linkage::None, true } );
+    table.put( ast->name,
+               Symbol { .name = unique_name, .linkage = Linkage::None, .type = Type::INT, .current_scope = true } );
     ast->name = unique_name;
     if ( ast->init ) {
-        expr( ast->init.value() );
+        expr( ast->init.value(), table );
     }
 }
 
-void SemanticAnalyser::visit_If( const ast::If ast ) {
-    expr( ast->condition );
-    ast->then->accept( this );
+void SemanticAnalyser::visit_If( const ast::If ast, SymbolTable& table ) {
+    expr( ast->condition, table );
+    visit_Statement( ast->then, table );
     if ( ast->else_stat ) {
-        ast->else_stat.value()->accept( this );
+        visit_Statement( ast->else_stat.value(), table );
     }
 }
 
@@ -165,11 +198,11 @@ void SemanticAnalyser::visit_Label( const ast::Label ast ) {
     labels[ ast->label ] = true;
 }
 
-void SemanticAnalyser::visit_Return( const ast::Return ast ) {
-    expr( ast->expr );
+void SemanticAnalyser::visit_Return( const ast::Return ast, SymbolTable& table ) {
+    expr( ast->expr, table );
 }
 
-void SemanticAnalyser::visit_Break( const ast::Break ast ) {
+void SemanticAnalyser::visit_Break( const ast::Break ast, SymbolTable& table ) {
     if ( loop_count == 0 && switch_count == 0 ) {
         throw SemanticException( ast->location, "break statement not in loop or switch statement" );
     }
@@ -180,57 +213,54 @@ void SemanticAnalyser::visit_Break( const ast::Break ast ) {
     }
 }
 
-void SemanticAnalyser::visit_Continue( const ast::Continue ast ) {
+void SemanticAnalyser::visit_Continue( const ast::Continue ast, SymbolTable& table ) {
     if ( loop_count == 0 ) {
         throw SemanticException( ast->location, "continue statement not in loop" );
     }
     loop_label( ast );
 }
 
-void SemanticAnalyser::visit_While( const ast::While ast ) {
+void SemanticAnalyser::visit_While( const ast::While ast, SymbolTable& table ) {
     last_break = TokenType::WHILE;
-    expr( ast->condition );
+    expr( ast->condition, table );
     new_loop_label( ast );
-    ast->body->accept( this );
+    visit_Statement( ast->body, table );
 }
 
-void SemanticAnalyser::visit_DoWhile( const ast::DoWhile ast ) {
+void SemanticAnalyser::visit_DoWhile( const ast::DoWhile ast, SymbolTable& table ) {
     last_break = TokenType::DO;
     new_loop_label( ast );
-    ast->body->accept( this );
-    expr( ast->condition );
+    visit_Statement( ast->body, table );
+    expr( ast->condition, table );
 }
 
-void SemanticAnalyser::for_init( ast::ForInit ast ) {
-    std::visit( overloaded { [ this ]( ast::Expr e ) -> void { expr( e ); },
-                             [ this ]( ast::Declaration d ) -> void { d->accept( this ); } },
+void SemanticAnalyser::for_init( ast::ForInit ast, SymbolTable& table ) {
+    std::visit( overloaded { [ this, &table ]( ast::Expr e ) -> void { expr( e, table ); },
+                             [ this, &table ]( ast::Declaration d ) -> void { visit_Declaration( d, table ); } },
                 ast );
 }
 
-void SemanticAnalyser::visit_For( const ast::For ast ) {
+void SemanticAnalyser::visit_For( const ast::For ast, SymbolTable& table ) {
     last_break = TokenType::FOR;
     // Create new symbol table and swap
-    auto previous_table = symbol_table;
-    symbol_table = new_scope();
+    auto new_table = new_scope( table );
 
     if ( ast->init ) {
-        for_init( ast->init.value() );
+        for_init( ast->init.value(), new_table );
     }
     if ( ast->condition ) {
-        expr( ast->condition.value() );
+        expr( ast->condition.value(), new_table );
     }
     if ( ast->increment ) {
-        expr( ast->increment.value() );
+        expr( ast->increment.value(), new_table );
     }
     new_loop_label( ast );
-    ast->body->accept( this );
-    // Restore previous symbol table
-    symbol_table = previous_table;
+    visit_Statement( ast->body, new_table );
 }
 
-void SemanticAnalyser::visit_Switch( const ast::Switch ast ) {
+void SemanticAnalyser::visit_Switch( const ast::Switch ast, SymbolTable& table ) {
     last_break = TokenType::SWITCH;
-    expr( ast->condition );
+    expr( ast->condition, table );
 
     new_switch_label( ast );
     // Reset case set for each switch
@@ -240,7 +270,7 @@ void SemanticAnalyser::visit_Switch( const ast::Switch ast ) {
     // Add the current switch to the switch stack
     switch_stack.push( ast );
 
-    ast->body->accept( this );
+    visit_Statement( ast->body, table );
 
     // Clear default case tracking
     if ( !last_default.empty() && last_default.top() == switch_count ) {
@@ -252,7 +282,7 @@ void SemanticAnalyser::visit_Switch( const ast::Switch ast ) {
     switch_stack.pop();
 }
 
-void SemanticAnalyser::visit_Case( const ast::Case ast ) {
+void SemanticAnalyser::visit_Case( const ast::Case ast, SymbolTable& table ) {
     spdlog::debug( "case: {}", ast->is_default ? "default" : "case" );
 
     // Check if we are in a switch statement
@@ -265,7 +295,7 @@ void SemanticAnalyser::visit_Case( const ast::Case ast ) {
 
         // constant expressions for case
         is_constant = false;
-        expr( ast->value );
+        expr( ast->value, table );
         if ( !is_constant ) {
             throw SemanticException( ast->location, "Case value must be constant expression" );
         }
@@ -290,46 +320,48 @@ void SemanticAnalyser::visit_Case( const ast::Case ast ) {
     switch_stack.top()->cases.push_back( ast );
 
     for ( const auto& item : ast->block_items ) {
-        std::visit( overloaded { [ this ]( ast::Declaration d ) -> void { d->accept( this ); },
+        std::visit( overloaded { [ this, &table ]( ast::Declaration d ) -> void { visit_Declaration( d, table ); },
                                  [ this ]( ast::FunctionDef f ) -> void {
                                      throw SemanticException( f->location, "No functions in case blocks" );
                                  },
-                                 [ this ]( ast::Statement s ) -> void { s->accept( this ); } },
+                                 [ this, &table ]( ast::Statement s ) -> void { visit_Statement( s, table ); } },
                     item );
     }
 }
 
-void SemanticAnalyser::visit_Compound( const ast::Compound ast ) {
+void SemanticAnalyser::visit_Compound( const ast::Compound ast, SymbolTable& table ) {
     spdlog::debug( "Compound" );
 
     for ( const auto& item : ast->block_items ) {
-        std::visit( overloaded { [ this ]( ast::Declaration d ) -> void { d->accept( this ); },
-                                 [ this ]( ast::FunctionDef f ) -> void { f->accept( this ); },
-                                 [ this ]( ast::Statement s ) -> void { s->accept( this ); } },
+        std::visit( overloaded { [ this, &table ]( ast::Declaration d ) -> void { visit_Declaration( d, table ); },
+                                 [ this, &table ]( ast::FunctionDef f ) -> void { visit_FunctionDef( f, table ); },
+                                 [ this, &table ]( ast::Statement s ) -> void { visit_Statement( s, table ); } },
                     item );
     }
 }
 
-void SemanticAnalyser::expr( const ast::Expr ast ) {
-    std::visit( overloaded { [ this ]( ast::UnaryOp u ) -> void { u->accept( this ); },
-                             [ this ]( ast::BinaryOp b ) -> void { b->accept( this ); },
-                             [ this ]( ast::PostOp b ) -> void { b->accept( this ); },
-                             [ this ]( ast::Conditional b ) -> void { b->accept( this ); },
-                             [ this ]( ast::Assign a ) -> void { a->accept( this ); },
-                             [ this ]( ast::Call c ) -> void { c->accept( this ); },
-                             [ this ]( ast::Var v ) -> void { v->accept( this ); },
-                             [ this ]( ast::Constant c ) -> void { c->accept( this ); } },
+void SemanticAnalyser::expr( const ast::Expr ast, SymbolTable& table ) {
+    std::visit( overloaded {
+                    [ this, &table ]( ast::UnaryOp u ) -> void { visit_UnaryOp( u, table ); },
+                    [ this, &table ]( ast::BinaryOp b ) -> void { visit_BinaryOp( b, table ); },
+                    [ this, &table ]( ast::PostOp b ) -> void { visit_PostOp( b, table ); },
+                    [ this, &table ]( ast::Conditional b ) -> void { visit_Conditional( b, table ); },
+                    [ this, &table ]( ast::Assign a ) -> void { visit_Assign( a, table ); },
+                    [ this, &table ]( ast::Call c ) -> void { visit_Call( c, table ); },
+                    [ this, &table ]( ast::Var v ) -> void { visit_Var( v, table ); },
+                    [ this ]( ast::Constant c ) -> void { visit_Constant( c ); },
+                },
                 ast );
 }
 
-void SemanticAnalyser::visit_UnaryOp( const ast::UnaryOp ast ) {
+void SemanticAnalyser::visit_UnaryOp( const ast::UnaryOp ast, SymbolTable& table ) {
     if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
         // operand must be a variable
         if ( !std::holds_alternative<ast::Var>( ast->operand ) ) {
             throw SemanticException( ast->location, "Invalid lvalue: for {} ", ast->op );
         }
     }
-    expr( ast->operand );
+    expr( ast->operand, table );
 
     // Constant Analysis
     if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
@@ -341,60 +373,71 @@ void SemanticAnalyser::visit_UnaryOp( const ast::UnaryOp ast ) {
     }
 }
 
-void SemanticAnalyser::visit_BinaryOp( const ast::BinaryOp ast ) {
-    expr( ast->left );
+void SemanticAnalyser::visit_BinaryOp( const ast::BinaryOp ast, SymbolTable& table ) {
+    expr( ast->left, table );
     bool left_constant = is_constant;
-    expr( ast->right );
+    expr( ast->right, table );
     bool right_constant = is_constant;
     // Constant Analysis
     is_constant = left_constant && right_constant;
 }
 
-void SemanticAnalyser::visit_PostOp( const ast::PostOp ast ) {
+void SemanticAnalyser::visit_PostOp( const ast::PostOp ast, SymbolTable& table ) {
     // Check left side for postfix increment/decrement
     if ( !std::holds_alternative<ast::Var>( ast->operand ) ) {
         throw SemanticException( ast->location, "Invalid lvalue: for {} ", ast->op );
     }
-    expr( ast->operand );
+    expr( ast->operand, table );
     // Constant Analysis - postfix operators are not constant
     is_constant = false;
 }
 
-void SemanticAnalyser::visit_Conditional( const ast::Conditional ast ) {
-    expr( ast->condition );
-    expr( ast->then_expr );
+void SemanticAnalyser::visit_Conditional( const ast::Conditional ast, SymbolTable& table ) {
+    expr( ast->condition, table );
+    expr( ast->then_expr, table );
     bool left_constant = is_constant;
-    expr( ast->else_expr );
+    expr( ast->else_expr, table );
     bool right_constant = is_constant;
     // Constant Analysis
     is_constant = left_constant && right_constant;
 }
 
-void SemanticAnalyser::visit_Assign( const ast::Assign ast ) {
+void SemanticAnalyser::visit_Assign( const ast::Assign ast, SymbolTable& table ) {
     if ( !std::holds_alternative<ast::Var>( ast->left ) ) {
         throw SemanticException( ast->location, "Invalid lvalue: for {}", ast->op );
     }
-    expr( ast->left );
-    expr( ast->right );
+    expr( ast->left, table );
+    expr( ast->right, table );
     // Constant Analysis
     is_constant = false; // Assignment is never constant
 }
 
-void SemanticAnalyser::visit_Call( const ast::Call ast ) {
+void SemanticAnalyser::visit_Call( const ast::Call ast, SymbolTable& table ) {
     // Check if the function is declared
-    if ( !symbol_table.find( ast->function_name ) ) {
+    auto symbol = table.find( ast->function_name );
+    if ( !symbol || symbol->type != Type::FUNCTION ) {
         throw SemanticException( ast->location, "Function {} not declared", ast->function_name );
     }
 
+    if ( symbol->number != ast->arguments.size() ) {
+        throw SemanticException( ast->location, "Function {} expects {} arguments, but got {}", ast->function_name,
+                                 symbol->number, ast->arguments.size() );
+    }
+
     for ( const auto& arg : ast->arguments ) {
-        expr( arg );
+        expr( arg, table );
     }
     // Constant Analysis
     is_constant = false; // Function calls are not constant
 }
 
-void SemanticAnalyser::visit_Var( const ast::Var ast ) {
-    if ( auto name = symbol_table.find( ast->name ) ) {
+void SemanticAnalyser::visit_Var( const ast::Var ast, SymbolTable& table ) {
+    if ( auto name = table.find( ast->name ) ) {
+
+        if ( name->type == Type::FUNCTION ) {
+            throw SemanticException( ast->location, "Variable {} cannot be of type function", ast->name );
+        }
+
         spdlog::debug( "Found var: {} for {}", name->name, ast->name );
         ast->name = name->name; // Change the name to the temporary.
 
@@ -411,9 +454,9 @@ void SemanticAnalyser::visit_Constant( ast::Constant ast ) {
     is_constant = true;
 }
 
-SymbolTable SemanticAnalyser::new_scope() {
+SymbolTable SemanticAnalyser::new_scope( SymbolTable& table ) {
     SymbolTable new_table;
-    new_table.copy( symbol_table );
+    new_table.copy( table );
     new_table.reset_current_block();
     return new_table;
 }

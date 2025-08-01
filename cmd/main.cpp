@@ -134,8 +134,8 @@ ast::Program run_parser( Lexer& lexer ) {
 
 void run_sematic( ast::Program program, SymbolTable& symbol_table ) {
     spdlog::info( "Run semantic anylser," );
-    SemanticAnalyser analyser( symbol_table );
-    analyser.analyse( program );
+    SemanticAnalyser analyser;
+    analyser.analyse( program, symbol_table );
 
     PrinterAST printer;
     auto       output = printer.print( program );

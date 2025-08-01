@@ -23,50 +23,49 @@ template <> struct std::less<ast::Constant> {
     bool operator()( const ast::Constant& lhs, const ast::Constant& rhs ) const { return lhs->value < rhs->value; }
 };
 
-class SemanticAnalyser : public ast::Visitor<void> {
+class SemanticAnalyser {
   public:
-    explicit SemanticAnalyser( SymbolTable& table ) : symbol_table( table ) {};
-    ~SemanticAnalyser() override = default;
+    explicit SemanticAnalyser();
+    ~SemanticAnalyser() = default;
 
-    void analyse( ast::Program ast );
-
-    void visit_Program( ast::Program ast ) override;
-    void visit_FunctionDef( ast::FunctionDef ast ) override;
-    void visit_Declaration( ast::Declaration ast ) override;
-    void visit_Statement( const ast::Statement ast ) override;
-    void statement( ast::StatementItem ast );
-    void visit_If( ast::If ast ) override;
-    void visit_Goto( ast::Goto ast ) override;
-    void visit_Label( ast::Label ast ) override;
-    void visit_Null( ast::Null ast ) override {};
-    void visit_Return( ast::Return ast ) override;
-    void visit_Break( const ast::Break ast ) override;
-    void visit_Continue( const ast::Continue ast ) override;
-    void visit_While( const ast::While ast ) override;
-    void visit_DoWhile( const ast::DoWhile ast ) override;
-    void for_init( ast::ForInit ast );
-    void visit_For( const ast::For ast ) override;
-    void visit_Switch( const ast::Switch ast ) override;
-    void visit_Case( const ast::Case ast ) override;
-    void visit_Compound( const ast::Compound ast ) override;
-    void expr( ast::Expr ast );
-    void visit_UnaryOp( ast::UnaryOp ast ) override;
-    void visit_BinaryOp( ast::BinaryOp ast ) override;
-    void visit_PostOp( ast::PostOp ast ) override;
-    void visit_Conditional( ast::Conditional ast ) override;
-    void visit_Assign( ast::Assign ast ) override;
-    void visit_Call( const ast::Call ast ) override;
-    void visit_Var( ast::Var ast ) override;
-    void visit_Constant( ast::Constant ast ) override;
+    void analyse( ast::Program ast, SymbolTable& table );
 
   private:
-    SymbolTable new_scope();
+    void visit_Program( ast::Program ast, SymbolTable& table );
+    void visit_FunctionDef( ast::FunctionDef ast, SymbolTable& table );
+    void visit_Declaration( ast::Declaration ast, SymbolTable& table );
+    void visit_Statement( const ast::Statement ast, SymbolTable& table );
+    void statement( ast::StatementItem ast, SymbolTable& table );
+    void visit_If( ast::If ast, SymbolTable& table );
+    void visit_Goto( ast::Goto ast );
+    void visit_Label( ast::Label ast );
+    void visit_Return( ast::Return ast, SymbolTable& table );
+    void visit_Break( const ast::Break ast, SymbolTable& table );
+    void visit_Continue( const ast::Continue ast, SymbolTable& table );
+    void visit_While( const ast::While ast, SymbolTable& table );
+    void visit_DoWhile( const ast::DoWhile ast, SymbolTable& table );
+    void for_init( ast::ForInit ast, SymbolTable& table );
+    void visit_For( const ast::For ast, SymbolTable& table );
+    void visit_Switch( const ast::Switch ast, SymbolTable& table );
+    void visit_Case( const ast::Case ast, SymbolTable& table );
+    void visit_Compound( const ast::Compound ast, SymbolTable& table );
+    void expr( ast::Expr ast, SymbolTable& table );
+    void visit_UnaryOp( ast::UnaryOp ast, SymbolTable& table );
+    void visit_BinaryOp( ast::BinaryOp ast, SymbolTable& table );
+    void visit_PostOp( ast::PostOp ast, SymbolTable& table );
+    void visit_Conditional( ast::Conditional ast, SymbolTable& table );
+    void visit_Assign( ast::Assign ast, SymbolTable& table );
+    void visit_Call( const ast::Call ast, SymbolTable& table );
+    void visit_Var( ast::Var ast, SymbolTable& table );
+    void visit_Constant( ast::Constant ast );
+
+  private:
+    SymbolTable new_scope( SymbolTable& table );
     void        new_loop_label( std::shared_ptr<ast::Base> b );
     void        loop_label( std::shared_ptr<ast::Base> b );
     void        new_switch_label( std::shared_ptr<ast::Base> b );
     void        switch_label( std::shared_ptr<ast::Base> b );
 
-    SymbolTable&                symbol_table;
     // Map of goto labels and whether they have been defined
     std::map<std::string, bool> labels;
 

@@ -16,9 +16,17 @@ enum class Linkage {
     External, // Visible across translation units
 };
 
+enum class Type {
+    VOID,
+    INT,
+    FUNCTION
+};
+
 class Symbol {
   public:
     std::string name;
     Linkage     linkage { Linkage::None };
+    Type        type { Type::INT };
+    int         number { 0 };
     bool        current_scope { false };
 };
