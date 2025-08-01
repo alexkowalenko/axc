@@ -23,7 +23,12 @@ AssemblyGen::AssemblyGen() {
 
 x86_at::Program AssemblyGen::generate( const tac::Program atac ) {
     auto program = mk_node<x86_at::Program_>( atac );
-    program->function = functionDef( atac->function );
+    for ( auto funct : atac->functions ) {
+        auto fd = functionDef( funct );
+        // FIX: This should be a vector of functions, not a single function
+        program->function = fd;
+    }
+
     return program;
 }
 
@@ -44,6 +49,7 @@ x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
                             jumpIfZero<tac::JumpIfNotZero>( r, false, function->instructions );
                         },
                         [ &function, this ]( tac::Label r ) -> void { label( r, function->instructions ); },
+                        [ this ]( tac::FunCall atac ) -> void {},
                     },
                     instr );
     }

@@ -21,7 +21,7 @@
 tac::Program TacGen::generate( ast::Program ast ) {
     auto program = mk_node<tac::Program_>( ast );
     for ( auto f : ast->functions ) {
-        program->function = functionDef( f );
+        program->functions.push_back( functionDef( f ) );
     }
     return program;
 }
@@ -307,7 +307,7 @@ tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructi
             [ &instructions, this ]( ast::PostOp b ) -> tac::Value { return post( b, instructions ); },
             [ &instructions, this ]( ast::Conditional b ) -> tac::Value { return conditional( b, instructions ); },
             [ &instructions, this ]( ast::Assign a ) -> tac::Value { return assign( a, instructions ); },
-            [ this ]( ast::Call ) -> tac::Value {},
+            [ &instructions, this ]( ast::Call c) -> tac::Value {return call( c, instructions ); },
             [ this ]( ast::Var v ) -> tac::Value { return mk_node<tac::Variable_>( v, v->name ); },
             [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
         ast );
@@ -610,6 +610,19 @@ tac::Value TacGen::assign( ast::Assign ast, std::vector<tac::Instruction>& instr
     auto copy = mk_node<tac::Copy_>( ast, temp, expr( ast->left, instructions ) );
     instructions.push_back( copy );
     return temp;
+}
+
+tac::Value    TacGen::call( const ast::Call ast, std::vector<tac::Instruction>& instructions ) {
+    std::vector<tac::Value> args;
+    for ( auto& arg : ast->arguments ) {
+        args.push_back( expr(arg, instructions ));
+    }
+
+    auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+    auto func = mk_node<tac::FunCall_>( ast, ast->function_name, args, dst );
+    instructions.push_back( func );
+
+    return dst;
 }
 
 tac::Label TacGen::generate_label( const std::shared_ptr<ast::Base> b, std::string_view name ) {

@@ -1,6 +1,7 @@
 binary.h
 constant.h
 copy.h
+funcall.h
 functiondef.h
 includes.h
 jump.h

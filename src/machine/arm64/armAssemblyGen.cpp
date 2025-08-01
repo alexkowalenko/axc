@@ -21,7 +21,11 @@ ARMAssemblyGen::ARMAssemblyGen() {
 
 arm64_at::Program ARMAssemblyGen::generate( const tac::Program atac ) {
     auto program = mk_node<arm64_at::Program_>( atac );
-    program->function = function( atac->function );
+    for ( auto& funct : atac->functions ) {
+        auto function_def = function( funct );
+        // FIX
+        program->function = function_def;
+    }
     return program;
 };
 arm64_at::FunctionDef ARMAssemblyGen::function( const tac::FunctionDef& atac ) {
@@ -37,6 +41,7 @@ arm64_at::FunctionDef ARMAssemblyGen::function( const tac::FunctionDef& atac ) {
                         [ this ]( tac::JumpIfZero ) -> void {},
                         [ this ]( tac::JumpIfNotZero ) -> void {},
                         [ this ]( tac::Label ) -> void {},
+                        [ this ]( tac::FunCall atac ) -> void {},
                     },
                     instr );
     }

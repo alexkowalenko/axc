@@ -73,7 +73,10 @@ using JumpIfNotZero = std::shared_ptr<JumpIfNotZero_>;
 class Label_;
 using Label = std::shared_ptr<Label_>;
 
-using Instruction = std::variant<Return, Unary, Binary, Copy, Jump, JumpIfZero, JumpIfNotZero, Label>;
+class FunCall_;
+using FunCall = std::shared_ptr<FunCall_>;
+
+using Instruction = std::variant<Return, Unary, Binary, Copy, Jump, JumpIfZero, JumpIfNotZero, Label, FunCall>;
 
 class Constant_;
 using Constant = std::shared_ptr<Constant_>;

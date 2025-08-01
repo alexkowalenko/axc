@@ -46,6 +46,7 @@ class TacGen {
     tac::Value    conditional( ast::Conditional ast, std::vector<tac::Instruction>& instructions );
     tac::Value    logical( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions );
     tac::Value    assign( ast::Assign ast, std::vector<tac::Instruction>& instructions );
+    tac::Value    call( const ast::Call ast, std::vector<tac::Instruction>& instructions );
     tac::Constant constant( ast::Constant ast );
 
     tac::Label generate_label( std::shared_ptr<ast::Base> b, std::string_view name );

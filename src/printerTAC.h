@@ -31,6 +31,7 @@ class PrinterTAC : public tac::Visitor<std::string> {
     std::string visit_JumpIfZero( const tac::JumpIfZero ast ) override;
     std::string visit_JumpIfNotZero( const tac::JumpIfNotZero ast ) override;
     std::string visit_Label( const tac::Label ast ) override;
+    std::string visit_FunCall( const tac::FunCall ast ) override;
 
     std::string visit_Constant( const tac::Constant ast ) override;
     std::string visit_Variable( const tac::Variable ast ) override;

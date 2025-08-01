@@ -99,5 +99,5 @@ architectures, such as Aarch64.
 - [x] Lexer.
 - [x] Parser.
 - [x] Semantic Analysis.
-- [ ] TAC Intermediate.
+- [x] TAC Intermediate.
 - [ ] Output: X86_64.

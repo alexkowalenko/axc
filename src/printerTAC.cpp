@@ -17,7 +17,11 @@ std::string PrinterTAC::print( const tac::Program ast ) {
 }
 
 std::string PrinterTAC::visit_Program( const tac::Program ast ) {
-    return ast->function->accept( this );
+    std::string buf;
+    for ( const auto& function : ast->functions ) {
+        buf += function->accept( this ) + "\n\n";
+    }
+    return buf;
 }
 
 std::string PrinterTAC::visit_FunctionDef( const tac::FunctionDef ast ) {
@@ -25,14 +29,15 @@ std::string PrinterTAC::visit_FunctionDef( const tac::FunctionDef ast ) {
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
         buf += std::visit( overloaded {
-                               [ this ]( tac::Return r ) -> std::string { return indent +  r->accept( this ); },
+                               [ this ]( tac::Return r ) -> std::string { return indent + r->accept( this ); },
                                [ this ]( tac::Unary r ) -> std::string { return indent + r->accept( this ); },
                                [ this ]( tac::Binary r ) -> std::string { return indent + r->accept( this ); },
-                               [ this ]( tac::Copy r ) -> std::string { return  indent + r->accept( this ); },
-                               [ this ]( tac::Jump r ) -> std::string { return  indent + r->accept( this ); },
-                               [ this ]( tac::JumpIfZero r ) -> std::string { return  indent + r->accept( this ); },
-                               [ this ]( tac::JumpIfNotZero r ) -> std::string { return  indent + r->accept( this ); },
+                               [ this ]( tac::Copy r ) -> std::string { return indent + r->accept( this ); },
+                               [ this ]( tac::Jump r ) -> std::string { return indent + r->accept( this ); },
+                               [ this ]( tac::JumpIfZero r ) -> std::string { return indent + r->accept( this ); },
+                               [ this ]( tac::JumpIfNotZero r ) -> std::string { return indent + r->accept( this ); },
                                [ this ]( tac::Label r ) -> std::string { return r->accept( this ); },
+                               [ this ]( tac::FunCall r ) -> std::string { return indent + r->accept( this ); },
 
                            },
                            instr );
@@ -153,6 +158,19 @@ std::string PrinterTAC::visit_JumpIfNotZero( const tac::JumpIfNotZero ast ) {
 std::string PrinterTAC::visit_Label( const tac::Label ast ) {
     return std::format( "Label: {:s}", ast->name );
 }
+
+std::string PrinterTAC::visit_FunCall( const tac::FunCall ast ) {
+    std::string buf = std::format( "FunCall: {:s}(", ast->function_name );
+    for ( const auto& arg : ast->arguments ) {
+        buf += value( arg ) + ", ";
+    }
+    if ( !ast->arguments.empty() ) {
+        buf.pop_back(); // Remove trailing space
+        buf.pop_back(); // Remove trailing comma
+    }
+    buf += ")";
+    return buf;
+};
 
 std::string PrinterTAC::visit_Constant( const tac::Constant ast ) {
     return std::format( "Constant( {:d})", ast->value );
