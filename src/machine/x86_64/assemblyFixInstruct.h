@@ -16,10 +16,6 @@ class AssemblyFixInstruct : public x86_at::Visitor<void> {
     AssemblyFixInstruct();
     ~AssemblyFixInstruct() override = default;
 
-    void set_number_stack_locations( const int number_stack_locations ) {
-        this->number_stack_locations = number_stack_locations;
-    }
-
     void filter( x86_at::Program program );
 
   public:
@@ -28,7 +24,10 @@ class AssemblyFixInstruct : public x86_at::Visitor<void> {
 
     void visit_Mov( const x86_at::Mov ast ) override;
     void visit_Unary( const x86_at::Unary ast ) override {};
-    void visit_AllocateStack( const x86_at::AllocateStack ast ) override {};
+    void visit_AllocateStack( const x86_at::AllocateStack ast ) override ;
+    void visit_DeallocateStack( const x86_at::DeallocateStack ast ) override ;
+    void visit_Push( const x86_at::Push ast ) override {};
+    void visit_Call( const x86_at::Call ast ) override;
     void visit_Ret( const x86_at::Ret ast ) override {};
     void visit_Imm( const x86_at::Imm ast ) override {};
     void visit_Binary( const x86_at::Binary ast ) override;
@@ -45,9 +44,9 @@ class AssemblyFixInstruct : public x86_at::Visitor<void> {
     void visit_Stack( const x86_at::Stack ast ) override {};
 
   private:
-    int                          number_stack_locations { 0 };
     static constexpr int         stack_increment { 4 };
     std::vector<x86_at::Instruction> current_instructions;
+    x86_at::FunctionDef current_function;
 
     x86_at::Register ax;
     x86_at::Register cx;

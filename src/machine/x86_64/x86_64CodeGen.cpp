@@ -64,6 +64,7 @@ CodeGenBase X86_64CodeGen::run_codegen( tac::Program tac ) {
     std::println( "-----------------------" );
     std::println( "{:s}", output );
 
+    spdlog::info( "Filtered 1: Filter Pseudo" );
     AssemblyFilterPseudo filter;
     filter.filter( assembly );
     output = assemblerPrinter.print( assembly );
@@ -71,8 +72,8 @@ CodeGenBase X86_64CodeGen::run_codegen( tac::Program tac ) {
     std::println( "----------" );
     std::println( "{:s}", output );
 
+    spdlog::info( "Filtered 2: Fix Instructions" );
     AssemblyFixInstruct filter2;
-    filter2.set_number_stack_locations( filter.get_number_stack_locations() );
     filter2.filter( assembly );
     output = assemblerPrinter.print( assembly );
     std::println( "Filtered 2:" );
@@ -114,7 +115,10 @@ void X86_64CodeGen::generate( CodeGenBase program ) {
 
 void X86_64CodeGen::visit_Program( const x86_at::Program ast ) {
     add_line( std::format( "# file: {}", option.input_file ) );
-    ast->function->accept( this );
+    for ( auto const& function : ast->functions ) {
+        function->accept( this );
+        add_line( "" );
+    }
 }
 
 void X86_64CodeGen::visit_FunctionDef( const x86_at::FunctionDef ast ) {
@@ -135,6 +139,9 @@ void X86_64CodeGen::visit_FunctionDef( const x86_at::FunctionDef ast ) {
                                  [ this ]( x86_at::Binary b ) -> void { b->accept( this ); },
                                  [ this ]( x86_at::Cmp b ) -> void { b->accept( this ); },
                                  [ this ]( x86_at::AllocateStack a ) -> void { a->accept( this ); },
+                                 [ this ]( x86_at::DeallocateStack a ) -> void { a->accept( this ); },
+                                 [ this ]( x86_at::Push p ) -> void { p->accept( this ); },
+                                 [ this ]( x86_at::Call c ) -> void { c->accept( this ); },
                                  [ this ]( x86_at::Idiv i ) -> void { i->accept( this ); },
                                  [ this ]( x86_at::Cdq c ) -> void { c->accept( this ); },
                                  [ this ]( x86_at::Jump c ) -> void { c->accept( this ); },
@@ -193,6 +200,12 @@ void X86_64CodeGen::visit_Unary( const x86_at::Unary ast ) {
 void X86_64CodeGen::visit_AllocateStack( const x86_at::AllocateStack ast ) {
     add_line( "subq", std::format( "${}, %rsp", ast->size ) );
 }
+
+void X86_64CodeGen::visit_DeallocateStack( const x86_at::DeallocateStack ast ) {}
+
+void X86_64CodeGen::visit_Push( const x86_at::Push ast ) {}
+
+void X86_64CodeGen::visit_Call( const x86_at::Call ast ) {}
 
 void X86_64CodeGen::visit_Binary( const x86_at::Binary ast ) {
     switch ( ast->op ) {

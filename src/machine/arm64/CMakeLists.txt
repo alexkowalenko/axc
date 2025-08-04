@@ -6,5 +6,6 @@ add_library(arm64 armAssemblyGen.cpp
 )
 
 target_link_libraries(arm64 PRIVATE
+        project_options
         spdlog::spdlog
 )

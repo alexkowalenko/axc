@@ -100,4 +100,5 @@ architectures, such as Aarch64.
 - [x] Parser.
 - [x] Semantic Analysis.
 - [x] TAC Intermediate.
+- [x] Code Generator.
 - [ ] Output: X86_64.

@@ -14,8 +14,8 @@
 #include <variant>
 #include <vector>
 
-#include "token.h"
 #include "codeGen.h"
+#include "token.h"
 
 namespace x86_at {
 
@@ -46,6 +46,10 @@ enum class RegisterName {
     AX,
     CX,
     DX,
+    DI,
+    SI,
+    R8,
+    R9,
     R10,
     R11,
 };
@@ -58,6 +62,14 @@ constexpr std::string to_string( const RegisterName rn ) {
         return "C";
     case RegisterName::DX :
         return "D";
+    case RegisterName::DI :
+        return "DI";
+    case RegisterName::SI :
+        return "SI";
+    case RegisterName::R8 :
+        return "R8";
+    case RegisterName::R9 :
+        return "R9";
     case RegisterName::R10 :
         return "R10";
     case RegisterName::R11 :
@@ -66,12 +78,15 @@ constexpr std::string to_string( const RegisterName rn ) {
 }
 
 enum class RegisterSize {
+    Qword, // 64 bits
     Long,
     Byte,
 };
 
 constexpr std::string to_string( const RegisterSize rs ) {
     switch ( rs ) {
+    case RegisterSize::Qword :
+        return "R";
     case RegisterSize::Long :
         return "E";
     case RegisterSize::Byte :
@@ -112,10 +127,20 @@ using Label = std::shared_ptr<Label_>;
 class AllocateStack_;
 using AllocateStack = std::shared_ptr<AllocateStack_>;
 
+class DeallocateStack_;
+using DeallocateStack = std::shared_ptr<DeallocateStack_>;
+
+class Push_;
+using Push = std::shared_ptr<Push_>;
+
+class Call_;
+using Call = std::shared_ptr<Call_>;
+
 class Ret_;
 using Ret = std::shared_ptr<Ret_>;
 
-using Instruction = std::variant<Mov, Unary, Binary, Cmp, Idiv, Cdq, Jump, JumpCC, SetCC, Label, AllocateStack, Ret>;
+using Instruction = std::variant<Mov, Unary, Binary, Cmp, Idiv, Cdq, Jump, JumpCC, SetCC, Label, AllocateStack,
+                                 DeallocateStack, Push, Call, Ret>;
 
 class Imm_;
 using Imm = std::shared_ptr<Imm_>;
@@ -130,4 +155,4 @@ class Stack_;
 using Stack = std::shared_ptr<Stack_>;
 
 using Operand = std::variant<Imm, Register, Pseudo, Stack>;
-} // namespace at
+} // namespace x86_at

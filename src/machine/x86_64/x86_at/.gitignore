@@ -1,7 +1,9 @@
 allocatestack.h
 binary.h
+call.h
 cmp.h
 cdq.h
+deallocatestack.h
 functiondef.h
 idiv.h
 imm.h
@@ -12,6 +14,7 @@ label.h
 mov.h
 program.h
 pseudo.h
+push.h
 register.h
 ret.h
 setcc.h

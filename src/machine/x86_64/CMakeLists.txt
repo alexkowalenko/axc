@@ -8,5 +8,6 @@ add_library(x86 assemblyGen.cpp
 )
 
 target_link_libraries(x86 PRIVATE
+        project_options
         spdlog::spdlog
 )

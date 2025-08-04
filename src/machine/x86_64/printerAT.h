@@ -28,6 +28,9 @@ class PrinterAT : public x86_at::Visitor<std::string> {
     std::string visit_Imm( const x86_at::Imm ast ) override;
     std::string visit_Unary( const x86_at::Unary ast ) override;
     std::string visit_AllocateStack( const x86_at::AllocateStack ast ) override;
+    std::string visit_DeallocateStack( const x86_at::DeallocateStack ast ) override;
+    std::string visit_Push( const x86_at::Push ast ) override;
+    std::string visit_Call( const x86_at::Call ast ) override;
     std::string visit_Binary( const x86_at::Binary ast ) override;
     std::string visit_Idiv( const x86_at::Idiv ast ) override;
     std::string visit_Cdq( const x86_at::Cdq ast ) override;

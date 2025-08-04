@@ -4,3 +4,4 @@ build/*
 docs/
 .vscode/*
 demo/
+.DS_Store

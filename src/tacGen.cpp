@@ -30,6 +30,10 @@ tac::FunctionDef TacGen::functionDef( ast::FunctionDef ast ) {
     spdlog::debug( "tac::functionDef: {}", ast->name );
     auto function = mk_node<tac::FunctionDef_>( ast );
     function->name = ast->name;
+    for ( auto const& param : ast->params ) {
+        // Add parameters to the function
+        function->params.push_back( param );
+    }
 
     std::vector<tac::Instruction> instructions;
     if ( ast->block ) {

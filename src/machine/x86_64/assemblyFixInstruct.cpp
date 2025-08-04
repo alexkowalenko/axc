@@ -11,6 +11,7 @@
 #include "assemblyFixInstruct.h"
 
 #include "common.h"
+#include "spdlog/spdlog.h"
 #include "x86_at/includes.h"
 #include "x86_common.h"
 
@@ -28,16 +29,14 @@ void AssemblyFixInstruct::filter( x86_at::Program program ) {
 }
 
 void AssemblyFixInstruct::visit_Program( const x86_at::Program ast ) {
-    ast->function->accept( this );
+    for (auto const& funct : ast->functions) {
+        funct->accept( this );
+    }
 }
 
 void AssemblyFixInstruct::visit_FunctionDef( const x86_at::FunctionDef ast ) {
+    current_function = ast;
     current_instructions.clear();
-
-    // Add Allocate Stack Instruction
-    auto allocate = mk_node<x86_at::AllocateStack_>( ast );
-    allocate->size = stack_increment * number_stack_locations;
-    current_instructions.push_back( allocate );
 
     // Look for MOV instructions
     for ( auto const& instr : ast->instructions ) {
@@ -45,7 +44,10 @@ void AssemblyFixInstruct::visit_FunctionDef( const x86_at::FunctionDef ast ) {
                                  [ this ]( x86_at::Unary u ) -> void { current_instructions.push_back( u ); },
                                  [ this ]( x86_at::Binary b ) -> void { b->accept( this ); },
                                  [ this ]( x86_at::Cmp b ) -> void { b->accept( this ); },
-                                 [ this ]( x86_at::AllocateStack a ) -> void { current_instructions.push_back( a ); },
+                                 [ this ]( x86_at::AllocateStack a ) -> void { a->accept( this ); },
+                                 [ this ]( x86_at::DeallocateStack a ) -> void { a->accept( this ); },
+                                 [ this ]( x86_at::Push p ) -> void { p->accept( this ); },
+                                 [ this ]( x86_at::Call c ) -> void { c->accept( this ); },
                                  [ this ]( x86_at::Idiv i ) -> void { i->accept( this ); },
                                  [ this ]( x86_at::Cdq c ) -> void { current_instructions.push_back( c ); },
                                  [ this ]( x86_at::Jump c ) -> void { current_instructions.push_back( c ); },
@@ -90,8 +92,9 @@ void AssemblyFixInstruct::visit_Idiv( const x86_at::Idiv ast ) {
 }
 
 void AssemblyFixInstruct::visit_Binary( const x86_at::Binary ast ) {
-    if ( ast->op == x86_at::BinaryOpType::ADD || ast->op == x86_at::BinaryOpType::SUB || ast->op == x86_at::BinaryOpType::AND ||
-         ast->op == x86_at::BinaryOpType::OR || ast->op == x86_at::BinaryOpType::XOR ) {
+    if ( ast->op == x86_at::BinaryOpType::ADD || ast->op == x86_at::BinaryOpType::SUB ||
+         ast->op == x86_at::BinaryOpType::AND || ast->op == x86_at::BinaryOpType::OR ||
+         ast->op == x86_at::BinaryOpType::XOR ) {
         // These instructions can't have stack locations in both operands
         if ( std::holds_alternative<x86_at::Stack>( ast->operand1 ) &&
              std::holds_alternative<x86_at::Stack>( ast->operand2 ) ) {
@@ -146,7 +149,8 @@ void AssemblyFixInstruct::visit_Binary( const x86_at::Binary ast ) {
 
 void AssemblyFixInstruct::visit_Cmp( const x86_at::Cmp ast ) {
     // CMP instructions can't have stack locations in both operands
-    if ( std::holds_alternative<x86_at::Stack>( ast->operand1 ) && std::holds_alternative<x86_at::Stack>( ast->operand2 ) ) {
+    if ( std::holds_alternative<x86_at::Stack>( ast->operand1 ) &&
+         std::holds_alternative<x86_at::Stack>( ast->operand2 ) ) {
         auto src = ast->operand1;
         auto dst = ast->operand2;
 
@@ -169,4 +173,23 @@ void AssemblyFixInstruct::visit_Cmp( const x86_at::Cmp ast ) {
         // Other MOV instructions
         current_instructions.push_back( ast );
     }
+}
+
+void AssemblyFixInstruct::visit_AllocateStack( const x86_at::AllocateStack ast ) {
+    // Add Allocate Stack Instruction
+    if ( current_function->stack_size != 0) {
+        auto allocate = mk_node<x86_at::AllocateStack_>( ast );
+        allocate->size = stack_increment * current_function->stack_size;
+        allocate->size = allocate->size + 15 & ~15; // Align to 16 bytes
+        spdlog::debug( "Adding AllocateStack instruction {} - {}", ast->size, allocate->size );
+        current_instructions.push_back( allocate );
+    }
+}
+
+void AssemblyFixInstruct::visit_DeallocateStack( const x86_at::DeallocateStack ast ) {
+    current_instructions.push_back( ast );
+}
+
+void AssemblyFixInstruct::visit_Call( const x86_at::Call ast ) {
+    current_instructions.push_back( ast );
 }

@@ -47,5 +47,6 @@ add_library(compiler STATIC
 
 target_link_libraries(compiler
         PRIVATE
+        project_options
         spdlog::spdlog
 )

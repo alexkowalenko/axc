@@ -14,8 +14,8 @@ if __name__ == "__main__":
         output_dir,
         "x86_at",
         {
-            "Program": [("FunctionDef", "function", False)],
-            "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False)],
+            "Program": [("std::vector<FunctionDef>", "functions", False)],
+            "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False), ("std::int32_t", "stack_size", False)],
             # Operations for Instructions
             "Mov": [("Operand", "src", False), ("Operand", "dst", False) ],
             "Unary": [("UnaryOpType", "op", False), ("Operand", "operand", False) ],
@@ -28,6 +28,11 @@ if __name__ == "__main__":
             "SetCC": [("CondCode", "cond", False), ("Operand", "operand", False)],
             "Label": [("std::string", "name", False)],
             "AllocateStack": [("std::int32_t", "size", False)],
+            "DeallocateStack": [("std::int32_t", "size", False)],
+            "Push": [("Operand", "operand", False)],
+            "Call": [("std::string", "function_name", False)],
+            "Ret": [("std::optional<Operand>", "value", True)],
+            # Operand types
             "Ret": [],
             # 4 Operand types for Operand
             "Imm": [("std::int32_t", "value", False)],

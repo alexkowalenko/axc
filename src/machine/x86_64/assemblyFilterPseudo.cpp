@@ -18,16 +18,22 @@ void AssemblyFilterPseudo::filter( x86_at::Program program ) {
 }
 
 void AssemblyFilterPseudo::visit_Program( const x86_at::Program ast ) {
-    ast->function->accept( this );
+    for (auto const& funct : ast->functions) {
+        funct->accept( this );
+    }
 }
 
 void AssemblyFilterPseudo::visit_FunctionDef( const x86_at::FunctionDef ast ) {
+    reset_stack_info();
     for ( auto const& instr : ast->instructions ) {
         std::visit( overloaded { [ this ]( x86_at::Mov v ) -> void { v->accept( this ); },
                                  [ this ]( x86_at::Unary u ) -> void { u->accept( this ); },
                                  [ this ]( x86_at::Cmp b ) -> void { b->accept( this ); },
                                  [ this ]( x86_at::Binary b ) -> void { b->accept( this ); },
                                  [ this ]( x86_at::AllocateStack a ) -> void { a->accept( this ); },
+                                 [ this ]( x86_at::DeallocateStack a ) -> void { a->accept( this ); },
+                                 [ this ]( x86_at::Push p ) -> void { p->accept( this ); },
+                                 [ this ]( x86_at::Call c ) -> void { c->accept( this ); },
                                  [ this ]( x86_at::Idiv i ) -> void { i->accept( this ); },
                                  [ this ]( x86_at::Cdq c ) -> void { c->accept( this ); },
                                  [ this ]( x86_at::Jump c ) -> void { c->accept( this ); },
@@ -37,6 +43,7 @@ void AssemblyFilterPseudo::visit_FunctionDef( const x86_at::FunctionDef ast ) {
                                  [ this ]( x86_at::Ret r ) -> void { r->accept( this ); } },
                     instr );
     }
+    ast->stack_size = get_number_stack_locations();
 }
 
 void AssemblyFilterPseudo::visit_Mov( const x86_at::Mov ast ) {
@@ -66,6 +73,13 @@ void AssemblyFilterPseudo::visit_SetCC( const x86_at::SetCC ast ) {
     ast->operand = operand( ast->operand );
 }
 
+void AssemblyFilterPseudo::visit_Call( const x86_at::Call ast ) {
+}
+
+void AssemblyFilterPseudo::visit_Push( const x86_at::Push ast ) {
+    ast->operand = operand( ast->operand );
+}
+
 x86_at::Operand AssemblyFilterPseudo::operand( const x86_at::Operand& op ) {
     if ( std::holds_alternative<x86_at::Pseudo>( op ) ) {
         auto p = std::get<x86_at::Pseudo>( op );
@@ -85,4 +99,9 @@ x86_at::Operand AssemblyFilterPseudo::operand( const x86_at::Operand& op ) {
 
 int AssemblyFilterPseudo::get_number_stack_locations() {
     return std::abs( next_stack_location / stack_increment );
+}
+
+void AssemblyFilterPseudo::reset_stack_info() {
+    stack_location_map.clear();
+    next_stack_location = 0;
 }

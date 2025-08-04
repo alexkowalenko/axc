@@ -13,12 +13,20 @@
 #include <map>
 
 #include "common.h"
+#include "spdlog/spdlog.h"
 #include "x86_common.h"
 
 AssemblyGen::AssemblyGen() {
     zero = std::make_shared<x86_at::Imm_>( Location(), 0 );
     ax = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::AX, x86_at::RegisterSize::Long );
+    cx = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::CX, x86_at::RegisterSize::Long );
     dx = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::DX, x86_at::RegisterSize::Long );
+    di = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::DI, x86_at::RegisterSize::Long );
+    si = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::SI, x86_at::RegisterSize::Long );
+    r8 = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::R8, x86_at::RegisterSize::Long );
+    r9 = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::R9, x86_at::RegisterSize::Long );
+
+    frame_registers = { di, si, dx, cx, r8, r9 };
 }
 
 x86_at::Program AssemblyGen::generate( const tac::Program atac ) {
@@ -26,31 +34,50 @@ x86_at::Program AssemblyGen::generate( const tac::Program atac ) {
     for ( auto funct : atac->functions ) {
         auto fd = functionDef( funct );
         // FIX: This should be a vector of functions, not a single function
-        program->function = fd;
+        program->functions.push_back( fd );
     }
 
     return program;
 }
 
 x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
+    spdlog::debug( "Generating function: {}", atac->name );
     auto function = mk_node<x86_at::FunctionDef_>( atac );
     function->name = atac->name;
+
+    int count = 0;
+    int stack_count = 16;
+    for (auto param : atac->params) {
+        auto p = mk_node<x86_at::Pseudo_>( atac, param );
+        if (count < frame_registers.size()) {
+            auto mov = mk_node<x86_at::Mov_>( atac, frame_registers[ count ], p );
+            function->instructions.push_back( mov );
+        } else {
+            auto stack_param = mk_node<x86_at::Stack_>( atac, stack_count );
+            auto mov = mk_node<x86_at::Mov_>( atac, stack_param, p );
+            function->instructions.push_back( mov );
+            stack_count += 8; // Increment stack by 8 bytes for each parameter
+        }
+        count ++;
+    }
+    spdlog::debug( "Arg Count: {}, Stack count: {}", atac->params.size(), stack_count );
+
     for ( auto instr : atac->instructions ) {
-        std::visit( overloaded {
-                        [ &function, this ]( tac::Return r ) -> void { ret( r, function->instructions ); },
-                        [ &function, this ]( tac::Unary r ) -> void { unary( r, function->instructions ); },
-                        [ &function, this ]( tac::Binary r ) -> void { binary( r, function->instructions ); },
-                        [ &function, this ]( tac::Copy r ) -> void { copy( r, function->instructions ); },
-                        [ &function, this ]( tac::Jump r ) -> void { jump( r, function->instructions ); },
-                        [ &function, this ]( tac::JumpIfZero r ) -> void {
-                            jumpIfZero<tac::JumpIfZero>( r, true, function->instructions );
-                        },
-                        [ &function, this ]( tac::JumpIfNotZero r ) -> void {
-                            jumpIfZero<tac::JumpIfNotZero>( r, false, function->instructions );
-                        },
-                        [ &function, this ]( tac::Label r ) -> void { label( r, function->instructions ); },
-                        [ this ]( tac::FunCall atac ) -> void {},
-                    },
+        std::visit( overloaded { [ &function, this ]( tac::Return r ) -> void { ret( r, function->instructions ); },
+                                 [ &function, this ]( tac::Unary r ) -> void { unary( r, function->instructions ); },
+                                 [ &function, this ]( tac::Binary r ) -> void { binary( r, function->instructions ); },
+                                 [ &function, this ]( tac::Copy r ) -> void { copy( r, function->instructions ); },
+                                 [ &function, this ]( tac::Jump r ) -> void { jump( r, function->instructions ); },
+                                 [ &function, this ]( tac::JumpIfZero r ) -> void {
+                                     jumpIfZero<tac::JumpIfZero>( r, true, function->instructions );
+                                 },
+                                 [ &function, this ]( tac::JumpIfNotZero r ) -> void {
+                                     jumpIfZero<tac::JumpIfNotZero>( r, false, function->instructions );
+                                 },
+                                 [ &function, this ]( tac::Label r ) -> void { label( r, function->instructions ); },
+                                 [ &function, this ]( tac::FunCall atac ) -> void {
+                                     functionCall( atac, function->instructions );
+                                 } },
                     instr );
     }
     return function;
@@ -207,6 +234,67 @@ void AssemblyGen::copy( const tac::Copy atac, std::vector<x86_at::Instruction>& 
 void AssemblyGen::label( const tac::Label atac, std::vector<x86_at::Instruction>& instructions ) {
     auto label = mk_node<x86_at::Label_>( atac, atac->name );
     instructions.push_back( label );
+}
+
+void AssemblyGen::functionCall( const tac::FunCall atac, std::vector<x86_at::Instruction>& instructions ) {
+    spdlog::debug( "Function call: {}", atac->function_name );
+    int arg_count = atac->arguments.size();
+
+    int stack_padding = 0;
+    int stack_args = 0;
+    if ( ( arg_count - 6 ) > 0 ) {
+        stack_args = arg_count - 6;
+        if ( stack_args % 2 != 0 )
+            // If odd number of stack arguments, add padding
+            stack_padding = 8;
+    }
+    spdlog::debug( "Arg count: {}, Stack args: {}, Stack padding: {}", arg_count, stack_args, stack_padding );
+
+    if ( stack_padding != 0 ) {
+        // Push padding to stack
+        auto pad = mk_node<x86_at::AllocateStack_>( atac, stack_padding );
+        instructions.push_back( pad );
+    }
+
+    auto reg_index = 0;
+    for ( auto& arg : atac->arguments ) {
+        if ( reg_index < frame_registers.size() ) {
+            // Use registers for the first 6 arguments
+            auto mov = mk_node<x86_at::Mov_>( atac, value( arg ), frame_registers[ reg_index ] );
+            instructions.push_back( mov );
+        } else {
+            // Remaining arguments go on the stack
+            auto v = value( arg );
+            if ( std::holds_alternative<x86_at::Imm>( v ) || std::holds_alternative<x86_at::Register>( v ) ) {
+                // If the value is an immediate or register, we can push it to the stack
+                auto push = mk_node<x86_at::Push_>( atac, v );
+                instructions.push_back( push );
+            } else {
+                // Otherwise, move it to AX, then push it
+                auto mov = mk_node<x86_at::Mov_>( atac, v, ax );
+                instructions.push_back( mov );
+                auto push = mk_node<x86_at::Push_>( atac, ax );
+                instructions.push_back( push );
+            }
+        }
+        ++reg_index;
+    }
+
+    // Emit Call
+    auto call = mk_node<x86_at::Call_>( atac );
+    call->function_name = atac->function_name;
+    instructions.push_back( call );
+
+    // Adjust stack pointer
+    auto bytes_to_remove = ( stack_args * 8 + stack_padding ); // Each argument is 8 bytes
+    if ( bytes_to_remove != 0 ) {
+        auto deallocate = mk_node<x86_at::DeallocateStack_>( atac, bytes_to_remove );
+        instructions.push_back( deallocate );
+    }
+
+    auto dst = value( atac->dst );
+    auto mov = mk_node<x86_at::Mov_>( atac, ax, dst );
+    instructions.push_back( mov );
 }
 
 x86_at::Operand AssemblyGen::value( const tac::Value& atac ) {

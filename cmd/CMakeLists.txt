@@ -6,6 +6,7 @@ add_executable(axc_comp main.cpp
         )
 
 target_link_libraries(axc_comp PRIVATE
+        project_options
         spdlog::spdlog
         argparse
         compiler

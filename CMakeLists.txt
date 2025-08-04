@@ -21,6 +21,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include(cmake/PreventInSourceBuilds.cmake)
 include(cmake/CPM.cmake)
 
+add_library(project_options INTERFACE)
+
+# sanitizer options if supported by compiler
+set(ENABLE_SANITIZER_ADDRESS ON)
+set(ENABLE_SANITIZER_UNDEFINED_BEHAVIOR ON)
+include(cmake/Sanitizers.cmake)
+enable_sanitizers(project_options)
+
 # Dependency management
 include(Dependencies.cmake)
 

@@ -27,26 +27,34 @@ std::string PrinterAT::print( const x86_at::Program ast ) {
 }
 
 std::string PrinterAT::visit_Program( const x86_at::Program ast ) {
-    return ast->function->accept( this );
+    std::string buf;
+    for ( const auto& function : ast->functions ) {
+        buf += function->accept( this ) + "\n\n";
+    }
+    return buf;
 };
 
 std::string PrinterAT::visit_FunctionDef( const x86_at::FunctionDef ast ) {
-    std::string buf = std::format( "Function({})\n", ast->name );
+    std::string buf = std::format( "Function: {}\n", ast->name );
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
-        buf += std::visit( overloaded { [ this ]( x86_at::Mov v ) -> std::string { return v->accept( this ); },
-                                        [ this ]( x86_at::Unary u ) -> std::string { return u->accept( this ); },
-                                        [ this ]( x86_at::Binary b ) -> std::string { return b->accept( this ); },
-                                        [ this ]( x86_at::Cmp b ) -> std::string { return b->accept( this ); },
-                                        [ this ]( x86_at::AllocateStack a ) -> std::string { return a->accept( this ); },
-                                        [ this ]( x86_at::Idiv i ) -> std::string { return i->accept( this ); },
-                                        [ this ]( x86_at::Cdq c ) -> std::string { return c->accept( this ); },
-                                        [ this ]( x86_at::Jump c ) -> std::string { return c->accept( this ); },
-                                        [ this ]( x86_at::JumpCC c ) -> std::string { return c->accept( this ); },
-                                        [ this ]( x86_at::SetCC c ) -> std::string { return c->accept( this ); },
-                                        [ this ]( x86_at::Label c ) -> std::string { return c->accept( this ); },
-                                        [ this ]( x86_at::Ret r ) -> std::string { return r->accept( this ); } },
-                           instr );
+        buf +=
+            std::visit( overloaded { [ this ]( x86_at::Mov v ) -> std::string { return v->accept( this ); },
+                                     [ this ]( x86_at::Unary u ) -> std::string { return u->accept( this ); },
+                                     [ this ]( x86_at::Binary b ) -> std::string { return b->accept( this ); },
+                                     [ this ]( x86_at::Cmp b ) -> std::string { return b->accept( this ); },
+                                     [ this ]( x86_at::AllocateStack a ) -> std::string { return a->accept( this ); },
+                                     [ this ]( x86_at::DeallocateStack a ) -> std::string { return a->accept( this ); },
+                                     [ this ]( x86_at::Push p ) -> std::string { return p->accept( this ); },
+                                     [ this ]( x86_at::Call c ) -> std::string { return c->accept( this ); },
+                                     [ this ]( x86_at::Idiv i ) -> std::string { return i->accept( this ); },
+                                     [ this ]( x86_at::Cdq c ) -> std::string { return c->accept( this ); },
+                                     [ this ]( x86_at::Jump c ) -> std::string { return c->accept( this ); },
+                                     [ this ]( x86_at::JumpCC c ) -> std::string { return c->accept( this ); },
+                                     [ this ]( x86_at::SetCC c ) -> std::string { return c->accept( this ); },
+                                     [ this ]( x86_at::Label c ) -> std::string { return c->accept( this ); },
+                                     [ this ]( x86_at::Ret r ) -> std::string { return r->accept( this ); } },
+                        instr );
         buf += "\n";
     }
     return buf;
@@ -136,11 +144,11 @@ std::string PrinterAT::visit_Jump( const x86_at::Jump ast ) {
 }
 
 std::string PrinterAT::visit_JumpCC( const x86_at::JumpCC ast ) {
-    return std::format( "JumpCC({} -> {})", to_upper(cond_code( ast->cond )), ast->target );
+    return std::format( "JumpCC({} -> {})", to_upper( cond_code( ast->cond ) ), ast->target );
 }
 
 std::string PrinterAT::visit_SetCC( const x86_at::SetCC ast ) {
-    return std::format( "SetCC({} -> {})", to_upper(cond_code( ast->cond )), operand( ast->operand ) );
+    return std::format( "SetCC({} -> {})", to_upper( cond_code( ast->cond ) ), operand( ast->operand ) );
 }
 
 std::string PrinterAT::visit_Label( const x86_at::Label ast ) {
@@ -151,8 +159,21 @@ std::string PrinterAT::visit_AllocateStack( const x86_at::AllocateStack ast ) {
     return std::format( "AllocateStack({})", ast->size );
 };
 
+std::string PrinterAT::visit_DeallocateStack( const x86_at::DeallocateStack ast ) {
+    return std::format( "DeallocateStack({})", ast->size );
+}
+
+std::string PrinterAT::visit_Push( const x86_at::Push ast ) {
+    return std::format( "Push({})", operand( ast->operand ) );
+}
+
+std::string PrinterAT::visit_Call( const x86_at::Call ast ) {
+    std::string buf = "Call: " + ast->function_name;
+    return buf;
+}
+
 std::string PrinterAT::visit_Register( const x86_at::Register ast ) {
-    return std::format( "%({}.{})", to_string(ast->reg), to_string(ast->size) );
+    return std::format( "%({}.{})", to_string( ast->reg ), to_string( ast->size ) );
 };
 
 std::string PrinterAT::visit_Pseudo( const x86_at::Pseudo ast ) {
