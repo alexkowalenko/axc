@@ -173,7 +173,7 @@ std::string PrinterAT::visit_Call( const x86_at::Call ast ) {
 }
 
 std::string PrinterAT::visit_Register( const x86_at::Register ast ) {
-    return std::format( "%({}.{})", to_string( ast->reg ), to_string( ast->size ) );
+    return std::format( "%{}", assemble_reg( ast ) );
 };
 
 std::string PrinterAT::visit_Pseudo( const x86_at::Pseudo ast ) {

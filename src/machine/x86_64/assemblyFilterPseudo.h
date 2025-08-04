@@ -37,8 +37,8 @@ class AssemblyFilterPseudo : public x86_at::Visitor<void> {
     void visit_Label( const x86_at::Label ast ) override {};
     void visit_AllocateStack( const x86_at::AllocateStack ast ) override {};
     void visit_DeallocateStack( const x86_at::DeallocateStack ast ) override {};
-    void visit_Push( const x86_at::Push ast ) override ;
-    void visit_Call( const x86_at::Call ast ) override;
+    void visit_Push( const x86_at::Push ast ) override;
+    void visit_Call( const x86_at::Call ast ) override {};
     void visit_Ret( const x86_at::Ret ast ) override {};
     // Operands
     void visit_Imm( const x86_at::Imm ast ) override {};
@@ -48,7 +48,7 @@ class AssemblyFilterPseudo : public x86_at::Visitor<void> {
 
   private:
     x86_at::Operand operand( const x86_at::Operand& op );
-    void reset_stack_info();
+    void            reset_stack_info();
 
     std::map<std::string, int> stack_location_map;
     int                        next_stack_location { 0 };

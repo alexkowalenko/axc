@@ -32,18 +32,41 @@ std::string to_lower( const std::string& s ) {
 
 std::string assemble_reg( x86_at::Register r ) {
     std::string name = to_lower( to_string( r->reg ) );
-    if ( r->reg == x86_at::RegisterName::AX || r->reg == x86_at::RegisterName::CX ||
-         r->reg == x86_at::RegisterName::DX ) {
-        if ( r->size == x86_at::RegisterSize::Long ) {
+    switch ( r->reg ) {
+    case x86_at::RegisterName::AX :
+    case x86_at::RegisterName::CX :
+    case x86_at::RegisterName::DX : {
+        switch ( r->size ) {
+        case x86_at::RegisterSize::Byte :
+            return name + "l"; // AL, CL, DL
+        case x86_at::RegisterSize::Long :
             return "e" + name + "x";
+        case x86_at::RegisterSize::Qword :
+            return "r" + name + "x";
         }
-        return name + "l";
     }
-    // RX
-    if ( r->size == x86_at::RegisterSize::Long ) {
-        return name + "d";
+    case x86_at::RegisterName::DI :
+    case x86_at::RegisterName::SI : {
+        switch ( r->size ) {
+        case x86_at::RegisterSize::Byte :
+            return name + "l"; // DIL, SIL
+        case x86_at::RegisterSize::Long :
+            return "e" + name; // EDI, ESI
+        case x86_at::RegisterSize::Qword :
+            return "r" + name; // RDI, RSI
+        }
     }
-    return name + "b";
+    default :
+        // Rx
+        switch ( r->size ) {
+        case x86_at::RegisterSize::Byte :
+            return name + "l"; // R8L, R9L, R10L, R11L
+        case x86_at::RegisterSize::Long :
+            return name + "d"; // R8D, R9D, R10D, R11D
+        case x86_at::RegisterSize::Qword :
+            return name; // R8, R9, R10, R11
+        }
+    }
 }
 
 X86_64CodeGen::X86_64CodeGen( Option const& option ) : CodeGenerator( option ) {
@@ -122,10 +145,7 @@ void X86_64CodeGen::visit_Program( const x86_at::Program ast ) {
 }
 
 void X86_64CodeGen::visit_FunctionDef( const x86_at::FunctionDef ast ) {
-    std::string name = ast->name;
-    if ( option.system == System::MacOS ) {
-        name = "_" + name;
-    }
+    std::string name = label( ast->name );
 
     add_line( ".global", name, ast->location.line );
     add_line( std::format( "{}:", name ) );
@@ -201,11 +221,17 @@ void X86_64CodeGen::visit_AllocateStack( const x86_at::AllocateStack ast ) {
     add_line( "subq", std::format( "${}, %rsp", ast->size ) );
 }
 
-void X86_64CodeGen::visit_DeallocateStack( const x86_at::DeallocateStack ast ) {}
+void X86_64CodeGen::visit_DeallocateStack( const x86_at::DeallocateStack ast ) {
+    add_line( "addq", std::format( "${}, %rsp", ast->size ) );
+}
 
-void X86_64CodeGen::visit_Push( const x86_at::Push ast ) {}
+void X86_64CodeGen::visit_Push( const x86_at::Push ast ) {
+    add_line( "pushq", operand( ast->operand ) );
+}
 
-void X86_64CodeGen::visit_Call( const x86_at::Call ast ) {}
+void X86_64CodeGen::visit_Call( const x86_at::Call ast ) {
+    add_line( "call", label( ast->function_name ) );
+}
 
 void X86_64CodeGen::visit_Binary( const x86_at::Binary ast ) {
     switch ( ast->op ) {
@@ -279,4 +305,12 @@ void X86_64CodeGen::visit_Pseudo( const x86_at::Pseudo ast ) {
 
 void X86_64CodeGen::visit_Stack( const x86_at::Stack ast ) {
     last_string = std::format( "{}(%rbp)", ast->offset );
+}
+
+std::string X86_64CodeGen::label( std::string const& name ) {
+    auto n = name;
+    if ( option.system == System::MacOS ) {
+        n = "_" + name;
+    }
+    return n;
 }

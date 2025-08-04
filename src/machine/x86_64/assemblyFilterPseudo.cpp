@@ -10,6 +10,8 @@
 
 #include "assemblyFilterPseudo.h"
 
+#include <spdlog/spdlog.h>
+
 #include "common.h"
 #include "x86_at/includes.h"
 
@@ -18,7 +20,7 @@ void AssemblyFilterPseudo::filter( x86_at::Program program ) {
 }
 
 void AssemblyFilterPseudo::visit_Program( const x86_at::Program ast ) {
-    for (auto const& funct : ast->functions) {
+    for ( auto const& funct : ast->functions ) {
         funct->accept( this );
     }
 }
@@ -44,6 +46,7 @@ void AssemblyFilterPseudo::visit_FunctionDef( const x86_at::FunctionDef ast ) {
                     instr );
     }
     ast->stack_size = get_number_stack_locations();
+    spdlog::debug( "Function {} has {} stack locations", ast->name, ast->stack_size );
 }
 
 void AssemblyFilterPseudo::visit_Mov( const x86_at::Mov ast ) {
@@ -71,9 +74,6 @@ void AssemblyFilterPseudo::visit_Cmp( const x86_at::Cmp ast ) {
 
 void AssemblyFilterPseudo::visit_SetCC( const x86_at::SetCC ast ) {
     ast->operand = operand( ast->operand );
-}
-
-void AssemblyFilterPseudo::visit_Call( const x86_at::Call ast ) {
 }
 
 void AssemblyFilterPseudo::visit_Push( const x86_at::Push ast ) {

@@ -13,7 +13,7 @@
 #include <token.h>
 
 TEST( TokenType, Basic ) { // NOLINT
-    EXPECT_EQ( to_string( TokenType::CONSTANT ), "<constant>" );
+    EXPECT_STREQ( to_string( TokenType::CONSTANT ), "<constant>" );
 
     Token const t( TokenType::IDENTIFIER, Location( 0, 0 ), "FORXYZ" );
     EXPECT_EQ( to_string( t ), "<id: FORXYZ>" );

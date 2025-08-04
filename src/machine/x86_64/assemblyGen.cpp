@@ -47,9 +47,9 @@ x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
 
     int count = 0;
     int stack_count = 16;
-    for (auto param : atac->params) {
+    for ( auto param : atac->params ) {
         auto p = mk_node<x86_at::Pseudo_>( atac, param );
-        if (count < frame_registers.size()) {
+        if ( count < frame_registers.size() ) {
             auto mov = mk_node<x86_at::Mov_>( atac, frame_registers[ count ], p );
             function->instructions.push_back( mov );
         } else {
@@ -58,7 +58,7 @@ x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
             function->instructions.push_back( mov );
             stack_count += 8; // Increment stack by 8 bytes for each parameter
         }
-        count ++;
+        count++;
     }
     spdlog::debug( "Arg Count: {}, Stack count: {}", atac->params.size(), stack_count );
 
@@ -250,6 +250,7 @@ void AssemblyGen::functionCall( const tac::FunCall atac, std::vector<x86_at::Ins
     }
     spdlog::debug( "Arg count: {}, Stack args: {}, Stack padding: {}", arg_count, stack_args, stack_padding );
 
+    // Fix stack alignment
     if ( stack_padding != 0 ) {
         // Push padding to stack
         auto pad = mk_node<x86_at::AllocateStack_>( atac, stack_padding );

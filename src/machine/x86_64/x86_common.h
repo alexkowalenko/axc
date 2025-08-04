@@ -30,3 +30,5 @@ inline std::string cond_code( x86_at::CondCode code ) {
         return "?";
     }
 }
+
+std::string assemble_reg( x86_at::Register r );

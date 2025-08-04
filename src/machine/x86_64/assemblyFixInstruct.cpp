@@ -10,8 +10,9 @@
 
 #include "assemblyFixInstruct.h"
 
+#include <spdlog/spdlog.h>
+
 #include "common.h"
-#include "spdlog/spdlog.h"
 #include "x86_at/includes.h"
 #include "x86_common.h"
 
@@ -29,7 +30,7 @@ void AssemblyFixInstruct::filter( x86_at::Program program ) {
 }
 
 void AssemblyFixInstruct::visit_Program( const x86_at::Program ast ) {
-    for (auto const& funct : ast->functions) {
+    for ( auto const& funct : ast->functions ) {
         funct->accept( this );
     }
 }
@@ -176,8 +177,9 @@ void AssemblyFixInstruct::visit_Cmp( const x86_at::Cmp ast ) {
 }
 
 void AssemblyFixInstruct::visit_AllocateStack( const x86_at::AllocateStack ast ) {
+    spdlog::debug( "Adding AllocateStack instruction: {}", ast->size );
     // Add Allocate Stack Instruction
-    if ( current_function->stack_size != 0) {
+    if ( current_function->stack_size != 0 ) {
         auto allocate = mk_node<x86_at::AllocateStack_>( ast );
         allocate->size = stack_increment * current_function->stack_size;
         allocate->size = allocate->size + 15 & ~15; // Align to 16 bytes
@@ -187,6 +189,10 @@ void AssemblyFixInstruct::visit_AllocateStack( const x86_at::AllocateStack ast )
 }
 
 void AssemblyFixInstruct::visit_DeallocateStack( const x86_at::DeallocateStack ast ) {
+    current_instructions.push_back( ast );
+}
+
+void AssemblyFixInstruct::visit_Push( const x86_at::Push ast ) {
     current_instructions.push_back( ast );
 }
 
