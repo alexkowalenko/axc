@@ -10,7 +10,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     set(CMAKE_CXX_COMPILER "/usr/local/llvm20/bin/clang++" CACHE STRING "" FORCE)
 endif()
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    set(CMAKE_CXX_COMPILER "/opt/homebrew/Cellar/llvm/v21.0.0/bin/clang++" CACHE STRING "" FORCE)
+    set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++" CACHE STRING "" FORCE)
 endif()
 message(STATUS "C++ compiler = ${CMAKE_CXX_COMPILER}")
 

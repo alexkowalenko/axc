@@ -16,6 +16,8 @@
 #include "spdlog/spdlog.h"
 #include "x86_common.h"
 
+#include <complex>
+
 AssemblyGen::AssemblyGen() {
     zero = std::make_shared<x86_at::Imm_>( Location(), 0 );
     ax = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::AX, x86_at::RegisterSize::Long );
@@ -41,7 +43,7 @@ x86_at::Program AssemblyGen::generate( const tac::Program atac ) {
 }
 
 x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
-    spdlog::debug( "Generating function: {}", atac->name );
+    spdlog::debug( "functionDef: {}", atac->name );
     auto function = mk_node<x86_at::FunctionDef_>( atac );
     function->name = atac->name;
 
@@ -257,15 +259,23 @@ void AssemblyGen::functionCall( const tac::FunCall atac, std::vector<x86_at::Ins
         instructions.push_back( pad );
     }
 
-    auto reg_index = 0;
+    auto count = 0;
     for ( auto& arg : atac->arguments ) {
-        if ( reg_index < frame_registers.size() ) {
+        if ( count < frame_registers.size() ) {
             // Use registers for the first 6 arguments
-            auto mov = mk_node<x86_at::Mov_>( atac, value( arg ), frame_registers[ reg_index ] );
+            auto mov = mk_node<x86_at::Mov_>( atac, value( arg ), frame_registers[ count ] );
             instructions.push_back( mov );
         } else {
-            // Remaining arguments go on the stack
-            auto v = value( arg );
+            break;
+        }
+        ++count;
+    }
+    if ( stack_args > 0 ) {
+        // If there are more than 6 arguments, we need to push the remaining ones to the stack, in reverse order
+        int s = stack_args;
+        for ( auto it = atac->arguments.end() - 1; s > 0; --it, --s ) {
+            spdlog::debug( "Stack args: {} ",  s );
+            auto v = value( *it );
             if ( std::holds_alternative<x86_at::Imm>( v ) || std::holds_alternative<x86_at::Register>( v ) ) {
                 // If the value is an immediate or register, we can push it to the stack
                 auto push = mk_node<x86_at::Push_>( atac, v );
@@ -278,7 +288,6 @@ void AssemblyGen::functionCall( const tac::FunCall atac, std::vector<x86_at::Ins
                 instructions.push_back( push );
             }
         }
-        ++reg_index;
     }
 
     // Emit Call
