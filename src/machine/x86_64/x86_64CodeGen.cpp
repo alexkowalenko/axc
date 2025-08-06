@@ -226,7 +226,18 @@ void X86_64CodeGen::visit_DeallocateStack( const x86_at::DeallocateStack ast ) {
 }
 
 void X86_64CodeGen::visit_Push( const x86_at::Push ast ) {
-    add_line( "pushq", operand( ast->operand ) );
+    if ( std::holds_alternative<x86_at::Imm>( ast->operand ) ) {
+        // If the operand is an immediate, then need to use pushq (64-bit immediate)
+        add_line( "pushq", operand( ast->operand ) );
+        return;
+    }
+    if ( std::holds_alternative<x86_at::Register>( ast->operand ) ) {
+        // If the operand is an register then match the register size to pushq
+        auto reg = std::get<x86_at::Register>( ast->operand );
+        add_line( "pushq", operand( mk_node<x86_at::Register_>( ast, reg->reg, x86_at::RegisterSize::Qword ) ));
+        return;
+    }
+    add_line( "pushl", operand( ast->operand ) );
 }
 
 void X86_64CodeGen::visit_Call( const x86_at::Call ast ) {
