@@ -21,13 +21,20 @@
 tac::Program TacGen::generate( ast::Program ast ) {
     auto program = mk_node<tac::Program_>( ast );
     for ( auto f : ast->functions ) {
-        program->functions.push_back( functionDef( f ) );
+        if ( auto funct = functionDef( f ) ) {
+            program->functions.push_back( *funct );
+        }
     }
     return program;
 }
 
-tac::FunctionDef TacGen::functionDef( ast::FunctionDef ast ) {
+std::optional<tac::FunctionDef> TacGen::functionDef( ast::FunctionDef ast ) {
     spdlog::debug( "tac::functionDef: {}", ast->name );
+    if ( !ast->block ) {
+        // extern function, don't generate TAC
+        spdlog::debug( "tac::functionDef: {} is extern, skipping", ast->name );
+        return std::nullopt;
+    }
     auto function = mk_node<tac::FunctionDef_>( ast );
     function->name = ast->name;
     for ( auto const& param : ast->params ) {
@@ -311,7 +318,7 @@ tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructi
             [ &instructions, this ]( ast::PostOp b ) -> tac::Value { return post( b, instructions ); },
             [ &instructions, this ]( ast::Conditional b ) -> tac::Value { return conditional( b, instructions ); },
             [ &instructions, this ]( ast::Assign a ) -> tac::Value { return assign( a, instructions ); },
-            [ &instructions, this ]( ast::Call c) -> tac::Value {return call( c, instructions ); },
+            [ &instructions, this ]( ast::Call c ) -> tac::Value { return call( c, instructions ); },
             [ this ]( ast::Var v ) -> tac::Value { return mk_node<tac::Variable_>( v, v->name ); },
             [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
         ast );
@@ -616,10 +623,10 @@ tac::Value TacGen::assign( ast::Assign ast, std::vector<tac::Instruction>& instr
     return temp;
 }
 
-tac::Value    TacGen::call( const ast::Call ast, std::vector<tac::Instruction>& instructions ) {
+tac::Value TacGen::call( const ast::Call ast, std::vector<tac::Instruction>& instructions ) {
     std::vector<tac::Value> args;
     for ( auto& arg : ast->arguments ) {
-        args.push_back( expr(arg, instructions ));
+        args.push_back( expr( arg, instructions ) );
     }
 
     auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
