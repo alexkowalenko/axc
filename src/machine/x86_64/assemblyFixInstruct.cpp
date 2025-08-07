@@ -36,8 +36,17 @@ void AssemblyFixInstruct::visit_Program( const x86_at::Program ast ) {
 }
 
 void AssemblyFixInstruct::visit_FunctionDef( const x86_at::FunctionDef ast ) {
-    current_function = ast;
     current_instructions.clear();
+
+    spdlog::debug( "Function: {} - stacksize: {} ", ast->name, ast->stack_size );
+    // Add Allocate Stack Instruction
+    if ( ast->stack_size != 0 ) {
+        auto allocate = mk_node<x86_at::AllocateStack_>( ast );
+        allocate->size = stack_increment * ast->stack_size;
+        allocate->size = allocate->size + 15 & ~15; // Align to 16 bytes
+        spdlog::debug( "Adding AllocateStack instruction {}", allocate->size );
+        current_instructions.push_back( allocate );
+    }
 
     // Look for MOV instructions
     for ( auto const& instr : ast->instructions ) {
@@ -179,9 +188,9 @@ void AssemblyFixInstruct::visit_Cmp( const x86_at::Cmp ast ) {
 void AssemblyFixInstruct::visit_AllocateStack( const x86_at::AllocateStack ast ) {
     spdlog::debug( "Adding AllocateStack instruction: {}", ast->size );
     // Add Allocate Stack Instruction
-    if ( current_function->stack_size != 0 ) {
+    if ( ast->size != 0 ) {
         auto allocate = mk_node<x86_at::AllocateStack_>( ast );
-        allocate->size = stack_increment * current_function->stack_size;
+        allocate->size = ast->size;
         allocate->size = allocate->size + 15 & ~15; // Align to 16 bytes
         spdlog::debug( "Adding AllocateStack instruction {} - {}", ast->size, allocate->size );
         current_instructions.push_back( allocate );

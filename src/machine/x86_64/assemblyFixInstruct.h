@@ -46,7 +46,6 @@ class AssemblyFixInstruct : public x86_at::Visitor<void> {
   private:
     static constexpr int             stack_increment { 4 };
     std::vector<x86_at::Instruction> current_instructions;
-    x86_at::FunctionDef              current_function;
 
     x86_at::Register ax;
     x86_at::Register cx;
