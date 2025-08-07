@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <cstdint>
 #include <format>
 
 enum class TokenType : std::uint8_t {

@@ -1,17 +1,18 @@
 
-include_directories(${PROJECT_SOURCE_DIR}/src)
-include_directories(${PROJECT_SOURCE_DIR}/src/machine)
 
-add_executable(axc_comp main.cpp
-        )
+add_executable(axc_comp)
+
+target_sources(axc_comp PRIVATE
+        main.cpp
+)
 
 target_link_libraries(axc_comp PRIVATE
         project_options
         spdlog::spdlog
         argparse
-        compiler
-        x86
-        arm64
+        axc::compiler
+        axc::x86
+        axc::arm64
 )
 
 install(TARGETS axc_comp DESTINATION bin)

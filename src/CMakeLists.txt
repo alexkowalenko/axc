@@ -25,7 +25,10 @@ add_generator(TAC tac ${TAC_HEADER})
 add_generator(X86_AT  machine/x86_64/x86_at ${X86_HEADER})
 add_generator(ARM64_AT  machine/arm64/arm64_at ${ARM64_HEADER})
 
-add_library(compiler STATIC
+add_library(axc.compiler)
+add_library(axc::compiler ALIAS axc.compiler)
+
+target_sources(axc.compiler PRIVATE
         token.cpp
         lexer.cpp
         parser.cpp
@@ -45,7 +48,14 @@ add_library(compiler STATIC
         ${ARM64_HEADER}
 )
 
-target_link_libraries(compiler
+target_sources(axc.compiler
+    PUBLIC
+        FILE_SET HEADERS
+        BASE_DIRS ${PROJECT_SOURCE_DIR}/src
+        FILES codeGen.h common.h exception.h lexer.h option.h parser.h printerAST.h printerTAC.h semanticAnalyser.h symbol.h symbolTable.h tacGen.h token.h ${AST_HEADER} ${TAC_HEADER}
+)
+
+target_link_libraries(axc.compiler
         PRIVATE
         project_options
         spdlog::spdlog
