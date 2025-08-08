@@ -118,6 +118,8 @@ const char* to_string( const TokenType l ) {
         return "default";
     case DO :
         return "do";
+    case EXTERN :
+        return "extern";
     case ELSE :
         return "else";
     case FOR :
@@ -130,6 +132,8 @@ const char* to_string( const TokenType l ) {
         return "int";
     case RETURN :
         return "return";
+    case STATIC :
+        return "static";
     case SWITCH :
         return "switch";
     case VOID :

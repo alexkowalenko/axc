@@ -105,7 +105,7 @@ architectures, such as AArch64.
 - [x] Output: X86_64.
 
 ## Chapter 10 File Scope Variables and Storage Classes
-- [ ] Lexer.
+- [x] Lexer.
 - [ ] Parser.
 - [ ] Semantic Analysis.
 - [ ] TAC Intermediate.

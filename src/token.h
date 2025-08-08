@@ -70,11 +70,13 @@ enum class TokenType : std::uint8_t {
     DEFAULT,
     DO,
     ELSE,
+    EXTERN,
     FOR,
     GOTO,
     IF,
     INT,
     RETURN,
+    STATIC,
     SWITCH,
     VOID,
     WHILE,
@@ -89,7 +91,7 @@ template <> struct std::formatter<TokenType> {
         return std::format_to( ctx.out(), "{}", to_string( obj ) );
     }
 };
-static_assert(std::formattable<TokenType, char>);
+static_assert( std::formattable<TokenType, char> );
 
 class Location {
   public:
@@ -111,7 +113,7 @@ template <> struct std::formatter<Location> {
         return std::format_to( ctx.out(), "{}", to_string( obj ) );
     }
 };
-static_assert(std::formattable<Location, char>);
+static_assert( std::formattable<Location, char> );
 
 class Token {
   public:
@@ -134,4 +136,4 @@ template <> struct std::formatter<Token> {
         return std::format_to( ctx.out(), "{}", to_string( obj ) );
     }
 };
-static_assert(std::formattable<Token, char>);
+static_assert( std::formattable<Token, char> );

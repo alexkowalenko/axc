@@ -172,22 +172,22 @@ TEST( Lexer, Comments ) {
 }
 
 TEST( Lexer, Keywords ) {
-    std::vector<TestLexer> const tests = {
-        { "int", TokenType::INT, "int" },
-        { "void", TokenType::VOID, "void" },
-        { "return", TokenType::RETURN, "return" },
-        { "goto", TokenType::GOTO, "goto" },
-        { "if", TokenType::IF, "if" },
-        { "else", TokenType::ELSE, "else" },
-        { "for", TokenType::FOR, "for" },
-        { "while", TokenType::WHILE, "while" },
-        { "do", TokenType::DO, "do" },
-        { "break", TokenType::BREAK, "break" },
-        { "continue", TokenType::CONTINUE, "continue" },
-        { "switch", TokenType::SWITCH, "switch" },
-        { "case", TokenType::CASE, "case" },
-        { "default", TokenType::DEFAULT, "default" },
-    };
+    std::vector<TestLexer> const tests = { { "int", TokenType::INT, "int" },
+                                           { "void", TokenType::VOID, "void" },
+                                           { "return", TokenType::RETURN, "return" },
+                                           { "goto", TokenType::GOTO, "goto" },
+                                           { "if", TokenType::IF, "if" },
+                                           { "else", TokenType::ELSE, "else" },
+                                           { "for", TokenType::FOR, "for" },
+                                           { "while", TokenType::WHILE, "while" },
+                                           { "do", TokenType::DO, "do" },
+                                           { "break", TokenType::BREAK, "break" },
+                                           { "continue", TokenType::CONTINUE, "continue" },
+                                           { "switch", TokenType::SWITCH, "switch" },
+                                           { "case", TokenType::CASE, "case" },
+                                           { "default", TokenType::DEFAULT, "default" },
+                                           { "extern", TokenType::EXTERN, "extern" },
+                                           { "static", TokenType::STATIC, "static" } };
     test_Lexer( tests );
 }
 
