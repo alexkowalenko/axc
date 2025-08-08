@@ -24,7 +24,7 @@ if __name__ == "__main__":
             "JumpIfZero": [("Value", "condition", False), ("std::string", "target", False)],
             "JumpIfNotZero": [("Value", "condition", False), ("std::string", "target", False)],
             "Label": [("std::string", "name", False)],
-            "FunCall": [("std::string", "function_name", False), ("std::vector<Value>", "arguments", False), ("Value", "dst", False)],
+            "FunCall": [("std::string", "function_name", False), ("std::vector<Value>", "arguments", False), ("Value", "dst", False), ("bool", "external" , False)],
             "Constant": [("std::int32_t", "value", False)],
             "Variable": [("std::string", "name", False)],
          })

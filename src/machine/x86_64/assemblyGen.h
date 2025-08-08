@@ -16,7 +16,7 @@
 /// Convert TAC Abstract tree to AT Assembly tree
 class AssemblyGen {
   public:
-    AssemblyGen();
+    AssemblyGen( Option const& option );
     ~AssemblyGen() = default;
 
     x86_at::Program generate( const tac::Program atac );
@@ -42,6 +42,8 @@ class AssemblyGen {
     x86_at::Operand pseudo( tac::Variable atac );
 
   private:
+    Option const& option;
+
     x86_at::Imm zero;
 
     x86_at::Register ax;

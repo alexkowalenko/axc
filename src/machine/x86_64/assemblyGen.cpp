@@ -18,7 +18,7 @@
 
 #include <complex>
 
-AssemblyGen::AssemblyGen() {
+AssemblyGen::AssemblyGen( Option const& option ) : option( option ) {
     zero = std::make_shared<x86_at::Imm_>( Location(), 0 );
     ax = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::AX, x86_at::RegisterSize::Long );
     cx = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::CX, x86_at::RegisterSize::Long );
@@ -293,6 +293,9 @@ void AssemblyGen::functionCall( const tac::FunCall atac, std::vector<x86_at::Ins
     // Emit Call
     auto call = mk_node<x86_at::Call_>( atac );
     call->function_name = atac->function_name;
+    if ( (option.system == System::Linux || option.system == System::FreeBSD ) && atac->external) {
+        call->function_name += "@PLT";
+    }
     instructions.push_back( call );
 
     // Adjust stack pointer

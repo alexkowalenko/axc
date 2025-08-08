@@ -53,6 +53,10 @@ int do_args( int argc, char** argv, Option& options ) {
         .help( "Machine architecture" )
         .choices( "x86_64", "amd64", "aarch64", "arm64" )
         .default_value( "x86_64" );
+    app.add_argument( "--os" )
+        .help( "Operating system" )
+        .choices( "linux", "macos", "freebsd" )
+        .default_value( "macos" );
 
     bool lex { false };
     bool parse { false };
@@ -107,6 +111,14 @@ int do_args( int argc, char** argv, Option& options ) {
         options.machine = Machine::AArch64;
     } else {
         options.machine = Machine::X86_64;
+    }
+
+    if ( app.get( "os" ) == "linux" ) {
+        options.system = System::Linux;
+    } else if ( app.get( "os" ) == "macos" ) {
+        options.system = System::MacOS;
+    } else if ( app.get( "os" ) == "freebsd" ) {
+        options.system = System::FreeBSD;
     }
 
     return EXIT_SUCCESS;

@@ -79,7 +79,7 @@ X86_64CodeGen::X86_64CodeGen( Option const& option ) : CodeGenerator( option ) {
 
 CodeGenBase X86_64CodeGen::run_codegen( tac::Program tac ) {
     spdlog::info( "Run codegen," );
-    AssemblyGen assembler;
+    AssemblyGen assembler(option);
     auto        assembly = assembler.generate( tac );
     PrinterAT   assemblerPrinter;
     auto        output = assemblerPrinter.print( assembly );

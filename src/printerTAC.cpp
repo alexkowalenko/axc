@@ -160,7 +160,7 @@ std::string PrinterTAC::visit_Label( const tac::Label ast ) {
 }
 
 std::string PrinterTAC::visit_FunCall( const tac::FunCall ast ) {
-    std::string buf = std::format( "FunCall: {:s}(", ast->function_name );
+    std::string buf = std::format( "FunCall: {:s}{:s}(", ast->function_name, ast->external ? "*" : "" );
     for ( const auto& arg : ast->arguments ) {
         buf += value( arg ) + ", ";
     }
@@ -173,7 +173,7 @@ std::string PrinterTAC::visit_FunCall( const tac::FunCall ast ) {
 };
 
 std::string PrinterTAC::visit_Constant( const tac::Constant ast ) {
-    return std::format( "Constant( {:d})", ast->value );
+    return std::format( "Constant({:d})", ast->value );
 }
 
 std::string PrinterTAC::visit_Variable( const tac::Variable ast ) {

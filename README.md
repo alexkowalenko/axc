@@ -27,7 +27,7 @@ In the age of AI, you could also use a LLM to generate the classes.
 ## Status
 
 Finished up to Chapter 8. Code generated for X86_64. Tested on MacOS and FreeBSD. Would like to support other
-architectures, such as Aarch64.
+architectures, such as AArch64.
 
 ## Chapter 1 Minimal Compiler
 - [X] Infrastructure.
@@ -35,7 +35,7 @@ architectures, such as Aarch64.
 - [X] AST, Parser.
 - [X] Assembler Tree (AT), Code Generator.
 - [X] File output X86_64 assembler code.
-- [x] File output Aarch64 assembler code.
+- [x] File output AArch64 assembler code.
 
 ## Chapter 2 Unary Operators
 - [X] Lexer.
@@ -46,14 +46,15 @@ architectures, such as Aarch64.
   - [X] Replacing pseudo registers.
   - [X] Fix instructions
 - [X] Output: X86_64
-- [ ] Output: Aarch64
+- [ ] Output: AArch64
 
 ## Chapter 3 Binary Operators
 - [X] Lexer.
 - [X] Parser.
 - [X] TAC intermediate.
 - [X] Code Generator.
-- [X] Output.
+- [X] Output X86_64.
+- [ ] Output AArch64.
 - [X] Extra: Bitwise Operators &,|,ˆ,<<,>>
 
 ## Chapter 4 Logical and Relational Operators
@@ -104,3 +105,9 @@ architectures, such as Aarch64.
 - [x] Output: X86_64.
 
 ## Chapter 10 File Scope Variables and Storage Classes
+- [ ] Lexer.
+- [ ] Parser.
+- [ ] Semantic Analysis.
+- [ ] TAC Intermediate.
+- [ ] Code Generator.
+- [ ] Output: X86_64.
