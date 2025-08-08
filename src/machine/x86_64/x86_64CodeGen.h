@@ -50,8 +50,11 @@ class X86_64CodeGen : public CodeGenerator, public x86_at::Visitor<void> {
 
   private:
     std::string operand( const x86_at::Operand& op );
-    std::string label( std::string const& name );
+    std::string function_label( std::string_view  name );
+    std::string jump_label( std::string_view name );
 
     std::string local_prefix;
     std::string last_string;
+
+    std::string current_function_name;
 };

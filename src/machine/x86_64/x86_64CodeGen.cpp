@@ -145,7 +145,8 @@ void X86_64CodeGen::visit_Program( const x86_at::Program ast ) {
 }
 
 void X86_64CodeGen::visit_FunctionDef( const x86_at::FunctionDef ast ) {
-    std::string name = label( ast->name );
+    std::string name = function_label( ast->name );
+    current_function_name = ast->name;
 
     add_line( ".global", name, ast->location.line );
     add_line( std::format( "{}:", name ) );
@@ -234,14 +235,14 @@ void X86_64CodeGen::visit_Push( const x86_at::Push ast ) {
     if ( std::holds_alternative<x86_at::Register>( ast->operand ) ) {
         // If the operand is an register then match the register size to pushq
         auto reg = std::get<x86_at::Register>( ast->operand );
-        add_line( "pushq", operand( mk_node<x86_at::Register_>( ast, reg->reg, x86_at::RegisterSize::Qword ) ));
+        add_line( "pushq", operand( mk_node<x86_at::Register_>( ast, reg->reg, x86_at::RegisterSize::Qword ) ) );
         return;
     }
     add_line( "pushl", operand( ast->operand ) );
 }
 
 void X86_64CodeGen::visit_Call( const x86_at::Call ast ) {
-    add_line( "call", label( ast->function_name ) );
+    add_line( "call", function_label( ast->function_name ) );
 }
 
 void X86_64CodeGen::visit_Binary( const x86_at::Binary ast ) {
@@ -283,11 +284,11 @@ void X86_64CodeGen::visit_Cmp( const x86_at::Cmp ast ) {
 }
 
 void X86_64CodeGen::visit_Jump( const x86_at::Jump ast ) {
-    add_line( "jmp", local_prefix + ast->target );
+    add_line( "jmp", jump_label( ast->target ) );
 }
 
 void X86_64CodeGen::visit_JumpCC( const x86_at::JumpCC ast ) {
-    add_line( std::format( "j{}", cond_code( ast->cond ) ), local_prefix + ast->target );
+    add_line( std::format( "j{}", cond_code( ast->cond ) ), jump_label( ast->target ) );
 }
 
 void X86_64CodeGen::visit_SetCC( const x86_at::SetCC ast ) {
@@ -295,7 +296,7 @@ void X86_64CodeGen::visit_SetCC( const x86_at::SetCC ast ) {
 }
 
 void X86_64CodeGen::visit_Label( const x86_at::Label ast ) {
-    add_line( local_prefix + ast->name + ":" );
+    add_line( jump_label( ast->name ) + ":" );
 }
 
 void X86_64CodeGen::visit_Cdq( const x86_at::Cdq ast ) {
@@ -318,10 +319,14 @@ void X86_64CodeGen::visit_Stack( const x86_at::Stack ast ) {
     last_string = std::format( "{}(%rbp)", ast->offset );
 }
 
-std::string X86_64CodeGen::label( std::string const& name ) {
-    auto n = name;
+std::string X86_64CodeGen::function_label( const std::string_view name ) {
+    std::string n { name };
     if ( option.system == System::MacOS ) {
-        n = "_" + name;
+        n = "_" + n;
     }
     return n;
+}
+
+std::string X86_64CodeGen::jump_label( std::string_view name ) {
+    return std::format( "{}{}.{}", local_prefix, current_function_name, name );
 }
