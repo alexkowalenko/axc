@@ -101,4 +101,6 @@ architectures, such as Aarch64.
 - [x] Semantic Analysis.
 - [x] TAC Intermediate.
 - [x] Code Generator.
-- [ ] Output: X86_64.
+- [x] Output: X86_64.
+
+## Chapter 10 File Scope Variables and Storage Classes

@@ -43,8 +43,8 @@ void AssemblyFixInstruct::visit_FunctionDef( const x86_at::FunctionDef ast ) {
     if ( ast->stack_size != 0 ) {
         auto allocate = mk_node<x86_at::AllocateStack_>( ast );
         allocate->size = stack_increment * ast->stack_size;
-        allocate->size = allocate->size + 15 & ~15; // Align to 16 bytes
-        spdlog::debug( "Adding AllocateStack instruction {}", allocate->size );
+        allocate->size = ( ( allocate->size + 15 ) & ~15 ); // Align to 16 bytes
+        spdlog::debug( "Adding AllocateStack instruction: {}", allocate->size );
         current_instructions.push_back( allocate );
     }
 
@@ -191,7 +191,6 @@ void AssemblyFixInstruct::visit_AllocateStack( const x86_at::AllocateStack ast )
     if ( ast->size != 0 ) {
         auto allocate = mk_node<x86_at::AllocateStack_>( ast );
         allocate->size = ast->size;
-        allocate->size = allocate->size + 15 & ~15; // Align to 16 bytes
         spdlog::debug( "Adding AllocateStack instruction {} - {}", ast->size, allocate->size );
         current_instructions.push_back( allocate );
     }

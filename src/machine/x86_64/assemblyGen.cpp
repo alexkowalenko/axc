@@ -274,7 +274,7 @@ void AssemblyGen::functionCall( const tac::FunCall atac, std::vector<x86_at::Ins
         // If there are more than 6 arguments, we need to push the remaining ones to the stack, in reverse order
         int s = stack_args;
         for ( auto it = atac->arguments.end() - 1; s > 0; --it, --s ) {
-            spdlog::debug( "Stack args: {} ",  s );
+            spdlog::debug( "Stack args: {} ", s );
             auto v = value( *it );
             if ( std::holds_alternative<x86_at::Imm>( v ) || std::holds_alternative<x86_at::Register>( v ) ) {
                 // If the value is an immediate or register, we can push it to the stack
