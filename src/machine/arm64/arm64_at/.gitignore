@@ -3,6 +3,9 @@ imm.h
 includes.h
 mov.h
 program.h
+pseudo.h
 register.h
 ret.h
+stack.h
+unary.h
 visitor.h

@@ -25,8 +25,11 @@ if __name__ == "__main__":
             "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False)],
             # Operations for Instructions
             "Mov": [("Operand", "src", False), ("Operand", "dst", False) ],
+            "Unary": [("UnaryOpType", "op", False), ("Operand", "dst", False),  ("Operand", "src", False) ],
             "Ret": [],
             # Operand types for Operand
             "Imm": [("std::int32_t", "value", False)],
             "Register": [("RegisterName", "reg", False)],
+            "Pseudo": [("std::string", "name", False)],
+            "Stack": [("std::int32_t", "offset", False)],
         })

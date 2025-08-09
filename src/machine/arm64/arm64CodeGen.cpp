@@ -18,6 +18,7 @@
 #include "armAssemblyGen.h"
 #include "common.h"
 #include "exception.h"
+#include "filterPseudo.h"
 #include "printerARM64.h"
 
 Arm64CodeGen::Arm64CodeGen( Option const& option ) : CodeGenerator( option ) {
@@ -33,6 +34,15 @@ CodeGenBase Arm64CodeGen::run_codegen( tac::Program tac ) {
     std::println( "Assembly Output: {}", to_string( option.machine ) );
     std::println( "------------------------" );
     std::println( "{:s}", output );
+
+    spdlog::info( "Filtered 1: Filter Pseudo" );
+    FilterPseudo filter;
+    filter.filter( assembly );
+    output = assemblerPrinter.print( assembly );
+    std::println( "Filtered 1:" );
+    std::println( "----------" );
+    std::println( "{:s}", output );
+
     return std::static_pointer_cast<CodeGenBase_>( assembly );
 }
 
@@ -84,7 +94,8 @@ void Arm64CodeGen::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
     for ( auto const& instr : ast->instructions ) {
 
         std::visit( overloaded { [ this ]( arm64_at::Mov v ) -> void { v->accept( this ); },
-                                 [ this ]( arm64_at::Ret r ) -> void { r->accept( this ); } },
+                                 [ this ]( arm64_at::Ret r ) -> void { r->accept( this ); },
+                                 [ this ]( arm64_at::Unary u ) -> void { u->accept( this ); } },
                     instr );
     }
 }
@@ -97,6 +108,19 @@ void Arm64CodeGen::visit_Ret( const arm64_at::Ret ast ) {
     add_line( "ret", "" );
 }
 
+void Arm64CodeGen::visit_Unary( const arm64_at::Unary ast ) {
+    switch ( ast->op ) {
+    case arm64_at::UnaryOpType::NEG :
+        add_line( "negs", operand( ast->dst ), operand( ast->src ) );
+        break;
+    case arm64_at::UnaryOpType::NOT :
+        add_line( "notl", operand( ast->dst ) );
+        break;
+    default :
+        throw CodeException( ast->location, "Unsupported unary operator" );
+    }
+}
+
 std::string Arm64CodeGen::operand( const arm64_at::Operand& op ) {
     return std::visit( overloaded { [ this ]( arm64_at::Imm v ) -> std::string {
                                        v->accept( this );
@@ -104,6 +128,13 @@ std::string Arm64CodeGen::operand( const arm64_at::Operand& op ) {
                                    },
                                     [ this ]( arm64_at::Register r ) -> std::string {
                                         r->accept( this );
+                                        return last_string;
+                                    },
+                                    [ this ]( arm64_at::Pseudo p ) -> std::string {
+                                        throw CodeException( p->location, "Pseudo variable at final code generation" );
+                                    },
+                                    [ this ]( arm64_at::Stack s ) -> std::string {
+                                        s->accept( this );
                                         return last_string;
                                     } },
                        op );
@@ -116,3 +147,5 @@ void Arm64CodeGen::visit_Imm( const arm64_at::Imm ast ) {
 void Arm64CodeGen::visit_Register( const arm64_at::Register ast ) {
     last_string = std::format( "{}", to_string( ast->reg ) );
 }
+
+void Arm64CodeGen::visit_Stack( const arm64_at::Stack ast ) {}

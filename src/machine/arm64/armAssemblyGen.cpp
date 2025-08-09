@@ -34,7 +34,7 @@ arm64_at::FunctionDef ARMAssemblyGen::function( const tac::FunctionDef& atac ) {
     for ( auto instr : atac->instructions ) {
         std::visit( overloaded {
                         [ &funct, this ]( tac::Return r ) -> void { ret( r, funct->instructions ); },
-                        [ this ]( tac::Unary ) -> void {},
+                        [ &funct, this ]( tac::Unary u ) -> void { unary( u, funct->instructions ); },
                         [ this ]( tac::Binary ) -> void {},
                         [ this ]( tac::Copy ) -> void {},
                         [ this ]( tac::Jump ) -> void {},
@@ -58,12 +58,26 @@ void ARMAssemblyGen::ret( const tac::Return atac, std::vector<arm64_at::Instruct
     instructions.push_back( ret );
 }
 
+void ARMAssemblyGen::unary( const tac::Unary atac, std::vector<arm64_at::Instruction>& instructions ) {
+    auto unary = mk_node<arm64_at::Unary_>( atac );
+    switch ( atac->op ) {
+    case tac::UnaryOpType::Complement :
+        unary->op = arm64_at::UnaryOpType::NOT;
+        break;
+    case tac::UnaryOpType::Negate :
+        unary->op = arm64_at::UnaryOpType::NEG;
+        break;
+    default :
+        break;
+    }
+    unary->dst = value( atac->dst );
+    unary->src = value( atac->src );
+    instructions.push_back( unary );
+}
+
 arm64_at::Operand ARMAssemblyGen::value( const tac::Value& atac ) {
     return std::visit( overloaded { [ this ]( tac::Constant c ) -> arm64_at::Operand { return constant( c ); },
-                                    [ this ]( tac::Variable v ) -> arm64_at::Operand {
-                                        throw CodeException( v->location,
-                                                             "Variable not supported in ARM64 assembly generation" );
-                                    } },
+                                    [ this ]( tac::Variable v ) -> arm64_at::Operand { return pseudo( v ); } },
                        atac );
 }
 
@@ -72,4 +86,8 @@ arm64_at::Operand ARMAssemblyGen::constant( const tac::Constant& atac ) {
         return xzr; // Use zero register for constant 0
     }
     return mk_node<arm64_at::Imm_>( atac, atac->value );
+}
+
+arm64_at::Operand ARMAssemblyGen::pseudo( tac::Variable atac ) {
+    return mk_node<arm64_at::Pseudo_>( atac, atac->name );
 }

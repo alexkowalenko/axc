@@ -10,13 +10,13 @@
 
 #pragma once
 
-#include "arm64_at/visitor.h"
 #include "arm64_at/base.h"
+#include "arm64_at/visitor.h"
 
 #include <string>
 
 class PrinterARM64 : public arm64_at::Visitor<std::string> {
-public:
+  public:
     PrinterARM64() = default;
     ~PrinterARM64() override = default;
 
@@ -26,11 +26,14 @@ public:
     std::string visit_FunctionDef( const arm64_at::FunctionDef ast ) override;
     std::string visit_Mov( const arm64_at::Mov ast ) override;
     std::string visit_Ret( const arm64_at::Ret ast ) override;
+    std::string visit_Unary( const arm64_at::Unary ast ) override;
     std::string visit_Imm( const arm64_at::Imm ast ) override;
     std::string visit_Register( const arm64_at::Register ast ) override;
+    std::string visit_Pseudo( const arm64_at::Pseudo ast ) override;
+    std::string visit_Stack( const arm64_at::Stack ast ) override;
 
     std::string indent { "  " };
 
-    private:
+  private:
     std::string operand( const arm64_at::Operand& op );
 };

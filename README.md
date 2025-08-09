@@ -41,11 +41,14 @@ architectures, such as AArch64.
 - [X] Lexer.
 - [X] AST, Parser.
 - [X] TAC intermediate.
-- [X] Code Generator.
+- [X] Code Generator X86_64:
   - [X] Assembler Tree, Code generator
   - [X] Replacing pseudo registers.
   - [X] Fix instructions
 - [X] Output: X86_64
+- [X] Code Generator AArch64:
+  - [X] Assembler Tree, Code generator
+  - [X] Replacing pseudo registers.
 - [ ] Output: AArch64
 
 ## Chapter 3 Binary Operators
