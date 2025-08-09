@@ -24,6 +24,7 @@ def main():
     app.add_argument('-g', '--codegen', help='run the lexer, parser, semantic, tac and code generator, no output.',action='store_true')
     app.add_argument('-s', '--silent', help='silent operation (no logging)', action='store_true')
     app.add_argument('-m', '--machine', help='machine Architecture.', choices=["x86_64", "amd64", "aarch64", "arm64"] )
+    app.add_argument('--os', help='Operating system.', choices=["linux", "macos", "freebsd"])
     app.add_argument('-c', help='Produce object file only.', action='store_true')
     app.add_argument('filename', help='File to be compile.')
     args = app.parse_args()
@@ -59,6 +60,17 @@ def main():
         options += " -s"
     if args.machine:
         options += f" -m {args.machine}"
+
+    if args.os:
+        options += f" --os={args.os}"
+    else:
+        if platform.system() == "Darwin":
+            options += " --os=macos"
+        elif platform.system() == "Linux":
+            options += " --os=linux"
+        elif platform.system() == "FreeBSD":
+            options += " --os=freebsd"
+
     cmd = f"{axc_path} {options} {temp_file.name}.s"
     print(cmd)
     result = subprocess.run(cmd, shell=True)
@@ -79,6 +91,7 @@ def main():
             target = "--target=arm64-apple-darwin"
         else:
             target = "--target=x86_64-apple-darwin"
+
 
     # Full compile or just binary
     if args.c:
