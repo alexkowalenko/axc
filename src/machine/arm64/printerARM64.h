@@ -20,17 +20,17 @@ class PrinterARM64 : public arm64_at::Visitor<std::string> {
     PrinterARM64() = default;
     ~PrinterARM64() override = default;
 
-    std::string print( const arm64_at::Program ast );
+    std::string print( arm64_at::Program ast );
 
-    std::string visit_Program( const arm64_at::Program ast ) override;
-    std::string visit_FunctionDef( const arm64_at::FunctionDef ast ) override;
-    std::string visit_Mov( const arm64_at::Mov ast ) override;
-    std::string visit_Ret( const arm64_at::Ret ast ) override;
-    std::string visit_Unary( const arm64_at::Unary ast ) override;
-    std::string visit_Imm( const arm64_at::Imm ast ) override;
-    std::string visit_Register( const arm64_at::Register ast ) override;
-    std::string visit_Pseudo( const arm64_at::Pseudo ast ) override;
-    std::string visit_Stack( const arm64_at::Stack ast ) override;
+    std::string visit_Program( arm64_at::Program ast ) override;
+    std::string visit_FunctionDef( arm64_at::FunctionDef ast ) override;
+    std::string visit_Mov( arm64_at::Mov ast ) override;
+    std::string visit_Ret( arm64_at::Ret ast ) override;
+    std::string visit_Unary( arm64_at::Unary ast ) override;
+    std::string visit_Imm( arm64_at::Imm ast ) override;
+    std::string visit_Register( arm64_at::Register ast ) override;
+    std::string visit_Pseudo( arm64_at::Pseudo ast ) override;
+    std::string visit_Stack( arm64_at::Stack ast ) override;
 
     std::string indent { "  " };
 

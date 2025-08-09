@@ -275,8 +275,7 @@ Token Lexer::get_token() {
 }
 
 Token const& Lexer::peek_token( size_t offset ) {
-    size_t i = offset;
-    while ( i >= next_token.size() ) {
+    while ( offset >= next_token.size() ) {
         auto t = make_token();
         next_token.push_back( t );
     }

@@ -79,7 +79,7 @@ X86_64CodeGen::X86_64CodeGen( Option const& option ) : CodeGenerator( option ) {
 
 CodeGenBase X86_64CodeGen::run_codegen( tac::Program tac ) {
     spdlog::info( "Run codegen," );
-    AssemblyGen assembler(option);
+    AssemblyGen assembler( option );
     auto        assembly = assembler.generate( tac );
     PrinterAT   assemblerPrinter;
     auto        output = assemblerPrinter.print( assembly );
@@ -105,7 +105,7 @@ CodeGenBase X86_64CodeGen::run_codegen( tac::Program tac ) {
     return std::static_pointer_cast<CodeGenBase_>( assembly );
 }
 
-void X86_64CodeGen::generate_output_file( CodeGenBase assembly ) {
+void X86_64CodeGen::generate_output_file( const CodeGenBase assembly ) {
     spdlog::info( "Generate output file for {}.", to_string( option.machine ) );
 
     // Generate Assembly code
@@ -115,7 +115,7 @@ void X86_64CodeGen::generate_output_file( CodeGenBase assembly ) {
     std::println( "{:s}", get_output() );
 }
 
-void X86_64CodeGen::generate( CodeGenBase program ) {
+void X86_64CodeGen::generate( const CodeGenBase program ) {
 
     auto x86_program = std::dynamic_pointer_cast<x86_at::Program_>( program );
     if ( !x86_program ) {
@@ -319,7 +319,7 @@ void X86_64CodeGen::visit_Stack( const x86_at::Stack ast ) {
     last_string = std::format( "{}(%rbp)", ast->offset );
 }
 
-std::string X86_64CodeGen::function_label( const std::string_view name ) {
+std::string X86_64CodeGen::function_label( const std::string_view name ) const {
     std::string n { name };
     if ( option.system == System::MacOS ) {
         n = "_" + n;

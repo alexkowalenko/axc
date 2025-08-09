@@ -33,7 +33,7 @@ constexpr std::string to_string( const RegisterName rn ) {
 
 class Base : public CodeGenBase_ {
   public:
-    explicit Base( Location loc ) : location( std::move( loc ) ) {}
+    explicit Base( const Location loc ) : location( loc ) {}
     ~Base() override = default;
 
     Location location;

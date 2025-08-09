@@ -10,10 +10,9 @@
 
 #pragma once
 
-#include <istream>
-#include <optional>
-#include <string>
 #include <deque>
+#include <istream>
+#include <string>
 
 #include "token.h"
 
@@ -23,7 +22,7 @@ class Lexer {
     ~Lexer() = default;
 
     Token        get_token();
-    Token const& peek_token(size_t offset = 0);
+    Token const& peek_token( size_t offset = 0 );
 
     [[nodiscard]] Location get_location() const { return { line, pos + 1 }; };
 

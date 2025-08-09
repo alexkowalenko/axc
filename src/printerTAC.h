@@ -18,23 +18,23 @@ class PrinterTAC : public tac::Visitor<std::string> {
     PrinterTAC() = default;
     ~PrinterTAC() override = default;
 
-    std::string print( const tac::Program ast );
+    std::string print( tac::Program ast );
 
-    std::string visit_Program( const tac::Program ast ) override;
-    std::string visit_FunctionDef( const tac::FunctionDef ast ) override;
-    std::string value( const tac::Value ast );
-    std::string visit_Return( const tac::Return ast ) override;
-    std::string visit_Binary( const tac::Binary ast ) override;
-    std::string visit_Unary( const tac::Unary ast ) override;
-    std::string visit_Copy( const tac::Copy ast ) override;
-    std::string visit_Jump( const tac::Jump ast ) override;
-    std::string visit_JumpIfZero( const tac::JumpIfZero ast ) override;
-    std::string visit_JumpIfNotZero( const tac::JumpIfNotZero ast ) override;
-    std::string visit_Label( const tac::Label ast ) override;
-    std::string visit_FunCall( const tac::FunCall ast ) override;
+    std::string visit_Program( tac::Program ast ) override;
+    std::string visit_FunctionDef( tac::FunctionDef ast ) override;
+    std::string value( tac::Value ast );
+    std::string visit_Return( tac::Return ast ) override;
+    std::string visit_Binary( tac::Binary ast ) override;
+    std::string visit_Unary( tac::Unary ast ) override;
+    std::string visit_Copy( tac::Copy ast ) override;
+    std::string visit_Jump( tac::Jump ast ) override;
+    std::string visit_JumpIfZero( tac::JumpIfZero ast ) override;
+    std::string visit_JumpIfNotZero( tac::JumpIfNotZero ast ) override;
+    std::string visit_Label( tac::Label ast ) override;
+    std::string visit_FunCall( tac::FunCall ast ) override;
 
-    std::string visit_Constant( const tac::Constant ast ) override;
-    std::string visit_Variable( const tac::Variable ast ) override;
+    std::string visit_Constant( tac::Constant ast ) override;
+    std::string visit_Variable( tac::Variable ast ) override;
 
     std::string indent { "  " };
 };

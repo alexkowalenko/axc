@@ -97,7 +97,7 @@ x86_at::Operand AssemblyFilterPseudo::operand( const x86_at::Operand& op ) {
     }
 }
 
-int AssemblyFilterPseudo::get_number_stack_locations() {
+int AssemblyFilterPseudo::get_number_stack_locations() const {
     return std::abs( next_stack_location / stack_increment );
 }
 

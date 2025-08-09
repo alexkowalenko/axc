@@ -46,7 +46,7 @@ CodeGenBase Arm64CodeGen::run_codegen( tac::Program tac ) {
     return std::static_pointer_cast<CodeGenBase_>( assembly );
 }
 
-void Arm64CodeGen::generate_output_file( CodeGenBase assembly ) {
+void Arm64CodeGen::generate_output_file( const CodeGenBase assembly ) {
     spdlog::info( "Generate output file for {}.", to_string( option.machine ) );
     // Generate Assembly code
     generate( assembly );
@@ -55,7 +55,7 @@ void Arm64CodeGen::generate_output_file( CodeGenBase assembly ) {
     std::println( "{:s}", get_output() );
 }
 
-void Arm64CodeGen::generate( CodeGenBase program ) {
+void Arm64CodeGen::generate( const CodeGenBase program ) {
     auto arm64_program = std::dynamic_pointer_cast<arm64_at::Program_>( program );
     if ( !arm64_program ) {
         throw CodeException( Location {}, "Invalid program type for ARM64 code generation" );

@@ -45,7 +45,7 @@ void AssemblyFixInstruct::visit_FunctionDef( const x86_at::FunctionDef ast ) {
         allocate->size = stack_increment * ast->stack_size;
         allocate->size = ( ( allocate->size + 15 ) & ~15 ); // Align to 16 bytes
         spdlog::debug( "Adding AllocateStack instruction: {}", allocate->size );
-        current_instructions.push_back( allocate );
+        current_instructions.emplace_back( allocate );
     }
 
     // Look for MOV instructions
@@ -77,12 +77,12 @@ void AssemblyFixInstruct::visit_Mov( const x86_at::Mov ast ) {
         auto dst = ast->dst;
 
         auto mov1 = mk_node<x86_at::Mov_>( ast, src, r10 );
-        current_instructions.push_back( mov1 );
+        current_instructions.emplace_back( mov1 );
         auto mov2 = mk_node<x86_at::Mov_>( ast, r10, dst );
-        current_instructions.push_back( mov2 );
+        current_instructions.emplace_back( mov2 );
     } else {
         // Other MOV instructions
-        current_instructions.push_back( ast );
+        current_instructions.emplace_back( ast );
     }
 }
 
@@ -91,13 +91,13 @@ void AssemblyFixInstruct::visit_Idiv( const x86_at::Idiv ast ) {
     if ( std::holds_alternative<x86_at::Imm>( ast->src ) ) {
 
         auto mov1 = mk_node<x86_at::Mov_>( ast, ast->src, r10 );
-        current_instructions.push_back( mov1 );
+        current_instructions.emplace_back( mov1 );
 
         auto idiv = mk_node<x86_at::Idiv_>( ast, r10 );
-        current_instructions.push_back( idiv );
+        current_instructions.emplace_back( idiv );
     } else {
         // Other Idiv instructions
-        current_instructions.push_back( ast );
+        current_instructions.emplace_back( ast );
     }
 }
 
@@ -110,50 +110,50 @@ void AssemblyFixInstruct::visit_Binary( const x86_at::Binary ast ) {
              std::holds_alternative<x86_at::Stack>( ast->operand2 ) ) {
 
             auto mov1 = mk_node<x86_at::Mov_>( ast, ast->operand1, r10 );
-            current_instructions.push_back( mov1 );
+            current_instructions.emplace_back( mov1 );
 
             auto binary = mk_node<x86_at::Binary_>( ast, ast->op, r10, ast->operand2 );
-            current_instructions.push_back( binary );
+            current_instructions.emplace_back( binary );
 
             // There is any extra rule that the second operand can't be a constant (pg. 88),
             // not implemented here.
         } else {
             // Other Add/Sub instructions
-            current_instructions.push_back( ast );
+            current_instructions.emplace_back( ast );
         }
     } else if ( ast->op == x86_at::BinaryOpType::MUL ) {
         // This instruction can't have a stack location in the second argument
         if ( std::holds_alternative<x86_at::Stack>( ast->operand2 ) ) {
 
             auto mov1 = mk_node<x86_at::Mov_>( ast, ast->operand2, r11 );
-            current_instructions.push_back( mov1 );
+            current_instructions.emplace_back( mov1 );
 
             auto binary = mk_node<x86_at::Binary_>( ast, ast->op, ast->operand1, r11 );
-            current_instructions.push_back( binary );
+            current_instructions.emplace_back( binary );
 
             auto mov2 = mk_node<x86_at::Mov_>( ast, r11, ast->operand2 );
-            current_instructions.push_back( mov2 );
+            current_instructions.emplace_back( mov2 );
         } else {
             // Other Mul instructions
-            current_instructions.push_back( ast );
+            current_instructions.emplace_back( ast );
         }
     } else if ( ast->op == x86_at::BinaryOpType::SHL || ast->op == x86_at::BinaryOpType::SHR ) {
         // These instruction encoding only allows a register shift count (cl) when the destination is a register.
 
         auto mov1 = mk_node<x86_at::Mov_>( ast, ast->operand2, ax );
-        current_instructions.push_back( mov1 );
+        current_instructions.emplace_back( mov1 );
 
         auto mov2 = mk_node<x86_at::Mov_>( ast, ast->operand1, cx );
-        current_instructions.push_back( mov2 );
+        current_instructions.emplace_back( mov2 );
 
         auto binary = mk_node<x86_at::Binary_>( ast, ast->op, cl, ax );
-        current_instructions.push_back( binary );
+        current_instructions.emplace_back( binary );
 
         mov2 = mk_node<x86_at::Mov_>( ast, ax, ast->operand2 );
-        current_instructions.push_back( mov2 );
+        current_instructions.emplace_back( mov2 );
     } else {
         // Other Binary instructions
-        current_instructions.push_back( ast );
+        current_instructions.emplace_back( ast );
     }
 }
 
@@ -161,13 +161,13 @@ void AssemblyFixInstruct::visit_Cmp( const x86_at::Cmp ast ) {
     // CMP instructions can't have stack locations in both operands
     if ( std::holds_alternative<x86_at::Stack>( ast->operand1 ) &&
          std::holds_alternative<x86_at::Stack>( ast->operand2 ) ) {
-        auto src = ast->operand1;
-        auto dst = ast->operand2;
+        const auto src = ast->operand1;
+        const auto dst = ast->operand2;
 
         auto c1 = mk_node<x86_at::Mov_>( ast, src, r10 );
-        current_instructions.push_back( c1 );
+        current_instructions.emplace_back( c1 );
         auto c2 = mk_node<x86_at::Cmp_>( ast, r10, dst );
-        current_instructions.push_back( c2 );
+        current_instructions.emplace_back( c2 );
         return;
     }
     if ( std::holds_alternative<x86_at::Imm>( ast->operand2 ) ) {
@@ -175,13 +175,13 @@ void AssemblyFixInstruct::visit_Cmp( const x86_at::Cmp ast ) {
 
         // movl operand2, %r11d
         auto mov1 = mk_node<x86_at::Mov_>( ast, ast->operand2, r11 );
-        current_instructions.push_back( mov1 );
+        current_instructions.emplace_back( mov1 );
         // cmpl operand1, %r11d
         auto mov2 = mk_node<x86_at::Cmp_>( ast, ast->operand1, r11 );
-        current_instructions.push_back( mov2 );
+        current_instructions.emplace_back( mov2 );
     } else {
         // Other MOV instructions
-        current_instructions.push_back( ast );
+        current_instructions.emplace_back( ast );
     }
 }
 
@@ -192,18 +192,18 @@ void AssemblyFixInstruct::visit_AllocateStack( const x86_at::AllocateStack ast )
         auto allocate = mk_node<x86_at::AllocateStack_>( ast );
         allocate->size = ast->size;
         spdlog::debug( "Adding AllocateStack instruction {} - {}", ast->size, allocate->size );
-        current_instructions.push_back( allocate );
+        current_instructions.emplace_back( allocate );
     }
 }
 
 void AssemblyFixInstruct::visit_DeallocateStack( const x86_at::DeallocateStack ast ) {
-    current_instructions.push_back( ast );
+    current_instructions.emplace_back( ast );
 }
 
 void AssemblyFixInstruct::visit_Push( const x86_at::Push ast ) {
-    current_instructions.push_back( ast );
+    current_instructions.emplace_back( ast );
 }
 
 void AssemblyFixInstruct::visit_Call( const x86_at::Call ast ) {
-    current_instructions.push_back( ast );
+    current_instructions.emplace_back( ast );
 }

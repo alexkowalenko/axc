@@ -35,16 +35,17 @@ class CodeGenerator {
     virtual CodeGenBase run_codegen( tac::Program tac ) = 0;
     virtual void        generate_output_file( CodeGenBase assembly ) = 0;
 
-    std::string get_output();
+    std::string get_output() const;
 
   protected:
     virtual void generate( CodeGenBase program ) = 0;
 
     void make_output_file_name();
 
-    void add_line( std::string line );
-    void add_line( std::string instruct, std::string operands, int line_number = 0 );
-    void add_line( std::string instruct, std::string operand1, std::string operand2, int line_number = 0 );
+    void add_line( std::string const& line );
+    void add_line( std::string const& instruct, std::string const& operands, int line_number = 0 );
+    void add_line( std::string const& instruct, std::string const& operand1, std::string const& operand2,
+                   int line_number = 0 );
 
     Option const&         option;
     std::filesystem::path output;

@@ -18,8 +18,6 @@
 #include "exception.h"
 #include "spdlog/spdlog.h"
 
-SemanticAnalyser::SemanticAnalyser() {};
-
 void SemanticAnalyser::analyse( const ast::Program ast, SymbolTable& table ) {
     visit_Program( ast, table );
 }
@@ -41,8 +39,8 @@ void SemanticAnalyser::visit_FunctionDef( ast::FunctionDef ast, SymbolTable& tab
     ast->params.erase( std::remove( ast->params.begin(), ast->params.end(), "void" ), ast->params.end() );
 
     auto symbol = table.find( ast->name );
-    spdlog::debug( "symbol linkage: {:d} here: {}", static_cast<int>( symbol->linkage ), symbol->current_scope );
     if ( symbol ) {
+        spdlog::debug( "symbol linkage: {:d} here: {:b}", static_cast<int>( symbol->linkage ), symbol->current_scope );
 
         if ( symbol->type != Type::FUNCTION ) {
             // Another symbol is already defined with the same name, but it is not a function.
@@ -131,7 +129,7 @@ void SemanticAnalyser::visit_FunctionDef( ast::FunctionDef ast, SymbolTable& tab
     }
 
     // Check for labels that were used but not defined.
-    for ( auto [ label, defined ] : labels ) {
+    for ( const auto& [ label, defined ] : labels ) {
         if ( !defined ) {
             throw SemanticException( ast->location, "Label {} not defined", label );
         }
@@ -168,7 +166,7 @@ void SemanticAnalyser::statement( const ast::StatementItem ast, SymbolTable& tab
                                  visit_Compound( ast, new_table );
                              },
                              [ this, &table ]( ast::Expr e ) -> void { expr( e, table ); }, // expr
-                             [ this ]( ast::Null ) -> void { ; } },
+                             []( ast::Null ) -> void { ; } },
                 ast );
 }
 
@@ -333,7 +331,7 @@ void SemanticAnalyser::visit_Case( const ast::Case ast, SymbolTable& table ) {
 
     for ( const auto& item : ast->block_items ) {
         std::visit( overloaded { [ this, &table ]( ast::Declaration d ) -> void { visit_Declaration( d, table ); },
-                                 [ this ]( ast::FunctionDef f ) -> void {
+                                 []( ast::FunctionDef f ) -> void {
                                      throw SemanticException( f->location, "No functions in case blocks" );
                                  },
                                  [ this, &table ]( ast::Statement s ) -> void { visit_Statement( s, table ); } },
@@ -443,7 +441,7 @@ void SemanticAnalyser::visit_Call( const ast::Call ast, SymbolTable& table ) {
     is_constant = false; // Function calls are not constant
 }
 
-void SemanticAnalyser::visit_Var( const ast::Var ast, SymbolTable& table ) {
+void SemanticAnalyser::visit_Var( const ast::Var ast, const SymbolTable& table ) {
     if ( auto name = table.find( ast->name ) ) {
 
         if ( name->type == Type::FUNCTION ) {
@@ -461,7 +459,7 @@ void SemanticAnalyser::visit_Var( const ast::Var ast, SymbolTable& table ) {
     throw SemanticException( ast->location, "variable: {} not declared", ast->name );
 }
 
-void SemanticAnalyser::visit_Constant( ast::Constant ast ) {
+void SemanticAnalyser::visit_Constant( ast::Constant ) {
     // Constant Analysis
     is_constant = true;
 }

@@ -19,27 +19,27 @@ class AssemblyGen {
     AssemblyGen( Option const& option );
     ~AssemblyGen() = default;
 
-    x86_at::Program generate( const tac::Program atac );
+    x86_at::Program generate( tac::Program atac );
 
-    x86_at::FunctionDef functionDef( const tac::FunctionDef atac );
+    x86_at::FunctionDef functionDef( tac::FunctionDef atac );
 
-    void ret( const tac::Return atac, std::vector<x86_at::Instruction>& instructions );
+    void ret( tac::Return atac, std::vector<x86_at::Instruction>& instructions ) const;
 
-    void unary( const tac::Unary atac, std::vector<x86_at::Instruction>& instructions );
-    void unary_not( const tac::Unary atac, std::vector<x86_at::Instruction>& instructions );
+    void unary( tac::Unary atac, std::vector<x86_at::Instruction>& instructions ) const;
+    void unary_not( tac::Unary atac, std::vector<x86_at::Instruction>& instructions ) const;
 
-    void binary( const tac::Binary atac, std::vector<x86_at::Instruction>& instructions );
-    void idiv( const tac::Binary atac, std::vector<x86_at::Instruction>& instructions );
-    void binary_relation( const tac::Binary atac, std::vector<x86_at::Instruction>& instructions );
-    void jump( const tac::Jump atac, std::vector<x86_at::Instruction>& instructions );
-    template <typename T> void jumpIfZero( const T atac, bool zerop, std::vector<x86_at::Instruction>& instructions );
-    void                       copy( const tac::Copy atac, std::vector<x86_at::Instruction>& instructions );
-    void                       label( const tac::Label atac, std::vector<x86_at::Instruction>& instructions );
-    void                       functionCall( const tac::FunCall atac, std::vector<x86_at::Instruction>& instructions );
+    void        binary( tac::Binary atac, std::vector<x86_at::Instruction>& instructions );
+    void        idiv( tac::Binary atac, std::vector<x86_at::Instruction>& instructions );
+    void        binary_relation( tac::Binary atac, std::vector<x86_at::Instruction>& instructions ) const;
+    static void jump( tac::Jump atac, std::vector<x86_at::Instruction>& instructions );
+    template <typename T> void jumpIfZero( T atac, bool zerop, std::vector<x86_at::Instruction>& instructions );
+    static void                copy( tac::Copy atac, std::vector<x86_at::Instruction>& instructions );
+    static void                label( tac::Label atac, std::vector<x86_at::Instruction>& instructions );
+    void                       functionCall( tac::FunCall atac, std::vector<x86_at::Instruction>& instructions ) const;
 
-    x86_at::Operand value( const tac::Value& atac );
-    x86_at::Operand constant( const tac::Constant& atac );
-    x86_at::Operand pseudo( tac::Variable atac );
+    static x86_at::Operand value( tac::Value atac );
+    static x86_at::Operand constant( tac::Constant atac );
+    static x86_at::Operand pseudo( tac::Variable atac );
 
   private:
     Option const& option;
@@ -59,7 +59,6 @@ class AssemblyGen {
 
 template <typename T>
 void AssemblyGen::jumpIfZero( const T atac, bool zerop, std::vector<x86_at::Instruction>& instructions ) {
-    auto zero = std::make_shared<x86_at::Imm_>( atac->location, 0 );
     auto cmp = std::make_shared<x86_at::Cmp_>( atac->location, zero, value( atac->condition ) );
     instructions.push_back( cmp );
     if ( zerop ) {

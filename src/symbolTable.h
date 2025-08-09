@@ -21,7 +21,7 @@ class SymbolTable {
     SymbolTable() = default;
     ~SymbolTable() = default;
 
-    inline void                         put( std::string const& name, Symbol value ) { table[ name ] = value; };
+    inline void                         put( std::string const& name, const Symbol& value ) { table[ name ] = value; };
     [[nodiscard]] std::optional<Symbol> find( const std::string& name ) const;
     void                                copy( SymbolTable& other );
     void                                reset_current_block();

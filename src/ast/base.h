@@ -21,7 +21,7 @@ namespace ast {
 
 class Base {
   public:
-    explicit Base( Location loc ) : location( std::move( loc ) ) {}
+    explicit Base( const Location loc ) : location( loc ) {}
     virtual ~Base() = default;
 
     Location    location;

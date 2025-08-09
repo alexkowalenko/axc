@@ -29,12 +29,12 @@ void CodeGenerator::make_output_file_name() {
     output.replace_extension( ".s" );
 }
 
-void CodeGenerator::add_line( std::string line ) {
+void CodeGenerator::add_line( const std::string& line ) {
     file << line << '\n';
     text << line << '\n';
 }
 
-void CodeGenerator::add_line( std::string instruct, std::string operands, int line_number ) {
+void CodeGenerator::add_line( std::string const& instruct, std::string const& operands, int line_number ) {
     std::string line;
     if ( line_number > 0 ) {
         line = std::format( "\t{}\t{}\t\t\t\t {} line {}", instruct, operands, comment_prefix, line_number );
@@ -44,7 +44,8 @@ void CodeGenerator::add_line( std::string instruct, std::string operands, int li
     add_line( line );
 }
 
-void CodeGenerator::add_line( std::string instruct, std::string operand1, std::string operand2, int line_number ) {
+void CodeGenerator::add_line( std::string const& instruct, std::string const& operand1, std::string const& operand2,
+                              int line_number ) {
     std::string line;
     if ( line_number > 0 ) {
         line =
@@ -55,6 +56,6 @@ void CodeGenerator::add_line( std::string instruct, std::string operand1, std::s
     add_line( line );
 }
 
-std::string CodeGenerator::get_output() {
+std::string CodeGenerator::get_output() const {
     return text.str();
 }

@@ -82,10 +82,10 @@ enum class TokenType : std::uint8_t {
     WHILE,
 };
 
-const char* to_string( const TokenType l );
+const char* to_string( TokenType l );
 
 template <> struct std::formatter<TokenType> {
-    constexpr static auto parse( std::format_parse_context& ctx ) { return ctx.begin(); }
+    constexpr static auto parse( const std::format_parse_context& ctx ) { return ctx.begin(); }
 
     template <typename FormatContext> static auto format( TokenType const& obj, FormatContext& ctx ) {
         return std::format_to( ctx.out(), "{}", to_string( obj ) );
@@ -107,7 +107,7 @@ constexpr auto to_string( Location l ) {
 }
 
 template <> struct std::formatter<Location> {
-    constexpr static auto parse( std::format_parse_context& ctx ) { return ctx.begin(); }
+    constexpr static auto parse( const std::format_parse_context& ctx ) { return ctx.begin(); }
 
     template <typename FormatContext> static auto format( Location const& obj, FormatContext& ctx ) {
         return std::format_to( ctx.out(), "{}", to_string( obj ) );
@@ -130,7 +130,7 @@ class Token {
 std::string to_string( Token const& t );
 
 template <> struct std::formatter<Token> {
-    constexpr static auto parse( std::format_parse_context& ctx ) { return ctx.begin(); }
+    constexpr static auto parse( const std::format_parse_context& ctx ) { return ctx.begin(); }
 
     template <typename FormatContext> static auto format( Token const& obj, FormatContext& ctx ) {
         return std::format_to( ctx.out(), "{}", to_string( obj ) );

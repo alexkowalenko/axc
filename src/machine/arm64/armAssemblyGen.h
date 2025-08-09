@@ -18,17 +18,17 @@ class ARMAssemblyGen {
     ARMAssemblyGen();
     ~ARMAssemblyGen() = default;
 
-    arm64_at::Program generate( const tac::Program atac );
+    arm64_at::Program generate( tac::Program atac );
 
   private:
-    arm64_at::FunctionDef function( const tac::FunctionDef& atac );
+    arm64_at::FunctionDef function( tac::FunctionDef atac );
 
-    void ret( const tac::Return atac, std::vector<arm64_at::Instruction>& instructions );
-    void unary( const tac::Unary atac, std::vector<arm64_at::Instruction>& instructions );
+    void ret( tac::Return atac, std::vector<arm64_at::Instruction>& instructions );
+    void unary( tac::Unary atac, std::vector<arm64_at::Instruction>& instructions );
 
-    arm64_at::Operand value( const tac::Value& atac );
-    arm64_at::Operand constant( const tac::Constant& atac );
-    arm64_at::Operand pseudo( tac::Variable atac );
+    arm64_at::Operand        value( tac::Value atac );
+    arm64_at::Operand        constant( tac::Constant atac );
+    static arm64_at::Operand pseudo( tac::Variable atac );
 
     arm64_at::Register x0;
     arm64_at::Register xzr; // Zero register

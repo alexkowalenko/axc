@@ -28,20 +28,20 @@ arm64_at::Program ARMAssemblyGen::generate( const tac::Program atac ) {
     }
     return program;
 };
-arm64_at::FunctionDef ARMAssemblyGen::function( const tac::FunctionDef& atac ) {
+arm64_at::FunctionDef ARMAssemblyGen::function( tac::FunctionDef atac ) {
     auto funct = mk_node<arm64_at::FunctionDef_>( atac );
     funct->name = atac->name;
     for ( auto instr : atac->instructions ) {
         std::visit( overloaded {
                         [ &funct, this ]( tac::Return r ) -> void { ret( r, funct->instructions ); },
                         [ &funct, this ]( tac::Unary u ) -> void { unary( u, funct->instructions ); },
-                        [ this ]( tac::Binary ) -> void {},
-                        [ this ]( tac::Copy ) -> void {},
-                        [ this ]( tac::Jump ) -> void {},
-                        [ this ]( tac::JumpIfZero ) -> void {},
-                        [ this ]( tac::JumpIfNotZero ) -> void {},
-                        [ this ]( tac::Label ) -> void {},
-                        [ this ]( tac::FunCall atac ) -> void {},
+                        []( tac::Binary ) -> void {},
+                        []( tac::Copy ) -> void {},
+                        []( tac::Jump ) -> void {},
+                        []( tac::JumpIfZero ) -> void {},
+                        []( tac::JumpIfNotZero ) -> void {},
+                        []( tac::Label ) -> void {},
+                        []( tac::FunCall ) -> void {},
                     },
                     instr );
     }
@@ -51,11 +51,11 @@ arm64_at::FunctionDef ARMAssemblyGen::function( const tac::FunctionDef& atac ) {
 void ARMAssemblyGen::ret( const tac::Return atac, std::vector<arm64_at::Instruction>& instructions ) {
     // mov(value, x0)
     auto mov = mk_node<arm64_at::Mov_>( atac, value( atac->value ), x0 );
-    instructions.push_back( mov );
+    instructions.emplace_back( mov );
 
     // ret
     auto ret = mk_node<arm64_at::Ret_>( atac );
-    instructions.push_back( ret );
+    instructions.emplace_back( ret );
 }
 
 void ARMAssemblyGen::unary( const tac::Unary atac, std::vector<arm64_at::Instruction>& instructions ) {
@@ -72,16 +72,16 @@ void ARMAssemblyGen::unary( const tac::Unary atac, std::vector<arm64_at::Instruc
     }
     unary->dst = value( atac->dst );
     unary->src = value( atac->src );
-    instructions.push_back( unary );
+    instructions.emplace_back( unary );
 }
 
-arm64_at::Operand ARMAssemblyGen::value( const tac::Value& atac ) {
+arm64_at::Operand ARMAssemblyGen::value( const tac::Value atac ) {
     return std::visit( overloaded { [ this ]( tac::Constant c ) -> arm64_at::Operand { return constant( c ); },
-                                    [ this ]( tac::Variable v ) -> arm64_at::Operand { return pseudo( v ); } },
+                                    []( tac::Variable v ) -> arm64_at::Operand { return pseudo( v ); } },
                        atac );
 }
 
-arm64_at::Operand ARMAssemblyGen::constant( const tac::Constant& atac ) {
+arm64_at::Operand ARMAssemblyGen::constant( const tac::Constant atac ) {
     if ( atac->value == 0 ) {
         return xzr; // Use zero register for constant 0
     }

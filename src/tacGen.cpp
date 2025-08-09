@@ -20,7 +20,7 @@
 
 tac::Program TacGen::generate( ast::Program ast ) {
     auto program = mk_node<tac::Program_>( ast );
-    for ( auto f : ast->functions ) {
+    for ( const auto& f : ast->functions ) {
         if ( auto funct = functionDef( f ) ) {
             program->functions.push_back( *funct );
         }
@@ -48,7 +48,7 @@ std::optional<tac::FunctionDef> TacGen::functionDef( ast::FunctionDef ast ) {
     }
 
     // Add a return at the end of the function
-    instructions.push_back( mk_node<tac::Return_>( ast, mk_node<tac::Constant_>( ast, 0 ) ) ); // Return 0
+    instructions.emplace_back( mk_node<tac::Return_>( ast, mk_node<tac::Constant_>( ast, 0 ) ) ); // Return 0
     function->instructions = instructions;
     return function;
 }
@@ -58,7 +58,7 @@ void TacGen::declaration( ast::Declaration ast, std::vector<tac::Instruction>& i
     if ( ast->init ) {
         auto result = expr( *ast->init, instructions );
         auto copy = mk_node<tac::Copy_>( ast, result, mk_node<tac::Variable_>( ast, ast->name ) );
-        instructions.push_back( copy );
+        instructions.emplace_back( copy );
     }
 }
 
@@ -97,7 +97,7 @@ void TacGen::ret( ast::Return ast, std::vector<tac::Instruction>& instructions )
 
     // Do Return
     auto ret = mk_node<tac::Return_>( ast, value );
-    instructions.push_back( ret );
+    instructions.emplace_back( ret );
 }
 
 void TacGen::if_stat( ast::If ast, std::vector<tac::Instruction>& instructions ) {
@@ -112,7 +112,7 @@ void TacGen::if_stat( ast::If ast, std::vector<tac::Instruction>& instructions )
 
     // JumpIfZero(c, jump_label)
     auto jump = mk_node<tac::JumpIfZero_>( ast, c, jump_label->name );
-    instructions.push_back( jump );
+    instructions.emplace_back( jump );
 
     // Instructs for then
     statement( ast->then, instructions );
@@ -120,38 +120,38 @@ void TacGen::if_stat( ast::If ast, std::vector<tac::Instruction>& instructions )
     if ( ast->else_stat ) {
         // Jump(end)
         auto jump = mk_node<tac::Jump_>( ast, end_label->name );
-        instructions.push_back( jump );
+        instructions.emplace_back( jump );
         // Label(else_label)
-        instructions.push_back( else_label );
+        instructions.emplace_back( else_label );
         // Instructs for else
         statement( ast->else_stat.value(), instructions );
     }
 
     // Label(end)
-    instructions.push_back( end_label );
+    instructions.emplace_back( end_label );
 }
 void TacGen::goto_stat( ast::Goto ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::goto_stat: {}", ast->label );
     auto jump = mk_node<tac::Jump_>( ast, ast->label );
-    instructions.push_back( jump );
+    instructions.emplace_back( jump );
 }
 
 void TacGen::label( ast::Label ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::label: {}", ast->label );
     auto label = mk_node<tac::Label_>( ast, ast->label );
-    instructions.push_back( label );
+    instructions.emplace_back( label );
 }
 
 void TacGen::break_stat( const ast::Break ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::break_stat: {}", ast->ast_label );
     auto jump = mk_node<tac::Jump_>( ast, "break_" + ast->ast_label );
-    instructions.push_back( jump );
+    instructions.emplace_back( jump );
 }
 
 void TacGen::continue_stat( const ast::Continue ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::continue_stat: {}", ast->ast_label );
     auto jump = mk_node<tac::Jump_>( ast, "continue_" + ast->ast_label );
-    instructions.push_back( jump );
+    instructions.emplace_back( jump );
 }
 
 void TacGen::while_stat( const ast::While ast, std::vector<tac::Instruction>& instructions ) {
@@ -159,7 +159,7 @@ void TacGen::while_stat( const ast::While ast, std::vector<tac::Instruction>& in
 
     // Label(continue_label)
     auto continue_label = generate_loop_continue( ast );
-    instructions.push_back( continue_label );
+    instructions.emplace_back( continue_label );
 
     auto break_label = generate_loop_break( ast );
 
@@ -168,33 +168,33 @@ void TacGen::while_stat( const ast::While ast, std::vector<tac::Instruction>& in
 
     // JumpIfZero(c, jump_label)
     auto jump = mk_node<tac::JumpIfZero_>( ast, c, break_label->name );
-    instructions.push_back( jump );
+    instructions.emplace_back( jump );
 
     // Instructs for body
     statement( ast->body, instructions );
     // Jump(continue_label)
-    instructions.push_back( mk_node<tac::Jump_>( ast, continue_label->name ) );
+    instructions.emplace_back( mk_node<tac::Jump_>( ast, continue_label->name ) );
     // Label(break_label)
-    instructions.push_back( generate_loop_break( ast ) );
+    instructions.emplace_back( generate_loop_break( ast ) );
 }
 
 void TacGen::do_while_stat( const ast::DoWhile ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::do_stat: {}", ast->ast_label );
     // Label(start)
     auto start = generate_label( ast, "do_while_start" );
-    instructions.push_back( start );
+    instructions.emplace_back( start );
 
     // Instructs for body
     statement( ast->body, instructions );
 
-    instructions.push_back( generate_loop_continue( ast ) );
+    instructions.emplace_back( generate_loop_continue( ast ) );
     // Instructs for condition
     auto c = expr( ast->condition, instructions );
 
     // JumpIfNotZero(c, jump_label)
     auto jump = mk_node<tac::JumpIfNotZero_>( ast, c, start->name );
-    instructions.push_back( jump );
-    instructions.push_back( generate_loop_break( ast ) );
+    instructions.emplace_back( jump );
+    instructions.emplace_back( generate_loop_break( ast ) );
 }
 
 void TacGen::for_stat( const ast::For ast, std::vector<tac::Instruction>& instructions ) {
@@ -211,7 +211,7 @@ void TacGen::for_stat( const ast::For ast, std::vector<tac::Instruction>& instru
 
     // Label(start)
     auto start = generate_label( ast, "while_start" );
-    instructions.push_back( start );
+    instructions.emplace_back( start );
 
     if ( ast->condition ) {
         // Instructs for condition
@@ -219,7 +219,7 @@ void TacGen::for_stat( const ast::For ast, std::vector<tac::Instruction>& instru
 
         // JumpIfZero(c, break_label)
         auto jump = mk_node<tac::JumpIfZero_>( ast, c, break_label->name );
-        instructions.push_back( jump );
+        instructions.emplace_back( jump );
     }
 
     // Instructs for body
@@ -227,7 +227,7 @@ void TacGen::for_stat( const ast::For ast, std::vector<tac::Instruction>& instru
 
     // Label(continue_label)
     auto continue_label = generate_loop_continue( ast );
-    instructions.push_back( continue_label );
+    instructions.emplace_back( continue_label );
     if ( ast->increment ) {
         // Instructs for increment
         expr( ast->increment.value(), instructions );
@@ -235,9 +235,9 @@ void TacGen::for_stat( const ast::For ast, std::vector<tac::Instruction>& instru
 
     // Jump(start)
     auto jump = mk_node<tac::Jump_>( ast, start->name );
-    instructions.push_back( jump );
+    instructions.emplace_back( jump );
     // Label(break_label)
-    instructions.push_back( break_label );
+    instructions.emplace_back( break_label );
 }
 
 void TacGen::switch_stat( const ast::Switch ast, std::vector<tac::Instruction>& instructions ) {
@@ -246,7 +246,7 @@ void TacGen::switch_stat( const ast::Switch ast, std::vector<tac::Instruction>& 
     // Instruction for condition
     auto c = expr( ast->condition, instructions );
 
-    for ( auto case_item : ast->cases ) {
+    for ( const auto& case_item : ast->cases ) {
         spdlog::debug( "tac::switch_stat: case {}", case_item->ast_label );
         // Generate label for case
         auto case_label = generate_label( case_item, std::format( "{}.case", case_item->ast_label ) );
@@ -256,7 +256,7 @@ void TacGen::switch_stat( const ast::Switch ast, std::vector<tac::Instruction>& 
         if ( case_item->is_default ) {
             // default:
             auto jump = mk_node<tac::Jump_>( ast, case_item->ast_label );
-            instructions.push_back( jump );
+            instructions.emplace_back( jump );
         } else {
             // case <value>:
             // Instructions for case value
@@ -265,10 +265,10 @@ void TacGen::switch_stat( const ast::Switch ast, std::vector<tac::Instruction>& 
             // BinOp(EQ, c, r)
             auto result = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
             auto case_cmp = mk_node<tac::Binary_>( ast, tac::BinaryOpType::Equal, c, r, result );
-            instructions.push_back( case_cmp );
+            instructions.emplace_back( case_cmp );
 
             auto jump = mk_node<tac::JumpIfNotZero_>( ast, result, case_label->name );
-            instructions.push_back( jump );
+            instructions.emplace_back( jump );
         }
     }
 
@@ -279,19 +279,19 @@ void TacGen::switch_stat( const ast::Switch ast, std::vector<tac::Instruction>& 
     statement( ast->body, instructions );
 
     // Generate end label for break statements
-    instructions.push_back( end_label );
+    instructions.emplace_back( end_label );
 }
 
 void TacGen::case_stat( const ast::Case ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::case_stat: {}", ast->ast_label );
     auto label = mk_node<tac::Label_>( ast, ast->ast_label );
-    instructions.push_back( label );
+    instructions.emplace_back( label );
 
     for ( auto b : ast->block_items ) {
         spdlog::debug( "tac::case_stat: block" );
         std::visit(
             overloaded { [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
-                         [ this ]( ast::FunctionDef ast ) -> void {},
+                         []( ast::FunctionDef ) -> void {},
                          [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
             b );
     }
@@ -303,7 +303,7 @@ void TacGen::compound( ast::Compound ast, std::vector<tac::Instruction>& instruc
         spdlog::debug( "tac::functionDef: block" );
         std::visit(
             overloaded { [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
-                         [ this ]( ast::FunctionDef ast ) -> void {},
+                         []( ast::FunctionDef ) -> void {},
                          [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
             b );
     }
@@ -319,7 +319,7 @@ tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructi
             [ &instructions, this ]( ast::Conditional b ) -> tac::Value { return conditional( b, instructions ); },
             [ &instructions, this ]( ast::Assign a ) -> tac::Value { return assign( a, instructions ); },
             [ &instructions, this ]( ast::Call c ) -> tac::Value { return call( c, instructions ); },
-            [ this ]( ast::Var v ) -> tac::Value { return mk_node<tac::Variable_>( v, v->name ); },
+            []( ast::Var v ) -> tac::Value { return mk_node<tac::Variable_>( v, v->name ); },
             [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
         ast );
 }
@@ -344,10 +344,10 @@ tac::Value TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instr
         b->src2 = mk_node<tac::Constant_>( ast, 1 );
         auto temp = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
         b->dst = temp;
-        instructions.push_back( b );
+        instructions.emplace_back( b );
 
         auto copy = mk_node<tac::Copy_>( ast, temp, expr( ast->operand, instructions ) );
-        instructions.push_back( copy );
+        instructions.emplace_back( copy );
         return temp;
     }
 
@@ -369,7 +369,7 @@ tac::Value TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instr
     u->src = expr( ast->operand, instructions );
     auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
     u->dst = dst;
-    instructions.push_back( u );
+    instructions.emplace_back( u );
     return u->dst;
 }
 
@@ -435,7 +435,7 @@ tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& ins
     b->src2 = expr( ast->right, instructions );
     auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
     b->dst = dst;
-    instructions.push_back( b );
+    instructions.emplace_back( b );
     return b->dst;
 }
 
@@ -444,7 +444,7 @@ tac::Value TacGen::post( ast::PostOp ast, std::vector<tac::Instruction>& instruc
     auto left = expr( ast->operand, instructions );
     auto orig = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
     auto copy = mk_node<tac::Copy_>( ast, left, orig );
-    instructions.push_back( copy );
+    instructions.emplace_back( copy );
 
     // Binop(Add/Sub, left, 1, dst)
     auto b = mk_node<tac::Binary_>( ast );
@@ -462,11 +462,11 @@ tac::Value TacGen::post( ast::PostOp ast, std::vector<tac::Instruction>& instruc
     b->src2 = mk_node<tac::Constant_>( ast, 1 );
     auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
     b->dst = dst;
-    instructions.push_back( b );
+    instructions.emplace_back( b );
 
     // Copy(dst, left)
     auto copy2 = mk_node<tac::Copy_>( ast, dst, left );
-    instructions.push_back( copy2 );
+    instructions.emplace_back( copy2 );
 
     // Return orig
     return orig;
@@ -544,26 +544,26 @@ tac::Value TacGen::conditional( ast::Conditional ast, std::vector<tac::Instructi
     auto c = expr( ast->condition, instructions );
     // JumpIfZero(c, end)
     auto jump = mk_node<tac::JumpIfZero_>( ast, c, e2_label->name );
-    instructions.push_back( jump );
+    instructions.emplace_back( jump );
     // Instructs for e1
     auto v1 = expr( ast->then_expr, instructions );
     // result = v1
     auto copy = mk_node<tac::Copy_>( ast, v1, result );
-    instructions.push_back( copy );
+    instructions.emplace_back( copy );
     // Jump(end)
     auto jump2 = mk_node<tac::Jump_>( ast, end_label->name );
-    instructions.push_back( jump2 );
+    instructions.emplace_back( jump2 );
 
     // Label(e2_label)
-    instructions.push_back( e2_label );
+    instructions.emplace_back( e2_label );
     // Instructs for e2
     auto v2 = expr( ast->else_expr, instructions );
     // result = v2
     copy = mk_node<tac::Copy_>( ast, v2, result );
-    instructions.push_back( copy );
+    instructions.emplace_back( copy );
 
     // Label(end)
-    instructions.push_back( end_label );
+    instructions.emplace_back( end_label );
     return result;
 }
 
@@ -573,7 +573,7 @@ tac::Value TacGen::assign( ast::Assign ast, std::vector<tac::Instruction>& instr
         // Handle normal assignment
         auto result = expr( ast->right, instructions );
         auto copy = mk_node<tac::Copy_>( ast, result, expr( ast->left, instructions ) );
-        instructions.push_back( copy );
+        instructions.emplace_back( copy );
         return result;
     }
 
@@ -616,10 +616,10 @@ tac::Value TacGen::assign( ast::Assign ast, std::vector<tac::Instruction>& instr
     b->src2 = expr( ast->right, instructions );
     auto temp = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
     b->dst = temp;
-    instructions.push_back( b );
+    instructions.emplace_back( b );
 
     auto copy = mk_node<tac::Copy_>( ast, temp, expr( ast->left, instructions ) );
-    instructions.push_back( copy );
+    instructions.emplace_back( copy );
     return temp;
 }
 
@@ -631,8 +631,8 @@ tac::Value TacGen::call( const ast::Call ast, std::vector<tac::Instruction>& ins
 
     auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
     auto func = mk_node<tac::FunCall_>( ast, ast->function_name, args, dst, false );
-    if (auto f = symbol_table.find( ast->function_name )) {
-        if (f.value().linkage == Linkage::External) {
+    if ( auto f = symbol_table.find( ast->function_name ) ) {
+        if ( f.value().linkage == Linkage::External ) {
             // Extern function, no need to generate code
             spdlog::debug( "tac::call: {} is extern", ast->function_name );
             func->external = true;
@@ -640,7 +640,7 @@ tac::Value TacGen::call( const ast::Call ast, std::vector<tac::Instruction>& ins
     } else {
         throw SemanticException( ast->location, "Function '{}' not found", ast->function_name );
     }
-    instructions.push_back( func );
+    instructions.emplace_back( func );
 
     return dst;
 }

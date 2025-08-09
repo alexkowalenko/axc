@@ -13,7 +13,6 @@
 #include "exception.h"
 #include "spdlog/spdlog.h"
 
-#include <expected>
 #include <functional>
 #include <map>
 
@@ -77,7 +76,7 @@ void Parser::function_params( ast::FunctionDef f ) {
     if ( token.tok == TokenType::VOID ) {
         // void
         expect_token( TokenType::VOID );
-        f->params.push_back( "void" );
+        f->params.emplace_back( "void" );
         return;
     }
     if ( token.tok == TokenType::R_PAREN ) {
@@ -206,7 +205,7 @@ ast::Compound Parser::compound() {
             if ( lexer.peek_token( 1 ).tok == TokenType::IDENTIFIER &&
                  lexer.peek_token( 2 ).tok == TokenType::L_PAREN ) {
                 // This is a function definition
-                compound->block_items.push_back( functionDef() );
+                compound->block_items.emplace_back( functionDef() );
             } else {
                 // This is a declaration
                 ast::BlockItem block = declaration();

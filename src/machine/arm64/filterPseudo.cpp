@@ -62,7 +62,7 @@ arm64_at::Operand FilterPseudo::operand( const arm64_at::Operand& op ) {
     }
 }
 
-int FilterPseudo::get_number_stack_locations() {
+int FilterPseudo::get_number_stack_locations() const {
     return std::abs( next_stack_location / stack_increment );
 }
 

@@ -8,8 +8,8 @@ import os
 
 import jinja2
 
-template_file = "class_template.h"
-template_visit_file = "visitor_template.h"
+template_file = "class_template.ht"
+template_visit_file = "visitor_template.ht"
 includes_file = "includes.h"
 
 def define_ast(output_dir, namespace_name, types):
