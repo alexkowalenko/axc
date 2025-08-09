@@ -130,7 +130,7 @@ void X86_64CodeGen::generate( const CodeGenBase program ) {
 
     x86_program->accept( this );
 
-    if ( option.system == System::Linux ) {
+    if ( option.system == System::Linux || option.system == System::FreeBSD ) {
         add_line( "\t\t.section .note.GNU-stack,\"\",@progbits" );
     }
     file.close();
