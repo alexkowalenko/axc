@@ -7,7 +7,6 @@ compound.h
 constant.h
 continue.h
 conditional.h
-declaration.h
 dowhile.h
 for.h
 functiondef.h
@@ -25,3 +24,4 @@ visitor.h
 while.h
 unaryop.h
 var.h
+variabledef.h

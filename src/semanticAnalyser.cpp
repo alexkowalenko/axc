@@ -23,10 +23,14 @@ void SemanticAnalyser::analyse( const ast::Program ast, SymbolTable& table ) {
 }
 
 void SemanticAnalyser::visit_Program( const ast::Program ast, SymbolTable& table ) {
-    for ( const auto& function : ast->functions ) {
+    for ( const auto& d : ast->declarations ) {
         // top level
         nested_function = false;
-        visit_FunctionDef( function, table );
+
+        std::visit(
+            overloaded { [ this, &table ]( ast::VariableDef ast ) -> void { return visit_VariableDef( ast, table ); },
+                         [ this, &table ]( ast::FunctionDef ast ) -> void { return visit_FunctionDef( ast, table ); } },
+            d );
     }
 }
 
@@ -170,8 +174,8 @@ void SemanticAnalyser::statement( const ast::StatementItem ast, SymbolTable& tab
                 ast );
 }
 
-void SemanticAnalyser::visit_Declaration( const ast::Declaration ast, SymbolTable& table ) {
-    spdlog::debug( "Declaration: {}", ast->name );
+void SemanticAnalyser::visit_VariableDef( const ast::VariableDef ast, SymbolTable& table ) {
+    spdlog::debug( "VariableDef: {}", ast->name );
     if ( auto symbol = table.find( ast->name ); symbol && symbol->current_scope ) {
         throw SemanticException( ast->location, "Duplicate declaration: {}", ast->name );
     }
@@ -246,7 +250,7 @@ void SemanticAnalyser::visit_DoWhile( const ast::DoWhile ast, SymbolTable& table
 
 void SemanticAnalyser::for_init( ast::ForInit ast, SymbolTable& table ) {
     std::visit( overloaded { [ this, &table ]( ast::Expr e ) -> void { expr( e, table ); },
-                             [ this, &table ]( ast::Declaration d ) -> void { visit_Declaration( d, table ); } },
+                             [ this, &table ]( ast::VariableDef d ) -> void { visit_VariableDef( d, table ); } },
                 ast );
 }
 
@@ -330,7 +334,7 @@ void SemanticAnalyser::visit_Case( const ast::Case ast, SymbolTable& table ) {
     switch_stack.top()->cases.push_back( ast );
 
     for ( const auto& item : ast->block_items ) {
-        std::visit( overloaded { [ this, &table ]( ast::Declaration d ) -> void { visit_Declaration( d, table ); },
+        std::visit( overloaded { [ this, &table ]( ast::VariableDef d ) -> void { visit_VariableDef( d, table ); },
                                  []( ast::FunctionDef f ) -> void {
                                      throw SemanticException( f->location, "No functions in case blocks" );
                                  },
@@ -343,7 +347,7 @@ void SemanticAnalyser::visit_Compound( const ast::Compound ast, SymbolTable& tab
     spdlog::debug( "Compound" );
 
     for ( const auto& item : ast->block_items ) {
-        std::visit( overloaded { [ this, &table ]( ast::Declaration d ) -> void { visit_Declaration( d, table ); },
+        std::visit( overloaded { [ this, &table ]( ast::VariableDef d ) -> void { visit_VariableDef( d, table ); },
                                  [ this, &table ]( ast::FunctionDef f ) -> void { visit_FunctionDef( f, table ); },
                                  [ this, &table ]( ast::Statement s ) -> void { visit_Statement( s, table ); } },
                     item );

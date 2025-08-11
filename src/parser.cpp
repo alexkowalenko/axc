@@ -57,17 +57,79 @@ constexpr Precedence get_precedence( const TokenType tok ) {
     return precedence_map.contains( tok ) ? precedence_map.at( tok ) : Precedence::Lowest;
 }
 
+constexpr bool isTypeOrStorage( Token const& t ) {
+    return t.tok == TokenType::INT || t.tok == TokenType::STATIC || t.tok == TokenType::EXTERN;
+}
+
 ast::Program Parser::parse() {
     auto program = make_AST<ast::Program_>();
 
     auto token = lexer.peek_token();
     while ( token.tok != TokenType::Eof ) {
-        program->functions.push_back( functionDef() );
+        program->declarations.push_back( declaration() );
         token = lexer.peek_token();
     }
     expect_token( TokenType::Eof );
     spdlog::debug( "Finish parse." );
     return program;
+}
+
+ast::Declaration Parser::declaration() {
+    spdlog::debug( "declaration" );
+    ast::Declaration declaration;
+    StorageClass     storage_class = StorageClass::None;
+    auto             token = lexer.peek_token();
+    bool             type = false;
+    while ( token.tok != TokenType::IDENTIFIER ) {
+        spdlog::debug( "declaration: token {}", to_string( token.tok ) );
+        switch ( token.tok ) {
+        case TokenType::STATIC :
+            if ( storage_class != StorageClass::None ) {
+                throw ParseException( lexer.get_location(), "Storage class already set." );
+            }
+            storage_class = StorageClass::Static;
+            expect_token( TokenType::STATIC );
+            break;
+        case TokenType::EXTERN :
+            if ( storage_class != StorageClass::None ) {
+                throw ParseException( lexer.get_location(), "Storage class already set." );
+            }
+            storage_class = StorageClass::Extern;
+            expect_token( TokenType::EXTERN );
+            break;
+        case TokenType::INT :
+            // Not collecting type information yet.
+            if ( type ) {
+                throw ParseException( lexer.get_location(), "Type already set." );
+            }
+            type = true;
+            expect_token( TokenType::INT );
+            break;
+        default :
+            throw ParseException( lexer.get_location(), "Unexpected token: {}", to_string( token.tok ) );
+        }
+        token = lexer.peek_token();
+    }
+
+    // Check type found
+    if ( !type ) {
+        throw ParseException( lexer.get_location(), "Expected type, got identifier" );
+    }
+
+    // Get name
+    const std::string name = expect_token( TokenType::IDENTIFIER ).value;
+    spdlog::debug( "declaration: name {}", name );
+
+    // Determine function or variable
+    token = lexer.peek_token();
+    if ( token.tok == TokenType::L_PAREN ) {
+        // Function declaration
+        declaration = functionDef( name, storage_class );
+    } else {
+        // Variable declaration
+        declaration = variableDef( name, storage_class );
+    }
+    return declaration;
 }
 
 void Parser::function_params( ast::FunctionDef f ) {
@@ -100,15 +162,11 @@ void Parser::function_params( ast::FunctionDef f ) {
     }
 }
 
-ast::FunctionDef Parser::functionDef() {
+ast::FunctionDef Parser::functionDef( std::string const& name, StorageClass storage_class ) {
     auto funct = make_AST<ast::FunctionDef_>();
 
-    // Get type
-    expect_token( TokenType::INT );
-
-    // Get name
-    auto name = expect_token( TokenType::IDENTIFIER );
-    funct->name = name.value;
+    funct->name = name;
+    funct->storage = storage_class;
 
     // ( void )
     expect_token( TokenType::L_PAREN );
@@ -127,14 +185,11 @@ ast::FunctionDef Parser::functionDef() {
     return funct;
 }
 
-ast::Declaration Parser::declaration() {
+ast::VariableDef Parser::variableDef( std::string const& name, StorageClass storage_class ) {
     spdlog::debug( "declaration" );
-    auto decl = make_AST<ast::Declaration_>();
-    expect_token( TokenType::INT );
-
-    // Get name
-    auto name = expect_token( TokenType::IDENTIFIER );
-    decl->name = name.value;
+    auto decl = make_AST<ast::VariableDef_>();
+    decl->name = name;
+    decl->storage = storage_class;
 
     // check for =
     auto token = lexer.peek_token();
@@ -199,17 +254,12 @@ ast::Compound Parser::compound() {
 
     auto token = lexer.peek_token();
     while ( token.tok != TokenType::R_BRACE ) {
-        if ( token.tok == TokenType::INT ) {
-
-            // Check for function definition;
-            if ( lexer.peek_token( 1 ).tok == TokenType::IDENTIFIER &&
-                 lexer.peek_token( 2 ).tok == TokenType::L_PAREN ) {
-                // This is a function definition
-                compound->block_items.emplace_back( functionDef() );
+        if ( isTypeOrStorage( token ) ) {
+            auto d = declaration();
+            if ( std::holds_alternative<ast::FunctionDef>( d ) ) {
+                compound->block_items.emplace_back( std::get<ast::FunctionDef>( d ) );
             } else {
-                // This is a declaration
-                ast::BlockItem block = declaration();
-                compound->block_items.push_back( block );
+                compound->block_items.emplace_back( std::get<ast::VariableDef>( d ) );
             }
         } else {
             ast::BlockItem block = statement();
@@ -304,9 +354,14 @@ ast::For Parser::for_stat() {
     // Init
     auto token = lexer.peek_token();
     if ( token.tok != TokenType::SEMICOLON ) {
-        if ( token.tok == TokenType::INT ) {
+        // Test for storage specifiers
+        if ( isTypeOrStorage( token ) ) {
             // Declaration
-            for_stat->init = declaration();
+            auto d = declaration();
+            if ( std::holds_alternative<ast::FunctionDef>( d ) ) {
+                throw ParseException( lexer.get_location(), "Function definition not allowed in C17." );
+            }
+            for_stat->init = std::get<ast::VariableDef>( d );
         } else {
             // Expression
             for_stat->init = expr();
@@ -366,11 +421,15 @@ ast::Case Parser::case_stat() {
     bool first = true;
     while ( token.tok != TokenType::CASE && token.tok != TokenType::DEFAULT && token.tok != TokenType::R_BRACE ) {
         spdlog::debug( "case: statement {}", to_string( token.tok ) );
-        if ( token.tok == TokenType::INT ) {
+        if ( isTypeOrStorage( token ) ) {
             if ( first ) {
                 throw ParseException( lexer.get_location(), "Declaration not allowed in C17." );
             }
-            ast::BlockItem block = declaration();
+            auto d = declaration();
+            if ( std::holds_alternative<ast::FunctionDef>( d ) ) {
+                throw ParseException( lexer.get_location(), "Function definition not allowed in C17." );
+            }
+            ast::BlockItem block = std::get<ast::VariableDef>( d );
             case_stat->block_items.push_back( block );
         } else {
             ast::BlockItem block = statement();

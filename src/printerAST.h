@@ -26,8 +26,8 @@ class PrinterAST : public ast::Visitor<std::string> {
     std::string visit_Program( ast::Program ast ) override;
     std::string visit_FunctionDef( ast::FunctionDef ast ) override;
     std::string block_item( ast::BlockItem ast );
-    std::string visit_Declaration( ast::Declaration ast ) override;
     std::string visit_Statement( ast::Statement ast ) override;
+    std::string visit_VariableDef( ast::VariableDef ast ) override;
     std::string statement( ast::StatementItem ast );
     std::string visit_If( ast::If ast ) override;
     std::string visit_Return( ast::Return ast ) override;

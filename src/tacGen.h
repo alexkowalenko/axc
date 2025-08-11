@@ -26,7 +26,7 @@ class TacGen {
   private:
     std::optional<tac::FunctionDef> functionDef( ast::FunctionDef ast );
 
-    void declaration( ast::Declaration ast, std::vector<tac::Instruction>& instructions );
+    void declaration( ast::VariableDef ast, std::vector<tac::Instruction>& instructions );
     void statement( ast::Statement, std::vector<tac::Instruction>& instructions );
     void ret( ast::Return ast, std::vector<tac::Instruction>& instructions );
     void if_stat( ast::If ast, std::vector<tac::Instruction>& instructions );

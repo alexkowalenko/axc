@@ -20,10 +20,15 @@
 
 tac::Program TacGen::generate( ast::Program ast ) {
     auto program = mk_node<tac::Program_>( ast );
-    for ( const auto& f : ast->functions ) {
-        if ( auto funct = functionDef( f ) ) {
-            program->functions.push_back( *funct );
-        }
+
+    for ( const auto& d : ast->declarations ) {
+        std::visit( overloaded { []( ast::VariableDef ast ) -> void {},
+                                 [ this, program ]( ast::FunctionDef ast ) -> void {
+                                     if ( auto funct = functionDef( ast ) ) {
+                                         program->functions.push_back( *funct );
+                                     }
+                                 } },
+                    d );
     }
     return program;
 }
@@ -53,7 +58,7 @@ std::optional<tac::FunctionDef> TacGen::functionDef( ast::FunctionDef ast ) {
     return function;
 }
 
-void TacGen::declaration( ast::Declaration ast, std::vector<tac::Instruction>& instructions ) {
+void TacGen::declaration( ast::VariableDef ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::declaration: {} {}", ast->name, ast->init ? "init" : "" );
     if ( ast->init ) {
         auto result = expr( *ast->init, instructions );
@@ -205,7 +210,7 @@ void TacGen::for_stat( const ast::For ast, std::vector<tac::Instruction>& instru
     if ( ast->init ) {
         std::visit(
             overloaded { [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
-                         [ this, &instructions ]( ast::Declaration d ) -> void { declaration( d, instructions ); } },
+                         [ this, &instructions ]( ast::VariableDef d ) -> void { declaration( d, instructions ); } },
             ast->init.value() );
     }
 
@@ -290,7 +295,7 @@ void TacGen::case_stat( const ast::Case ast, std::vector<tac::Instruction>& inst
     for ( auto b : ast->block_items ) {
         spdlog::debug( "tac::case_stat: block" );
         std::visit(
-            overloaded { [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
+            overloaded { [ this, &instructions ]( ast::VariableDef ast ) -> void { declaration( ast, instructions ); },
                          []( ast::FunctionDef ) -> void {},
                          [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
             b );
@@ -302,7 +307,7 @@ void TacGen::compound( ast::Compound ast, std::vector<tac::Instruction>& instruc
     for ( auto b : ast->block_items ) {
         spdlog::debug( "tac::functionDef: block" );
         std::visit(
-            overloaded { [ this, &instructions ]( ast::Declaration ast ) -> void { declaration( ast, instructions ); },
+            overloaded { [ this, &instructions ]( ast::VariableDef ast ) -> void { declaration( ast, instructions ); },
                          []( ast::FunctionDef ) -> void {},
                          [ this, &instructions ]( ast::Statement ast ) -> void { statement( ast, instructions ); } },
             b );

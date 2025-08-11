@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include "../token.h"
+#include "common.h"
 
 #include <variant>
 #include <vector>
@@ -54,8 +55,8 @@ using Call = std::shared_ptr<Call_>;
 
 using Expr = std::variant<Constant, UnaryOp, BinaryOp, PostOp, Conditional, Var, Assign, Call>;
 
-class Declaration_;
-using Declaration = std::shared_ptr<Declaration_>;
+class VariableDef_;
+using VariableDef = std::shared_ptr<VariableDef_>;
 
 class Null_;
 using Null = std::shared_ptr<Null_>;
@@ -84,7 +85,7 @@ using DoWhile = std::shared_ptr<DoWhile_>;
 class For_;
 using For = std::shared_ptr<For_>;
 
-using ForInit = std::variant<Declaration, Expr>;
+using ForInit = std::variant<VariableDef, Expr>;
 
 class Compound_;
 using Compound = std::shared_ptr<Compound_>;
@@ -104,6 +105,8 @@ using Statement = std::shared_ptr<Statement_>;
 class FunctionDef_;
 using FunctionDef = std::shared_ptr<FunctionDef_>;
 
-using BlockItem = std::variant<Statement, Declaration, FunctionDef>;
+using BlockItem = std::variant<Statement, VariableDef, FunctionDef>;
+
+using Declaration = std::variant<VariableDef, FunctionDef>;
 
 } // namespace ast

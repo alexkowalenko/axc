@@ -109,7 +109,7 @@ architectures, such as AArch64.
 
 ## Chapter 10 File Scope Variables and Storage Classes
 - [x] Lexer.
-- [ ] Parser.
+- [x] Parser.
 - [ ] Semantic Analysis.
 - [ ] TAC Intermediate.
 - [ ] Code Generator.

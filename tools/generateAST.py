@@ -14,9 +14,9 @@ if __name__ == "__main__":
         output_dir,
         "ast",
         {
-            "Program": [("std::vector<FunctionDef>", "functions", False)],
-            "FunctionDef": [("std::string", "name", False), ("std::vector<std::string>", "params", False), ("std::optional<Compound>", "block", False)],
-            "Declaration": [("std::string", "name", False), ("std::optional<Expr>", "init", False)],
+            "Program": [("std::vector<Declaration>", "declarations", False)],
+            "FunctionDef": [("std::string", "name", False), ("std::vector<std::string>", "params", False), ("std::optional<Compound>", "block", False), ("StorageClass", "storage", False)],
+            "VariableDef": [("std::string", "name", False), ("std::optional<Expr>", "init", False), ("StorageClass", "storage", False)],
             "Statement": [("std::optional<Label>", "label", False), ("std::optional<StatementItem>", "statement", False)],
             "Null": [], # Null statement
             "Return": [("Expr", "expr", False)],

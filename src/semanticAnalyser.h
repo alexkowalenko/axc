@@ -33,8 +33,8 @@ class SemanticAnalyser {
   private:
     void visit_Program( ast::Program ast, SymbolTable& table );
     void visit_FunctionDef( ast::FunctionDef ast, SymbolTable& table );
-    void visit_Declaration( ast::Declaration ast, SymbolTable& table );
     void visit_Statement( ast::Statement ast, SymbolTable& table );
+    void visit_VariableDef( ast::VariableDef ast, SymbolTable& table );
     void statement( ast::StatementItem ast, SymbolTable& table );
     void visit_If( ast::If ast, SymbolTable& table );
     void visit_Goto( ast::Goto ast );

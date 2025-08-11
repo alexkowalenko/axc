@@ -13,7 +13,6 @@
 #include <string>
 
 #include "ast/includes.h"
-#include "common.h"
 
 std::string PrinterAST::print( const ast::Program& ast ) {
     return ast->accept( this );
@@ -21,14 +20,30 @@ std::string PrinterAST::print( const ast::Program& ast ) {
 
 std::string PrinterAST::visit_Program( const ast::Program ast ) {
     std::string buf;
-    for ( const auto& f : ast->functions ) {
-        buf += f->accept( this ) + new_line + new_line;
+    for ( const auto& d : ast->declarations ) {
+        buf +=
+            std::visit( overloaded { [ this ]( ast::VariableDef ast ) -> std::string { return ast->accept( this ); },
+                                     [ this ]( ast::FunctionDef ast ) -> std::string { return ast->accept( this ); } },
+                        d );
     }
     return buf;
 }
 
+std::string to_string( StorageClass s ) {
+    switch ( s ) {
+    case StorageClass::None :
+        return "";
+    case StorageClass::Static :
+        return "static ";
+    case StorageClass::Extern :
+        return "extern ";
+    }
+    return "";
+}
+
 std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef ast ) {
-    std::string buf = std::format( "{} {}(", to_string( TokenType::INT ), ast->name );
+    std::string buf = to_string( ast->storage );
+    buf += std::format( "{} {}(", to_string( TokenType::INT ), ast->name );
     for ( const auto& p : ast->params ) {
         if ( p == "void" ) {
             buf += std::string( to_string( TokenType::VOID ) ) + ", ";
@@ -50,14 +65,15 @@ std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef ast ) {
 }
 
 std::string PrinterAST::block_item( const ast::BlockItem ast ) {
-    return std::visit( overloaded { [ this ]( ast::Declaration ast ) -> std::string { return ast->accept( this ); },
+    return std::visit( overloaded { [ this ]( ast::VariableDef ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::FunctionDef ast ) -> std::string { return ast->accept( this ); },
                                     [ this ]( ast::Statement ast ) -> std::string { return ast->accept( this ); } },
                        ast );
 }
 
-std::string PrinterAST::visit_Declaration( const ast::Declaration ast ) {
-    std::string buf = "int " + ast->name;
+std::string PrinterAST::visit_VariableDef( const ast::VariableDef ast ) {
+    std::string buf = to_string( ast->storage );
+    buf += "int " + ast->name;
     if ( ast->init ) {
         buf += " = " + expr( ast->init.value() );
     }
@@ -138,7 +154,7 @@ std::string PrinterAST::visit_DoWhile( const ast::DoWhile ast ) {
 
 std::string PrinterAST::for_init( ast::ForInit ast ) {
     return std::visit( overloaded { [ this ]( ast::Expr e ) -> std::string { return expr( e ); },
-                                    [ this ]( ast::Declaration d ) -> std::string { return d->accept( this ); } },
+                                    [ this ]( ast::VariableDef d ) -> std::string { return d->accept( this ); } },
                        ast );
 }
 

@@ -67,9 +67,10 @@ class Parser {
   private:
     template <class T> constexpr std::shared_ptr<T> make_AST() { return std::make_shared<T>( lexer.get_location() ); }
 
-    void             function_params( ast::FunctionDef f );
-    ast::FunctionDef functionDef();
     ast::Declaration declaration();
+    void             function_params( ast::FunctionDef f );
+    ast::FunctionDef functionDef( std::string const& name, StorageClass storage );
+    ast::VariableDef variableDef( std::string const& name, StorageClass storage );
     ast::Statement   statement();
 
     Token expect_token( TokenType expected );
