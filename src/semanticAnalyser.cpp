@@ -19,22 +19,64 @@
 #include "spdlog/spdlog.h"
 
 void SemanticAnalyser::analyse( const ast::Program ast, SymbolTable& table ) {
-    visit_Program( ast, table );
+    global_table = &table;
+    program( ast, table );
 }
 
-void SemanticAnalyser::visit_Program( const ast::Program ast, SymbolTable& table ) {
+void SemanticAnalyser::program( const ast::Program ast, SymbolTable& table ) {
     for ( const auto& d : ast->declarations ) {
         // top level
         nested_function = false;
 
         std::visit(
-            overloaded { [ this, &table ]( ast::VariableDef ast ) -> void { return visit_VariableDef( ast, table ); },
-                         [ this, &table ]( ast::FunctionDef ast ) -> void { return visit_FunctionDef( ast, table ); } },
+            overloaded { [ this, &table ]( ast::VariableDef ast ) -> void { return file_variable_def( ast, table ); },
+                         [ this, &table ]( ast::FunctionDef ast ) -> void { return function_def( ast, table ); } },
             d );
     }
 }
 
-void SemanticAnalyser::visit_FunctionDef( ast::FunctionDef ast, SymbolTable& table ) {
+void SemanticAnalyser::file_variable_def( ast::VariableDef ast, SymbolTable& table ) {
+    spdlog::debug( "file VariableDef: {}", ast->name );
+    // extern variables can't have initializers
+    if ( ast->storage == StorageClass::Extern && ast->init ) {
+        throw SemanticException( ast->location, "Extern variables can't have initializers" );
+    }
+    if ( ast->init ) {
+        if ( !std::holds_alternative<ast::Constant>( *ast->init ) ) {
+            throw SemanticException( ast->location, "Global variables must have constant initializers" );
+        }
+    }
+
+    if ( auto old_decl = table.find( ast->name ); old_decl ) {
+        if ( old_decl->type != Type::INT ) {
+            throw SemanticException( ast->location, "Function redeclared as variable: {}", ast->name );
+        }
+        if ( ast->storage == StorageClass::Extern ) {
+            // If extern then takes the previous defintion
+            ast->storage = old_decl->storage;
+        } else if ( old_decl->storage != StorageClass::None && ast->storage != StorageClass::None ) {
+            if ( old_decl->storage != ast->storage ) {
+                throw SemanticException( ast->location,
+                                         "Can't declare the same declaration with and without linkage: {}", ast->name );
+            }
+        } else if ( old_decl->storage == StorageClass::Static && ast->storage == StorageClass::None ) {
+            throw SemanticException( ast->location, "Can't declare the same declaration with and without linkage: {}",
+                                     ast->name );
+        } else if ( old_decl->has_init && ast->init ) {
+            throw SemanticException(
+                ast->location, "Can't declare the same declaration with and without initialisation: {}", ast->name );
+        }
+    } else {
+        spdlog::debug( "Declaring file variable: {}", ast->name );
+        table.put( ast->name, Symbol { .name = ast->name,
+                                       .storage = ast->storage,
+                                       .type = Type::INT,
+                                       .current_scope = true,
+                                       .has_init = ast->init.has_value() } );
+    }
+}
+
+void SemanticAnalyser::function_def( ast::FunctionDef ast, SymbolTable& table ) {
     spdlog::debug( "Function: {}", ast->name );
     // Clear the labels for each function.
     labels.clear();
@@ -44,7 +86,7 @@ void SemanticAnalyser::visit_FunctionDef( ast::FunctionDef ast, SymbolTable& tab
 
     auto symbol = table.find( ast->name );
     if ( symbol ) {
-        spdlog::debug( "symbol linkage: {:d} here: {:b}", static_cast<int>( symbol->linkage ), symbol->current_scope );
+        spdlog::debug( "symbol storage: {:d} here: {:b}", static_cast<int>( symbol->storage ), symbol->current_scope );
 
         if ( symbol->type != Type::FUNCTION ) {
             // Another symbol is already defined with the same name, but it is not a function.
@@ -53,12 +95,12 @@ void SemanticAnalyser::visit_FunctionDef( ast::FunctionDef ast, SymbolTable& tab
         } else {
             // Function with the same name already exists.
             spdlog::debug( "Function {} already exists", ast->name );
-            if ( symbol->linkage == Linkage::None && symbol->current_scope ) {
-                throw SemanticException( ast->location, "Duplicate declaration: {}", ast->name );
+            if ( symbol->storage == StorageClass::None && symbol->current_scope ) {
+                throw SemanticException( ast->location, "Duplicate function declaration: {}", ast->name );
             }
-            if ( symbol->linkage == Linkage::Internal ) {
+            if ( symbol->storage == StorageClass::Static ) {
                 // If the function is internal, it should not be declared again.
-                throw SemanticException( ast->location, "Duplicate declaration: {}", ast->name );
+                throw SemanticException( ast->location, "Duplicate function declaration: {}", ast->name );
             }
 
             if ( symbol->number != ast->params.size() ) {
@@ -106,7 +148,7 @@ void SemanticAnalyser::visit_FunctionDef( ast::FunctionDef ast, SymbolTable& tab
         }
 
         // Add symbol with function name to the symbol table.
-        s.linkage = Linkage::Internal;
+        s.storage = StorageClass::Static;
         table.put( ast->name, s );
 
         // Create new scope
@@ -116,9 +158,10 @@ void SemanticAnalyser::visit_FunctionDef( ast::FunctionDef ast, SymbolTable& tab
         for ( auto& param : ast->params ) {
             auto unique_name = table.temp_name( param );
             spdlog::debug( "Declaring param: {} as {}", param, unique_name );
-            new_table.put(
-                param,
-                Symbol { .name = unique_name, .linkage = Linkage::None, .type = Type::INT, .current_scope = true } );
+            new_table.put( param, Symbol { .name = unique_name,
+                                           .storage = StorageClass::None,
+                                           .type = Type::INT,
+                                           .current_scope = true } );
             param = unique_name;
         }
 
@@ -126,7 +169,7 @@ void SemanticAnalyser::visit_FunctionDef( ast::FunctionDef ast, SymbolTable& tab
         visit_Compound( ast->block.value(), new_table );
     } else {
         // If there is no block, it is a function declaration.
-        s.linkage = Linkage::External;
+        s.storage = StorageClass::Extern;
         s.current_scope = true;
         table.put( ast->name, s );
         function_table.put( ast->name, s );
@@ -174,15 +217,81 @@ void SemanticAnalyser::statement( const ast::StatementItem ast, SymbolTable& tab
                 ast );
 }
 
-void SemanticAnalyser::visit_VariableDef( const ast::VariableDef ast, SymbolTable& table ) {
-    spdlog::debug( "VariableDef: {}", ast->name );
-    if ( auto symbol = table.find( ast->name ); symbol && symbol->current_scope ) {
-        throw SemanticException( ast->location, "Duplicate declaration: {}", ast->name );
+void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTable& table ) {
+    spdlog::debug( "block VariableDef: {}", ast->name );
+
+    if ( ast->storage == StorageClass::Extern ) {
+        // extern variables can't have initializers
+        if ( ast->init ) {
+            throw SemanticException( ast->location, "Extern variables can't have initializers" );
+        }
+
+        if ( auto old_dec = table.find( ast->name ); old_dec ) {
+            if ( old_dec->type != Type::INT ) {
+                // Another symbol is already defined with the same name, but it is not a variable.
+                throw SemanticException( ast->location, "Function {} redeclared as variable.", ast->name );
+            }
+            // Previous declaration
+            if ( old_dec->current_scope &&
+                 ( old_dec->storage == StorageClass::None || old_dec->storage == StorageClass::Static ) ) {
+                throw SemanticException( ast->location, "Conflicting local definitions: {}", ast->name );
+            }
+            // Already declared, put in local table not global
+            Symbol s { .name = ast->name, .storage = StorageClass::Extern, .type = Type::INT, .current_scope = true };
+            table.put( ast->name, s );
+            return;
+        }
+
+        // Add the variable to the symbol table
+        spdlog::debug( "Declaring extern variable: {}", ast->name );
+        Symbol s { .name = ast->name, .storage = StorageClass::Extern, .type = Type::INT, .current_scope = true };
+        global_table->put( ast->name, s );
+        table.put( ast->name, s );
+        return;
     }
+
+    if ( ast->storage == StorageClass::Static ) {
+        if ( ast->init ) {
+            if ( !std::holds_alternative<ast::Constant>( *ast->init ) ) {
+                throw SemanticException( ast->location, "static variables must have constant initializers" );
+            }
+        }
+        if ( auto old_dec = table.find( ast->name ); old_dec ) {
+            if ( old_dec->type != Type::INT ) {
+                // Another symbol is already defined with the same name, but it is not a variable.
+                throw SemanticException( ast->location, "Function {} redeclared as variable.", ast->name );
+            }
+            // Previous declaration
+            if ( old_dec->current_scope && old_dec->storage != StorageClass::Static ) {
+                throw SemanticException( ast->location, "Conflicting local definitions: {}", ast->name );
+            }
+        }
+        spdlog::debug( "Declaring static variable: {}", ast->name );
+        table.put(
+            ast->name,
+            Symbol { .name = ast->name, .storage = StorageClass::Static, .type = Type::INT, .current_scope = true } );
+        return;
+    }
+
+    // No linkage
+    if ( auto old_dec = table.find( ast->name ); old_dec ) {
+        if ( old_dec->type != Type::INT ) {
+            // Another symbol is already defined with the same name, but it is not a variable.
+            throw SemanticException( ast->location, "Function {} redeclared as variable.", ast->name );
+        }
+        // Previous declaration
+        if ( old_dec->current_scope && old_dec->storage != StorageClass::None ) {
+            throw SemanticException( ast->location, "Conflicting local definitions: {}", ast->name );
+        }
+    }
+
+    auto original_name = ast->name;
     auto unique_name = table.temp_name( ast->name );
-    spdlog::debug( "Declaring variable: {} as {}", ast->name, unique_name );
-    table.put( ast->name,
-               Symbol { .name = unique_name, .linkage = Linkage::None, .type = Type::INT, .current_scope = true } );
+
+    spdlog::debug( "Declaring local variable: {} as {}", ast->name, unique_name );
+    table.put(
+        ast->name,
+        Symbol { .name = unique_name, .storage = StorageClass::None, .type = Type::INT, .current_scope = true } );
     ast->name = unique_name;
     if ( ast->init ) {
         expr( ast->init.value(), table );
@@ -250,7 +359,13 @@ void SemanticAnalyser::visit_DoWhile( const ast::DoWhile ast, SymbolTable& table
 
 void SemanticAnalyser::for_init( ast::ForInit ast, SymbolTable& table ) {
     std::visit( overloaded { [ this, &table ]( ast::Expr e ) -> void { expr( e, table ); },
-                             [ this, &table ]( ast::VariableDef d ) -> void { visit_VariableDef( d, table ); } },
+                             [ this, &table ]( ast::VariableDef d ) -> void {
+                                 if ( d->storage != StorageClass::None ) {
+                                     throw SemanticException( d->location,
+                                                              "Invalid storage class for for loop initialisation." );
+                                 }
+                                 block_variable_def( d, table );
+                             } },
                 ast );
 }
 
@@ -334,7 +449,7 @@ void SemanticAnalyser::visit_Case( const ast::Case ast, SymbolTable& table ) {
     switch_stack.top()->cases.push_back( ast );
 
     for ( const auto& item : ast->block_items ) {
-        std::visit( overloaded { [ this, &table ]( ast::VariableDef d ) -> void { visit_VariableDef( d, table ); },
+        std::visit( overloaded { [ this, &table ]( ast::VariableDef d ) -> void { block_variable_def( d, table ); },
                                  []( ast::FunctionDef f ) -> void {
                                      throw SemanticException( f->location, "No functions in case blocks" );
                                  },
@@ -347,8 +462,8 @@ void SemanticAnalyser::visit_Compound( const ast::Compound ast, SymbolTable& tab
     spdlog::debug( "Compound" );
 
     for ( const auto& item : ast->block_items ) {
-        std::visit( overloaded { [ this, &table ]( ast::VariableDef d ) -> void { visit_VariableDef( d, table ); },
-                                 [ this, &table ]( ast::FunctionDef f ) -> void { visit_FunctionDef( f, table ); },
+        std::visit( overloaded { [ this, &table ]( ast::VariableDef d ) -> void { block_variable_def( d, table ); },
+                                 [ this, &table ]( ast::FunctionDef f ) -> void { function_def( f, table ); },
                                  [ this, &table ]( ast::Statement s ) -> void { visit_Statement( s, table ); } },
                     item );
     }

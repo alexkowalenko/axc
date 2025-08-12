@@ -31,10 +31,11 @@ class SemanticAnalyser {
     void analyse( ast::Program ast, SymbolTable& table );
 
   private:
-    void visit_Program( ast::Program ast, SymbolTable& table );
-    void visit_FunctionDef( ast::FunctionDef ast, SymbolTable& table );
+    void program( ast::Program ast, SymbolTable& table );
+    void function_def( ast::FunctionDef ast, SymbolTable& table );
+    void file_variable_def( ast::VariableDef ast, SymbolTable& table );
     void visit_Statement( ast::Statement ast, SymbolTable& table );
-    void visit_VariableDef( ast::VariableDef ast, SymbolTable& table );
+    void block_variable_def( ast::VariableDef ast, SymbolTable& table );
     void statement( ast::StatementItem ast, SymbolTable& table );
     void visit_If( ast::If ast, SymbolTable& table );
     void visit_Goto( ast::Goto ast );
@@ -90,7 +91,8 @@ class SemanticAnalyser {
     bool is_constant { false };
 
     // Nested function
-    bool        nested_function { false };
-    // Current function parameter
-    SymbolTable function_table;
+    bool nested_function { false };
+
+    SymbolTable  function_table;
+    SymbolTable* global_table { nullptr };
 };

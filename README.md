@@ -24,6 +24,10 @@ generated for X86_64 needs to be fixed, due to non-orthogonal instructions, it m
 hand coding the many classes, which would be tedious and error prone. I picked up this from Nystrom's _Crafting Interpreters_ book.
 In the age of AI, you could also use a LLM to generate the classes.
 
+- To pass the test suite, you need to place the checks in the order determined by the book. You might to do some checks
+at the parser lever, but you won't pass the tests then, since the tests according to the book are done in the semantic
+analysis pass. This is annoying. 
+
 ## Status
 
 Finished up to Chapter 8. Code generated for X86_64. Tested on MacOS and FreeBSD. Would like to support other

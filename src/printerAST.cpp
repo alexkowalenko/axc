@@ -25,6 +25,8 @@ std::string PrinterAST::visit_Program( const ast::Program ast ) {
             std::visit( overloaded { [ this ]( ast::VariableDef ast ) -> std::string { return ast->accept( this ); },
                                      [ this ]( ast::FunctionDef ast ) -> std::string { return ast->accept( this ); } },
                         d );
+        buf += new_line;
+        buf += new_line;
     }
     return buf;
 }

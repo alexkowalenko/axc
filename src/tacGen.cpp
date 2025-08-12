@@ -637,7 +637,7 @@ tac::Value TacGen::call( const ast::Call ast, std::vector<tac::Instruction>& ins
     auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
     auto func = mk_node<tac::FunCall_>( ast, ast->function_name, args, dst, false );
     if ( auto f = symbol_table.find( ast->function_name ) ) {
-        if ( f.value().linkage == Linkage::External ) {
+        if ( f.value().storage == StorageClass::Extern ) {
             // Extern function, no need to generate code
             spdlog::debug( "tac::call: {} is extern", ast->function_name );
             func->external = true;

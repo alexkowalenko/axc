@@ -10,23 +10,16 @@
 
 #pragma once
 
-enum class Linkage {
-    None,
-    Internal, // Only visible within the current translation unit
-    External, // Visible across translation units
-};
+#include "common.h"
 
-enum class Type {
-    VOID,
-    INT,
-    FUNCTION
-};
+enum class Type { VOID, INT, FUNCTION };
 
 class Symbol {
   public:
-    std::string name;
-    Linkage     linkage { Linkage::None };
-    Type        type { Type::INT };
-    int         number { 0 };
-    bool        current_scope { false };
+    std::string  name;
+    StorageClass storage { StorageClass::None };
+    Type         type { Type::INT };
+    int          number { 0 };
+    bool         current_scope { false };
+    bool         has_init { false };
 };
