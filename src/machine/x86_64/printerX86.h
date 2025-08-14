@@ -15,10 +15,10 @@
 #include "x86_at/base.h"
 #include "x86_at/visitor.h"
 
-class PrinterAT : public x86_at::Visitor<std::string> {
+class PrinterX86 : public x86_at::Visitor<std::string> {
   public:
-    PrinterAT() = default;
-    ~PrinterAT() override = default;
+    PrinterX86() = default;
+    ~PrinterX86() override = default;
 
     std::string print( x86_at::Program ast );
 

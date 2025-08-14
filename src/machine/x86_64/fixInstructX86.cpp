@@ -8,7 +8,7 @@
 // Created by Alex Kowalenko on 12/7/2025.
 //
 
-#include "assemblyFixInstruct.h"
+#include "fixInstructX86.h"
 
 #include <spdlog/spdlog.h>
 
@@ -16,7 +16,7 @@
 #include "x86_at/includes.h"
 #include "x86_common.h"
 
-AssemblyFixInstruct::AssemblyFixInstruct() {
+FixInstructX86::FixInstructX86() {
     ax = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::AX, x86_at::RegisterSize::Long );
     cl = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::CX, x86_at::RegisterSize::Byte );
     cx = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::CX, x86_at::RegisterSize::Long );
@@ -25,17 +25,17 @@ AssemblyFixInstruct::AssemblyFixInstruct() {
     r11 = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::R11, x86_at::RegisterSize::Long );
 }
 
-void AssemblyFixInstruct::filter( x86_at::Program program ) {
+void FixInstructX86::filter( x86_at::Program program ) {
     program->accept( this );
 }
 
-void AssemblyFixInstruct::visit_Program( const x86_at::Program ast ) {
+void FixInstructX86::visit_Program( const x86_at::Program ast ) {
     for ( auto const& funct : ast->functions ) {
         funct->accept( this );
     }
 }
 
-void AssemblyFixInstruct::visit_FunctionDef( const x86_at::FunctionDef ast ) {
+void FixInstructX86::visit_FunctionDef( const x86_at::FunctionDef ast ) {
     current_instructions.clear();
 
     spdlog::debug( "Function: {} - stacksize: {} ", ast->name, ast->stack_size );
@@ -70,7 +70,7 @@ void AssemblyFixInstruct::visit_FunctionDef( const x86_at::FunctionDef ast ) {
     ast->instructions = current_instructions;
 }
 
-void AssemblyFixInstruct::visit_Mov( const x86_at::Mov ast ) {
+void FixInstructX86::visit_Mov( const x86_at::Mov ast ) {
     // MOV instructions can't have stack locations in both operands
     if ( std::holds_alternative<x86_at::Stack>( ast->src ) && std::holds_alternative<x86_at::Stack>( ast->dst ) ) {
         auto src = ast->src;
@@ -86,7 +86,7 @@ void AssemblyFixInstruct::visit_Mov( const x86_at::Mov ast ) {
     }
 }
 
-void AssemblyFixInstruct::visit_Idiv( const x86_at::Idiv ast ) {
+void FixInstructX86::visit_Idiv( const x86_at::Idiv ast ) {
     // Can't have an Immediate as a source
     if ( std::holds_alternative<x86_at::Imm>( ast->src ) ) {
 
@@ -101,7 +101,7 @@ void AssemblyFixInstruct::visit_Idiv( const x86_at::Idiv ast ) {
     }
 }
 
-void AssemblyFixInstruct::visit_Binary( const x86_at::Binary ast ) {
+void FixInstructX86::visit_Binary( const x86_at::Binary ast ) {
     if ( ast->op == x86_at::BinaryOpType::ADD || ast->op == x86_at::BinaryOpType::SUB ||
          ast->op == x86_at::BinaryOpType::AND || ast->op == x86_at::BinaryOpType::OR ||
          ast->op == x86_at::BinaryOpType::XOR ) {
@@ -157,7 +157,7 @@ void AssemblyFixInstruct::visit_Binary( const x86_at::Binary ast ) {
     }
 }
 
-void AssemblyFixInstruct::visit_Cmp( const x86_at::Cmp ast ) {
+void FixInstructX86::visit_Cmp( const x86_at::Cmp ast ) {
     // CMP instructions can't have stack locations in both operands
     if ( std::holds_alternative<x86_at::Stack>( ast->operand1 ) &&
          std::holds_alternative<x86_at::Stack>( ast->operand2 ) ) {
@@ -185,7 +185,7 @@ void AssemblyFixInstruct::visit_Cmp( const x86_at::Cmp ast ) {
     }
 }
 
-void AssemblyFixInstruct::visit_AllocateStack( const x86_at::AllocateStack ast ) {
+void FixInstructX86::visit_AllocateStack( const x86_at::AllocateStack ast ) {
     spdlog::debug( "Adding AllocateStack instruction: {}", ast->size );
     // Add Allocate Stack Instruction
     if ( ast->size != 0 ) {
@@ -196,14 +196,14 @@ void AssemblyFixInstruct::visit_AllocateStack( const x86_at::AllocateStack ast )
     }
 }
 
-void AssemblyFixInstruct::visit_DeallocateStack( const x86_at::DeallocateStack ast ) {
+void FixInstructX86::visit_DeallocateStack( const x86_at::DeallocateStack ast ) {
     current_instructions.emplace_back( ast );
 }
 
-void AssemblyFixInstruct::visit_Push( const x86_at::Push ast ) {
+void FixInstructX86::visit_Push( const x86_at::Push ast ) {
     current_instructions.emplace_back( ast );
 }
 
-void AssemblyFixInstruct::visit_Call( const x86_at::Call ast ) {
+void FixInstructX86::visit_Call( const x86_at::Call ast ) {
     current_instructions.emplace_back( ast );
 }

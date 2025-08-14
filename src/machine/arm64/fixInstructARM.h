@@ -15,9 +15,9 @@
 
 #include <vector>
 
-class FixInstruct : public arm64_at::Visitor<void> {
+class FixInstructARM : public arm64_at::Visitor<void> {
   public:
-    FixInstruct();
+    FixInstructARM();
 
     void filter( arm64_at::Program program );
 

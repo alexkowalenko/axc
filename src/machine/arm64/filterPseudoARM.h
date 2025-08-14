@@ -15,10 +15,10 @@
 #include "arm64_at/base.h"
 #include "arm64_at/visitor.h"
 
-class FilterPseudo : public arm64_at::Visitor<void> {
+class FilterPseudoARM : public arm64_at::Visitor<void> {
   public:
-    FilterPseudo() = default;
-    ~FilterPseudo() override = default;
+    FilterPseudoARM() = default;
+    ~FilterPseudoARM() override = default;
 
     void filter( arm64_at::Program program );
 

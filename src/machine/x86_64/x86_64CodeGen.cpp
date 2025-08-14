@@ -19,10 +19,10 @@
 #include "x86_at/includes.h"
 #include "x86_common.h"
 
-#include "assemblyFilterPseudo.h"
-#include "assemblyFixInstruct.h"
 #include "assemblyGen.h"
-#include "printerAT.h"
+#include "filterPseudo.h"
+#include "fixInstructX86.h"
+#include "printerX86.h"
 
 std::string to_lower( const std::string& s ) {
     std::string buf = s;
@@ -81,14 +81,14 @@ CodeGenBase X86_64CodeGen::run_codegen( tac::Program tac ) {
     spdlog::info( "Run codegen," );
     AssemblyGen assembler( option );
     auto        assembly = assembler.generate( tac );
-    PrinterAT   assemblerPrinter;
+    PrinterX86  assemblerPrinter;
     auto        output = assemblerPrinter.print( assembly );
     std::println( "Assembly Output: {}", to_string( option.machine ) );
     std::println( "-----------------------" );
     std::println( "{:s}", output );
 
     spdlog::info( "Filtered 1: Filter Pseudo" );
-    AssemblyFilterPseudo filter;
+    FilterPseudoX86 filter;
     filter.filter( assembly );
     output = assemblerPrinter.print( assembly );
     std::println( "Filtered 1:" );
@@ -96,7 +96,7 @@ CodeGenBase X86_64CodeGen::run_codegen( tac::Program tac ) {
     std::println( "{:s}", output );
 
     spdlog::info( "Filtered 2: Fix Instructions" );
-    AssemblyFixInstruct filter2;
+    FixInstructX86 filter2;
     filter2.filter( assembly );
     output = assemblerPrinter.print( assembly );
     std::println( "Filtered 2:" );

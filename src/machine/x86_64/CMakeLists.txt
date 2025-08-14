@@ -4,10 +4,10 @@ add_library(axc::x86 ALIAS axc.x86)
 
 target_sources(axc.x86 PRIVATE
         assemblyGen.cpp
-        assemblyFilterPseudo.cpp
-        assemblyFixInstruct.cpp
+        filterPseudo.cpp
+        fixInstructX86.cpp
         x86_64CodeGen.cpp
-        printerAT.cpp
+        printerX86.cpp
 )
 
 target_sources(axc.x86
@@ -15,10 +15,10 @@ target_sources(axc.x86
         FILE_SET HEADERS
         BASE_DIRS ${PROJECT_SOURCE_DIR}/src/machine/x86_64
         FILES assemblyGen.h
-        assemblyFilterPseudo.h
-        assemblyFixInstruct.h
+        filterPseudo.h
+        fixInstructX86.h
         x86_64CodeGen.h
-        printerAT.h
+        printerX86.h
 )
 
 target_link_libraries(axc.x86 PRIVATE

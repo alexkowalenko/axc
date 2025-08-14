@@ -13,10 +13,10 @@
 #include "x86_at/base.h"
 #include "x86_at/visitor.h"
 
-class AssemblyFixInstruct : public x86_at::Visitor<void> {
+class FixInstructX86 : public x86_at::Visitor<void> {
   public:
-    AssemblyFixInstruct();
-    ~AssemblyFixInstruct() override = default;
+    FixInstructX86();
+    ~FixInstructX86() override = default;
 
     void filter( x86_at::Program program );
 

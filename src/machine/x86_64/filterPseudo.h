@@ -15,10 +15,10 @@
 #include "x86_at/base.h"
 #include "x86_at/visitor.h"
 
-class AssemblyFilterPseudo : public x86_at::Visitor<void> {
+class FilterPseudoX86 : public x86_at::Visitor<void> {
   public:
-    AssemblyFilterPseudo() = default;
-    ~AssemblyFilterPseudo() override = default;
+    FilterPseudoX86() = default;
+    ~FilterPseudoX86() override = default;
 
     void filter( x86_at::Program program );
     int  get_number_stack_locations() const;

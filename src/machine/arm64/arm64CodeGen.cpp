@@ -18,8 +18,8 @@
 #include "armAssemblyGen.h"
 #include "common.h"
 #include "exception.h"
-#include "filterPseudo.h"
-#include "fixInstruct.h"
+#include "filterPseudoARM.h"
+#include "fixInstructARM.h"
 #include "printerARM64.h"
 
 Arm64CodeGen::Arm64CodeGen( Option const& option ) : CodeGenerator( option ) {
@@ -37,7 +37,7 @@ CodeGenBase Arm64CodeGen::run_codegen( tac::Program tac ) {
     std::println( "{:s}", output );
 
     spdlog::info( "Filtered 1: Filter Pseudo" );
-    FilterPseudo filter;
+    FilterPseudoARM filter;
     filter.filter( assembly );
     output = assemblerPrinter.print( assembly );
     std::println( "Filtered 1:" );
@@ -45,7 +45,7 @@ CodeGenBase Arm64CodeGen::run_codegen( tac::Program tac ) {
     std::println( "{:s}", output );
 
     spdlog::info( "Filtered 2: Fix Instructions" );
-    FixInstruct filter2;
+    FixInstructARM filter2;
     filter2.filter( assembly );
     output = assemblerPrinter.print( assembly );
     std::println( "Filtered 2:" );
