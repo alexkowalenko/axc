@@ -21,10 +21,11 @@ class SymbolTable {
     SymbolTable() = default;
     ~SymbolTable() = default;
 
-    inline void                         put( std::string const& name, const Symbol& value ) { table[ name ] = value; };
+    void put( std::string const& name, const Symbol& value ) { table.insert_or_assign( name, value ); };
     [[nodiscard]] std::optional<Symbol> find( const std::string& name ) const;
     void                                copy( SymbolTable& other );
     void                                reset_current_block();
+    void                                dump();
 
     std::string temp_name( std::string_view basename = "temp" );
 

@@ -81,47 +81,63 @@ void SemanticAnalyser::function_def( ast::FunctionDef ast, SymbolTable& table ) 
     // Clear the labels for each function.
     labels.clear();
 
+    bool global = ast->storage != StorageClass::Static;
+
     // remove "void" parameters
     ast->params.erase( std::remove( ast->params.begin(), ast->params.end(), "void" ), ast->params.end() );
 
-    auto symbol = table.find( ast->name );
-    if ( symbol ) {
-        spdlog::debug( "symbol storage: {:d} here: {:b}", static_cast<int>( symbol->storage ), symbol->current_scope );
+    auto old_dec = table.find( ast->name );
+    if ( old_dec ) {
+        spdlog::debug( "Function {} already exists", ast->name );
+        spdlog::debug( "symbol type: {:d} here: {:b}", static_cast<int>( old_dec->type ), old_dec->current_scope );
 
-        if ( symbol->type != Type::FUNCTION ) {
+        if ( old_dec->type != Type::FUNCTION && old_dec->current_scope ) {
             // Another symbol is already defined with the same name, but it is not a function.
-            symbol = std::nullopt;
-            spdlog::debug( "Symbol {} is not a function, reusing symbol", ast->name );
-        } else {
-            // Function with the same name already exists.
-            spdlog::debug( "Function {} already exists", ast->name );
-            if ( symbol->storage == StorageClass::None && symbol->current_scope ) {
-                throw SemanticException( ast->location, "Duplicate function declaration: {}", ast->name );
-            }
-            if ( symbol->storage == StorageClass::Static ) {
-                // If the function is internal, it should not be declared again.
-                throw SemanticException( ast->location, "Duplicate function declaration: {}", ast->name );
-            }
+            throw SemanticException( ast->location, "Redeclaring {} as a function", ast->name );
+        }
 
-            if ( symbol->number != ast->params.size() ) {
-                // If the number of parameters does not match, we will throw an exception later.
-                spdlog::debug( "Function {} has {} parameters, but got {}", ast->name, symbol->number,
-                               ast->params.size() );
-            }
+        if ( old_dec->type != Type::FUNCTION ) {
+            old_dec = std::nullopt;
+            goto out;
+        }
 
-            spdlog::debug( "count: {} ", ast->params.size() );
+        if ( old_dec->storage == StorageClass::None && old_dec->current_scope ) {
+            throw SemanticException( ast->location, "Duplicate function declaration: {}", ast->name );
+        }
 
-            if ( symbol->number != ast->params.size() ) {
-                throw SemanticException( ast->location, "Function {} expects {} arguments, but got {}.", ast->name,
-                                         symbol->number, ast->params.size() );
-            }
+        if ( old_dec->storage == StorageClass::Static ) {
+            // If the function is internal, it should not be declared again.
+            throw SemanticException( ast->location, "Duplicate function declaration: {}", ast->name );
+        }
+
+        if ( ast->block && old_dec->has_init ) {
+            // Function defined more than once
+            throw SemanticException( ast->location, "Function {} already defined", ast->name );
+        }
+
+        if ( old_dec->global && ast->storage == StorageClass::Static ) {
+            throw SemanticException( ast->location, "Static function {} follows non-static", ast->name );
+        }
+        global = old_dec->global;
+
+        if ( old_dec->number != ast->params.size() ) {
+            // If the number of parameters does not match, we will throw an exception later.
+            spdlog::debug( "Function {} has {} parameters, but got {}", ast->name, old_dec->number,
+                           ast->params.size() );
+        }
+
+        if ( old_dec->number != ast->params.size() ) {
+            throw SemanticException( ast->location, "Function {} expects {} arguments, but got {}.", ast->name,
+                                     old_dec->number, ast->params.size() );
         }
     }
 
-    auto s = symbol.value_or( Symbol { .name = ast->name, .type = Type::FUNCTION } );
+out:
+    auto s = old_dec.value_or( Symbol { .name = ast->name, .type = Type::FUNCTION } );
+    s.global = global;
 
     // Check if the function is defined as a nested function.
-    if ( auto f = function_table.find( ast->name ) ) {
+    if ( auto f = global_table->find( ast->name ) ) {
         spdlog::debug( "Function {} is defined as a nested function", ast->name );
 
         // type check it
@@ -169,10 +185,11 @@ void SemanticAnalyser::function_def( ast::FunctionDef ast, SymbolTable& table ) 
         visit_Compound( ast->block.value(), new_table );
     } else {
         // If there is no block, it is a function declaration.
+        spdlog::debug( "Declaring function: {} with {} parameters", ast->name, ast->params.size() );
         s.storage = StorageClass::Extern;
         s.current_scope = true;
         table.put( ast->name, s );
-        function_table.put( ast->name, s );
+        global_table->put( ast->name, s );
     }
 
     // Check for labels that were used but not defined.
@@ -229,7 +246,7 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
         if ( auto old_dec = table.find( ast->name ); old_dec ) {
             if ( old_dec->type != Type::INT ) {
                 // Another symbol is already defined with the same name, but it is not a variable.
-                throw SemanticException( ast->location, "Function {} redeclared as variable.", ast->name );
+                throw SemanticException( ast->location, "Function {} redeclared as variable", ast->name );
             }
             // Previous declaration
             if ( old_dec->current_scope &&
@@ -275,12 +292,15 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
 
     // No linkage
     if ( auto old_dec = table.find( ast->name ); old_dec ) {
-        if ( old_dec->type != Type::INT ) {
+        if ( old_dec->type != Type::INT && old_dec->current_scope ) {
             // Another symbol is already defined with the same name, but it is not a variable.
             throw SemanticException( ast->location, "Function {} redeclared as variable.", ast->name );
         }
         // Previous declaration
         if ( old_dec->current_scope && old_dec->storage != StorageClass::None ) {
+            throw SemanticException( ast->location, "Conflicting local definitions: {}", ast->name );
+        }
+        if ( old_dec->storage == StorageClass::None ) {
             throw SemanticException( ast->location, "Conflicting local definitions: {}", ast->name );
         }
     }
@@ -542,9 +562,11 @@ void SemanticAnalyser::visit_Assign( const ast::Assign ast, SymbolTable& table )
 }
 
 void SemanticAnalyser::visit_Call( const ast::Call ast, SymbolTable& table ) {
+    spdlog::debug( "Call: {}", ast->function_name );
     // Check if the function is declared
     auto symbol = table.find( ast->function_name );
     if ( !symbol || symbol->type != Type::FUNCTION ) {
+        table.dump();
         throw SemanticException( ast->location, "Function {} not declared", ast->function_name );
     }
 

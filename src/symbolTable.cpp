@@ -11,6 +11,12 @@
 #include "symbolTable.h"
 
 #include <format>
+#include <print>
+
+std::string to_string( Symbol const& s ) {
+    return std::format( "Symbol({} type:{} storage:{} global:{})", s.name, to_string( s.type ), to_string( s.storage ),
+                        s.global );
+}
 
 std::string SymbolTable::temp_name( std::string_view basename ) {
     return std::format( "{}.{}", basename, temp_counter++ );
@@ -30,5 +36,11 @@ void SymbolTable::copy( SymbolTable& other ) {
 void SymbolTable::reset_current_block() {
     for ( auto& [ _, symbol ] : table ) {
         symbol.current_scope = false;
+    }
+}
+
+void SymbolTable::dump() {
+    for ( auto& [ name, symbol ] : table ) {
+        std::println( "{}: {} ", name, to_string( symbol ) );
     }
 }

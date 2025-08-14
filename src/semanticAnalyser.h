@@ -93,6 +93,5 @@ class SemanticAnalyser {
     // Nested function
     bool nested_function { false };
 
-    SymbolTable  function_table;
     SymbolTable* global_table { nullptr };
 };

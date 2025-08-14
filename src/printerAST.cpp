@@ -31,18 +31,6 @@ std::string PrinterAST::visit_Program( const ast::Program ast ) {
     return buf;
 }
 
-std::string to_string( StorageClass s ) {
-    switch ( s ) {
-    case StorageClass::None :
-        return "";
-    case StorageClass::Static :
-        return "static ";
-    case StorageClass::Extern :
-        return "extern ";
-    }
-    return "";
-}
-
 std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef ast ) {
     std::string buf = to_string( ast->storage );
     buf += std::format( "{} {}(", to_string( TokenType::INT ), ast->name );

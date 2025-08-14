@@ -22,4 +22,18 @@ class Symbol {
     int          number { 0 };
     bool         current_scope { false };
     bool         has_init { false };
+    bool         global { false };
 };
+
+constexpr std::string to_string( const Type type ) {
+    switch ( type ) {
+    case Type::VOID :
+        return "void";
+    case Type::INT :
+        return "int";
+    case Type::FUNCTION :
+        return "function";
+    }
+}
+
+std::string to_string( Symbol const& s );
