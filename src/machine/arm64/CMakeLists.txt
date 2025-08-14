@@ -5,6 +5,7 @@ add_library(axc::arm64 ALIAS axc.arm64)
 target_sources(axc.arm64 PRIVATE
         armAssemblyGen.cpp
         filterPseudo.cpp
+        fixInstruct.cpp
         arm64CodeGen.cpp
         printerARM64.cpp
 )

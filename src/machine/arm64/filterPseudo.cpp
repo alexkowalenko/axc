@@ -27,15 +27,29 @@ void FilterPseudo::visit_Program( const arm64_at::Program ast ) {
 void FilterPseudo::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
     for ( auto const& instr : ast->instructions ) {
         std::visit( overloaded { [ this ]( arm64_at::Mov v ) -> void { v->accept( this ); },
+                                 [ this ]( arm64_at::Load l ) -> void { l->accept( this ); },
+                                 [ this ]( arm64_at::Store s ) -> void { s->accept( this ); },
                                  [ this ]( arm64_at::Unary u ) -> void { u->accept( this ); },
-                                 [ this ]( arm64_at::Ret r ) -> void { r->accept( this ); } },
+                                 [ this ]( arm64_at::Ret r ) -> void { r->accept( this ); },
+                                 [ this ]( arm64_at::AllocateStack a ) -> void { a->accept( this ); },
+                                 [ this ]( arm64_at::DeallocateStack d ) -> void { d->accept( this ); } },
                     instr );
     }
-    // ast->stack_size = get_number_stack_locations();
+    ast->stack_size = get_number_stack_locations();
     spdlog::debug( "Function {} has {} stack locations", ast->name, get_number_stack_locations() );
 }
 
 void FilterPseudo::visit_Mov( const arm64_at::Mov ast ) {
+    ast->src = operand( ast->src );
+    ast->dst = operand( ast->dst );
+}
+
+void FilterPseudo::visit_Load( arm64_at::Load ast ) {
+    ast->src = operand( ast->src );
+    ast->dst = operand( ast->dst );
+}
+
+void FilterPseudo::visit_Store( arm64_at::Store ast ) {
     ast->src = operand( ast->src );
     ast->dst = operand( ast->dst );
 }

@@ -25,7 +25,11 @@ class FilterPseudo : public arm64_at::Visitor<void> {
     void visit_Program( arm64_at::Program ast ) override;
     void visit_FunctionDef( arm64_at::FunctionDef ast ) override;
     void visit_Mov( arm64_at::Mov ast ) override;
+    void visit_Load( arm64_at::Load ast ) override;
+    void visit_Store( arm64_at::Store ast ) override;
     void visit_Unary( arm64_at::Unary ast ) override;
+    void visit_AllocateStack( arm64_at::AllocateStack ast ) override {};
+    void visit_DeallocateStack( arm64_at::DeallocateStack ast ) override {};
     void visit_Ret( arm64_at::Ret ast ) override {};
     // Operands
     void visit_Imm( arm64_at::Imm ast ) override {};
@@ -40,5 +44,5 @@ class FilterPseudo : public arm64_at::Visitor<void> {
 
     std::map<std::string, int> stack_location_map;
     int                        next_stack_location { 0 };
-    static constexpr int       stack_increment { -4 };
+    static constexpr int       stack_increment { -8 };
 };

@@ -19,6 +19,7 @@
 #include "common.h"
 #include "exception.h"
 #include "filterPseudo.h"
+#include "fixInstruct.h"
 #include "printerARM64.h"
 
 Arm64CodeGen::Arm64CodeGen( Option const& option ) : CodeGenerator( option ) {
@@ -40,6 +41,14 @@ CodeGenBase Arm64CodeGen::run_codegen( tac::Program tac ) {
     filter.filter( assembly );
     output = assemblerPrinter.print( assembly );
     std::println( "Filtered 1:" );
+    std::println( "----------" );
+    std::println( "{:s}", output );
+
+    spdlog::info( "Filtered 2: Fix Instructions" );
+    FixInstruct filter2;
+    filter2.filter( assembly );
+    output = assemblerPrinter.print( assembly );
+    std::println( "Filtered 2:" );
     std::println( "----------" );
     std::println( "{:s}", output );
 
@@ -81,6 +90,9 @@ void Arm64CodeGen::visit_Program( const arm64_at::Program ast ) {
 }
 
 void Arm64CodeGen::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
+    // Set current function for later
+    current_function = ast;
+
     std::string name = ast->name;
     if ( option.system == System::MacOS ) {
         name = "_" + name;
@@ -91,11 +103,17 @@ void Arm64CodeGen::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
     add_line( "\t.align 2" );
     add_line( std::format( "{}:", name ) );
 
+    add_line( "str", "lr, [sp,#-16]!" ); // Save link register
+
     for ( auto const& instr : ast->instructions ) {
 
         std::visit( overloaded { [ this ]( arm64_at::Mov v ) -> void { v->accept( this ); },
+                                 [ this ]( arm64_at::Load l ) -> void { l->accept( this ); },
+                                 [ this ]( arm64_at::Store s ) -> void { s->accept( this ); },
                                  [ this ]( arm64_at::Ret r ) -> void { r->accept( this ); },
-                                 [ this ]( arm64_at::Unary u ) -> void { u->accept( this ); } },
+                                 [ this ]( arm64_at::Unary u ) -> void { u->accept( this ); },
+                                 [ this ]( arm64_at::AllocateStack a ) -> void { a->accept( this ); },
+                                 [ this ]( arm64_at::DeallocateStack d ) -> void { d->accept( this ); } },
                     instr );
     }
 }
@@ -104,21 +122,55 @@ void Arm64CodeGen::visit_Mov( const arm64_at::Mov ast ) {
     add_line( "mov", operand( ast->dst ), operand( ast->src ) );
 }
 
+void Arm64CodeGen::visit_Load( arm64_at::Load ast ) {
+    add_line( "ldr", operand( ast->dst ), operand( ast->src ) );
+}
+
+void Arm64CodeGen::visit_Store( arm64_at::Store ast ) {
+    add_line( "str", operand( ast->src ), operand( ast->dst ) );
+}
+
 void Arm64CodeGen::visit_Ret( const arm64_at::Ret ast ) {
+    // Need to deallocate stack of temporary variables
+    if ( current_function->stack_size != 0 ) {
+        auto size = current_function->stack_size * 8;
+        if ( size % 16 != 0 ) {
+            size += 16 - ( size % 16 );
+        }
+        add_line( "add", std::format( "sp, sp, #{}", size ) );
+    }
+
+    add_line( "ldr", "lr, [sp], #16" ); // Restore link register
     add_line( "ret", "" );
 }
 
 void Arm64CodeGen::visit_Unary( const arm64_at::Unary ast ) {
     switch ( ast->op ) {
     case arm64_at::UnaryOpType::NEG :
-        add_line( "negs", operand( ast->dst ), operand( ast->src ) );
+        add_line( "neg", operand( ast->dst ), operand( ast->src ) );
         break;
     case arm64_at::UnaryOpType::NOT :
-        add_line( "notl", operand( ast->dst ) );
+        add_line( "mvn", operand( ast->dst ) );
         break;
     default :
         throw CodeException( ast->location, "Unsupported unary operator" );
     }
+}
+
+void Arm64CodeGen::visit_AllocateStack( arm64_at::AllocateStack ast ) {
+    auto size = ast->size * 8;
+    if ( size % 16 != 0 ) {
+        size += 16 - ( size % 16 );
+    }
+    add_line( "sub", std::format( "sp, sp, #{}", size ) );
+}
+
+void Arm64CodeGen::visit_DeallocateStack( arm64_at::DeallocateStack ast ) {
+    auto size = ast->size * 8;
+    if ( size % 16 != 0 ) {
+        size += 16 - ( size % 16 );
+    }
+    add_line( "add", std::format( "sp, sp, #{}", size ) );
 }
 
 std::string Arm64CodeGen::operand( const arm64_at::Operand& op ) {
@@ -148,4 +200,6 @@ void Arm64CodeGen::visit_Register( const arm64_at::Register ast ) {
     last_string = std::format( "{}", to_string( ast->reg ) );
 }
 
-void Arm64CodeGen::visit_Stack( const arm64_at::Stack ast ) {}
+void Arm64CodeGen::visit_Stack( const arm64_at::Stack ast ) {
+    last_string = std::format( "[sp, #{}]", ast->offset );
+}

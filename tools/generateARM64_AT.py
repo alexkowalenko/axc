@@ -22,10 +22,14 @@ if __name__ == "__main__":
         "arm64_at",
         {
             "Program": [("FunctionDef", "function", False)],
-            "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False)],
+            "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False), ("std::int32_t", "stack_size", False)],
             # Operations for Instructions
             "Mov": [("Operand", "src", False), ("Operand", "dst", False) ],
+            "Load": [("Operand", "src", False), ("Operand", "dst", False) ],
+            "Store": [("Operand", "src", False), ("Operand", "dst", False) ],
             "Unary": [("UnaryOpType", "op", False), ("Operand", "dst", False),  ("Operand", "src", False) ],
+            "AllocateStack": [("std::int32_t", "size", False)],
+            "DeallocateStack": [("std::int32_t", "size", False)],
             "Ret": [],
             # Operand types for Operand
             "Imm": [("std::int32_t", "value", False)],

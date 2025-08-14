@@ -25,16 +25,37 @@ std::string PrinterARM64::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
     std::string buf = std::format( "Function({})\n", ast->name );
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
-        buf += std::visit( overloaded { [ this ]( arm64_at::Mov v ) -> std::string { return v->accept( this ); },
-                                        [ this ]( arm64_at::Ret r ) -> std::string { return r->accept( this ); },
-                                        [ this ]( arm64_at::Unary u ) -> std::string { return u->accept( this ); } },
-                           instr );
+        buf += std::visit(
+            overloaded { [ this ]( arm64_at::Mov v ) -> std::string { return v->accept( this ); },
+                         [ this ]( arm64_at::Load l ) -> std::string { return l->accept( this ); },
+                         [ this ]( arm64_at::Store s ) -> std::string { return s->accept( this ); },
+                         [ this ]( arm64_at::Ret r ) -> std::string { return r->accept( this ); },
+                         [ this ]( arm64_at::Unary u ) -> std::string { return u->accept( this ); },
+                         [ this ]( arm64_at::AllocateStack a ) -> std::string { return a->accept( this ); },
+                         [ this ]( arm64_at::DeallocateStack d ) -> std::string { return d->accept( this ); } },
+            instr );
         buf += "\n";
     }
     return buf;
 }
 std::string PrinterARM64::visit_Mov( const arm64_at::Mov ast ) {
-    return std::format( "mov({}, {})", operand( ast->src ), operand( ast->dst ) );
+    return std::format( "Move({}<-{})", operand( ast->dst ), operand( ast->src ) );
+}
+
+std::string PrinterARM64::visit_Load( const arm64_at::Load ast ) {
+    return std::format( "Load({}<-{})", operand( ast->dst ), operand( ast->src ) );
+}
+
+std::string PrinterARM64::visit_Store( const arm64_at::Store ast ) {
+    return std::format( "Store({}<-{})", operand( ast->dst ), operand( ast->src ) );
+}
+
+std::string PrinterARM64::visit_AllocateStack( arm64_at::AllocateStack ast ) {
+    return std::format( "AllocateStack({})", ast->size );
+}
+
+std::string PrinterARM64::visit_DeallocateStack( arm64_at::DeallocateStack ast ) {
+    return std::format( "DeallocateStack({})", ast->size );
 }
 
 std::string PrinterARM64::visit_Ret( const arm64_at::Ret ast ) {

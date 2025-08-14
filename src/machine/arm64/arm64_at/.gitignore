@@ -1,11 +1,15 @@
+allocatestack.h
+deallocatestack.h
 functiondef.h
 imm.h
 includes.h
+load.h
 mov.h
 program.h
 pseudo.h
 register.h
 ret.h
 stack.h
+store.h
 unary.h
 visitor.h
