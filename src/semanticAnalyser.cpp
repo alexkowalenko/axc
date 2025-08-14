@@ -97,6 +97,7 @@ void SemanticAnalyser::function_def( ast::FunctionDef ast, SymbolTable& table ) 
         }
 
         if ( old_dec->type != Type::FUNCTION ) {
+            // Function was declared in a another scope, discard symbol and exit this section
             old_dec = std::nullopt;
             goto out;
         }
@@ -119,12 +120,6 @@ void SemanticAnalyser::function_def( ast::FunctionDef ast, SymbolTable& table ) 
             throw SemanticException( ast->location, "Static function {} follows non-static", ast->name );
         }
         global = old_dec->global;
-
-        if ( old_dec->number != ast->params.size() ) {
-            // If the number of parameters does not match, we will throw an exception later.
-            spdlog::debug( "Function {} has {} parameters, but got {}", ast->name, old_dec->number,
-                           ast->params.size() );
-        }
 
         if ( old_dec->number != ast->params.size() ) {
             throw SemanticException( ast->location, "Function {} expects {} arguments, but got {}.", ast->name,
@@ -297,10 +292,7 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
             throw SemanticException( ast->location, "Function {} redeclared as variable.", ast->name );
         }
         // Previous declaration
-        if ( old_dec->current_scope && old_dec->storage != StorageClass::None ) {
-            throw SemanticException( ast->location, "Conflicting local definitions: {}", ast->name );
-        }
-        if ( old_dec->storage == StorageClass::None ) {
+        if ( old_dec->current_scope && old_dec->storage != StorageClass::Extern ) {
             throw SemanticException( ast->location, "Conflicting local definitions: {}", ast->name );
         }
     }
