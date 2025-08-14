@@ -137,7 +137,8 @@ void X86_64CodeGen::generate( const CodeGenBase program ) {
 }
 
 void X86_64CodeGen::visit_Program( const x86_at::Program ast ) {
-    add_line( std::format( "# file: {}", option.input_file ) );
+    add_line( comment_prefix + "X86_64 " );
+    add_line( std::format( "{}file: {}", comment_prefix, option.input_file ) );
     for ( auto const& function : ast->functions ) {
         function->accept( this );
         add_line( "" );

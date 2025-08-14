@@ -80,6 +80,7 @@ void Arm64CodeGen::generate( const CodeGenBase program ) {
 }
 
 void Arm64CodeGen::visit_Program( const arm64_at::Program ast ) {
+    add_line( comment_prefix + " AArch64" );
     add_line( std::format( "{} file: {}", comment_prefix, option.input_file ) );
 
     add_line( "\t.text" );
@@ -150,7 +151,7 @@ void Arm64CodeGen::visit_Unary( const arm64_at::Unary ast ) {
         add_line( "neg", operand( ast->dst ), operand( ast->src ) );
         break;
     case arm64_at::UnaryOpType::NOT :
-        add_line( "mvn", operand( ast->dst ) );
+        add_line( "mvn", operand( ast->dst ), operand( ast->src ) );
         break;
     default :
         throw CodeException( ast->location, "Unsupported unary operator" );

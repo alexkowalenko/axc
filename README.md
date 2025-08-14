@@ -53,7 +53,7 @@ architectures, such as AArch64.
 - [X] Code Generator AArch64:
   - [X] Assembler Tree, Code generator
   - [X] Replacing pseudo registers.
-- [ ] Output: AArch64
+- [x] Output: AArch64
 
 ## Chapter 3 Binary Operators
 - [X] Lexer.

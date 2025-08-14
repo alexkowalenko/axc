@@ -58,7 +58,10 @@ def main():
         options += " -c"
     if args.silent:
         options += " -s"
-    if args.machine:
+    if(os.path.basename(__file__) == "axc_arm64.py"):
+        options += " -m arm64"
+        args.machine = "arm64"
+    elif args.machine:
         options += f" -m {args.machine}"
 
     if args.os:
