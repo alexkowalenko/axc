@@ -14,8 +14,10 @@
 #include "common.h"
 
 FixInstructARM::FixInstructARM() {
+    // temp registers
     x9 = std::make_shared<arm64_at::Register_>( Location(), arm64_at::RegisterName::X9 );
     x10 = std::make_shared<arm64_at::Register_>( Location(), arm64_at::RegisterName::X10 );
+    x11 = std::make_shared<arm64_at::Register_>( Location(), arm64_at::RegisterName::X11 );
 }
 
 void FixInstructARM::filter( arm64_at::Program program ) {
@@ -40,6 +42,7 @@ void FixInstructARM::visit_FunctionDef( arm64_at::FunctionDef ast ) {
                                  [ this ]( arm64_at::Store s ) -> void { return s->accept( this ); },
                                  [ this ]( arm64_at::Ret r ) -> void { return r->accept( this ); },
                                  [ this ]( arm64_at::Unary u ) -> void { return u->accept( this ); },
+                                 [ this ]( arm64_at::Binary b ) -> void { return b->accept( this ); },
                                  [ this ]( arm64_at::AllocateStack a ) -> void { return a->accept( this ); },
                                  [ this ]( arm64_at::DeallocateStack d ) -> void { return d->accept( this ); } },
                     instr );
@@ -63,21 +66,25 @@ void FixInstructARM::visit_Store( arm64_at::Store ast ) {
     current_instructions.emplace_back( ast );
 }
 
+arm64_at::Operand FixInstructARM::fix_operand( const HasLocation auto b, arm64_at::Operand operand,
+                                               arm64_at::Register& reg ) {
+    if ( std::holds_alternative<arm64_at::Stack>( operand ) ) {
+        // If stack load into register
+        current_instructions.emplace_back( mk_node<arm64_at::Load_>( b, operand, reg ) );
+        return reg;
+    } else if ( std::holds_alternative<arm64_at::Imm>( operand ) ) {
+        // If immediate value, move into register
+        current_instructions.emplace_back( mk_node<arm64_at::Mov_>( b, operand, reg ) );
+        return reg;
+    } else {
+        return operand;
+    }
+}
+
 void FixInstructARM::visit_Unary( arm64_at::Unary ast ) {
-    arm64_at::Operand src;
     arm64_at::Operand dst;
 
-    if ( std::holds_alternative<arm64_at::Stack>( ast->src ) ) {
-        // If stack load into register
-        current_instructions.emplace_back( mk_node<arm64_at::Load_>( ast, ast->src, x9 ) );
-        src = x9;
-    } else if ( std::holds_alternative<arm64_at::Imm>( ast->src ) ) {
-        // If immediate value, move into register
-        current_instructions.emplace_back( mk_node<arm64_at::Mov_>( ast, ast->src, x9 ) );
-        src = x9;
-    } else {
-        src = ast->src;
-    }
+    arm64_at::Operand src = fix_operand( ast, ast->src, x9 );
 
     // If destination stack store into register
     if ( std::holds_alternative<arm64_at::Stack>( ast->dst ) ) {
@@ -91,6 +98,42 @@ void FixInstructARM::visit_Unary( arm64_at::Unary ast ) {
     if ( std::holds_alternative<arm64_at::Stack>( ast->dst ) ) {
 
         current_instructions.emplace_back( mk_node<arm64_at::Store_>( ast, x10, ast->dst ) );
+    }
+}
+
+void FixInstructARM::visit_Binary( arm64_at::Binary ast ) {
+    arm64_at::Operand dst;
+
+    arm64_at::Operand src1 = fix_operand( ast, ast->src1, x9 );
+    arm64_at::Operand src2;
+    if ( ast->op == arm64_at::BinaryOpType::ADD || ast->op == arm64_at::BinaryOpType::SUB ) {
+        // Only move second operand to register if it's a stack, and use add/sub which supports immediate < 4096 in src2
+        if ( std::holds_alternative<arm64_at::Stack>( ast->src2 ) ) {
+            // If stack load into register
+            current_instructions.emplace_back( mk_node<arm64_at::Load_>( ast, ast->src2, x10 ) );
+            src2 = x10;
+        } else if ( auto imm = std::get<arm64_at::Imm>( ast->src2 ); std::abs( imm->value ) > 4095 ) {
+            // If immediate value, move into register
+            current_instructions.emplace_back( mk_node<arm64_at::Mov_>( ast, ast->src2, x10 ) );
+            src2 = x10;
+        } else {
+            src2 = ast->src2;
+        }
+    } else {
+        src2 = fix_operand( ast, ast->src2, x10 );
+    }
+
+    // If destination stack store into register
+    if ( std::holds_alternative<arm64_at::Stack>( ast->dst ) ) {
+        dst = x11;
+    }
+
+    // Perform the operation with modified src, dst
+    current_instructions.emplace_back( mk_node<arm64_at::Binary_>( ast, ast->op, dst, src1, src2 ) );
+
+    // If destination stack store back to stack
+    if ( std::holds_alternative<arm64_at::Stack>( ast->dst ) ) {
+        current_instructions.emplace_back( mk_node<arm64_at::Store_>( ast, x11, ast->dst ) );
     }
 }
 

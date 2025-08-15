@@ -28,6 +28,7 @@ class FilterPseudoARM : public arm64_at::Visitor<void> {
     void visit_Load( arm64_at::Load ast ) override;
     void visit_Store( arm64_at::Store ast ) override;
     void visit_Unary( arm64_at::Unary ast ) override;
+    void visit_Binary( arm64_at::Binary ast ) override;
     void visit_AllocateStack( arm64_at::AllocateStack ast ) override {};
     void visit_DeallocateStack( arm64_at::DeallocateStack ast ) override {};
     void visit_Ret( arm64_at::Ret ast ) override {};

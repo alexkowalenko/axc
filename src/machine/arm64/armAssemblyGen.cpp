@@ -35,7 +35,7 @@ arm64_at::FunctionDef ARMAssemblyGen::function( tac::FunctionDef atac ) {
         std::visit( overloaded {
                         [ &funct, this ]( tac::Return r ) -> void { ret( r, funct->instructions ); },
                         [ &funct, this ]( tac::Unary u ) -> void { unary( u, funct->instructions ); },
-                        []( tac::Binary ) -> void {},
+                        [ &funct, this ]( tac::Binary b ) -> void { binary( b, funct->instructions ); },
                         []( tac::Copy ) -> void {},
                         []( tac::Jump ) -> void {},
                         []( tac::JumpIfZero ) -> void {},
@@ -73,6 +73,31 @@ void ARMAssemblyGen::unary( const tac::Unary atac, std::vector<arm64_at::Instruc
     unary->dst = value( atac->dst );
     unary->src = value( atac->src );
     instructions.emplace_back( unary );
+}
+
+void ARMAssemblyGen::binary( const tac::Binary atac, std::vector<arm64_at::Instruction>& instructions ) {
+    auto binary = mk_node<arm64_at::Binary_>( atac );
+    switch ( atac->op ) {
+    case tac::BinaryOpType::Add :
+        binary->op = arm64_at::BinaryOpType::ADD;
+        break;
+    case tac::BinaryOpType::Subtract :
+        binary->op = arm64_at::BinaryOpType::SUB;
+        break;
+    case tac::BinaryOpType::Multiply :
+        binary->op = arm64_at::BinaryOpType::MUL;
+        break;
+    case tac::BinaryOpType::Divide :
+        binary->op = arm64_at::BinaryOpType::DIV;
+        break;
+    case tac::BinaryOpType::Modulo :
+        binary->op = arm64_at::BinaryOpType::MOD;
+        break;
+    }
+    binary->dst = value( atac->dst );
+    binary->src1 = value( atac->src1 );
+    binary->src2 = value( atac->src2 );
+    instructions.emplace_back( binary );
 }
 
 arm64_at::Operand ARMAssemblyGen::value( const tac::Value atac ) {

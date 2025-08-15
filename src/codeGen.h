@@ -46,6 +46,8 @@ class CodeGenerator {
     void add_line( std::string const& instruct, std::string const& operands, int line_number = 0 );
     void add_line( std::string const& instruct, std::string const& operand1, std::string const& operand2,
                    int line_number = 0 );
+    void add_line( std::string const& instruct, std::string const& operand1, std::string const& operand2,
+                   std::string const& operand3, int line_number = 0 );
 
     Option const&         option;
     std::filesystem::path output;

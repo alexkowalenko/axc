@@ -1,4 +1,5 @@
 allocatestack.h
+binary.h
 deallocatestack.h
 functiondef.h
 imm.h

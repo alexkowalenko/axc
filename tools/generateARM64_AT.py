@@ -28,6 +28,7 @@ if __name__ == "__main__":
             "Load": [("Operand", "src", False), ("Operand", "dst", False) ],
             "Store": [("Operand", "src", False), ("Operand", "dst", False) ],
             "Unary": [("UnaryOpType", "op", False), ("Operand", "dst", False),  ("Operand", "src", False) ],
+            "Binary": [("BinaryOpType", "op", False), ("Operand", "dst", False), ("Operand", "src1", False), ("Operand", "src2", False)],
             "AllocateStack": [("std::int32_t", "size", False)],
             "DeallocateStack": [("std::int32_t", "size", False)],
             "Ret": [],

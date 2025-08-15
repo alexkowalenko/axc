@@ -31,6 +31,7 @@ class PrinterARM64 : public arm64_at::Visitor<std::string> {
     std::string visit_DeallocateStack( arm64_at::DeallocateStack ast ) override;
     std::string visit_Ret( arm64_at::Ret ast ) override;
     std::string visit_Unary( arm64_at::Unary ast ) override;
+    std::string visit_Binary( arm64_at::Binary ast ) override;
     std::string visit_Imm( arm64_at::Imm ast ) override;
     std::string visit_Register( arm64_at::Register ast ) override;
     std::string visit_Pseudo( arm64_at::Pseudo ast ) override;

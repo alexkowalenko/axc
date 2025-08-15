@@ -17,10 +17,20 @@ namespace arm64_at {
 
 enum class UnaryOpType { NEG, NOT };
 
+enum class BinaryOpType {
+    ADD,
+    SUB,
+    MUL,
+    DIV,
+    MOD,
+};
+
 enum class RegisterName {
     X0 = 0,
     X9 = 9,
     X10 = 10,
+    X11 = 11,
+    X12 = 12,
     XZR,
 };
 
@@ -32,6 +42,10 @@ constexpr std::string to_string( const RegisterName rn ) {
         return "x9";
     case RegisterName::X10 :
         return "x10";
+    case RegisterName::X11 :
+        return "x11";
+    case RegisterName::X12 :
+        return "x12";
     case RegisterName::XZR :
         return "xzr";
     }
@@ -66,7 +80,10 @@ using AllocateStack = std::shared_ptr<AllocateStack_>;
 class DeallocateStack_;
 using DeallocateStack = std::shared_ptr<DeallocateStack_>;
 
-using Instruction = std::variant<Mov, Load, Store, Ret, Unary, AllocateStack, DeallocateStack>;
+class Binary_;
+using Binary = std::shared_ptr<Binary_>;
+
+using Instruction = std::variant<Mov, Load, Store, Ret, Unary, Binary, AllocateStack, DeallocateStack>;
 
 class Imm_;
 using Imm = std::shared_ptr<Imm_>;

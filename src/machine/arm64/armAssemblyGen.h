@@ -25,6 +25,7 @@ class ARMAssemblyGen {
 
     void ret( tac::Return atac, std::vector<arm64_at::Instruction>& instructions );
     void unary( tac::Unary atac, std::vector<arm64_at::Instruction>& instructions );
+    void binary( tac::Binary atac, std::vector<arm64_at::Instruction>& instructions );
 
     arm64_at::Operand        value( tac::Value atac );
     arm64_at::Operand        constant( tac::Constant atac );

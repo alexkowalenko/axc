@@ -24,6 +24,7 @@
 
 Arm64CodeGen::Arm64CodeGen( Option const& option ) : CodeGenerator( option ) {
     comment_prefix = "// ";
+    x12 = std::make_shared<arm64_at::Register_>( Location(), arm64_at::RegisterName::X12 );
 }
 
 CodeGenBase Arm64CodeGen::run_codegen( tac::Program tac ) {
@@ -113,6 +114,7 @@ void Arm64CodeGen::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
                                  [ this ]( arm64_at::Store s ) -> void { s->accept( this ); },
                                  [ this ]( arm64_at::Ret r ) -> void { r->accept( this ); },
                                  [ this ]( arm64_at::Unary u ) -> void { u->accept( this ); },
+                                 [ this ]( arm64_at::Binary b ) -> void { b->accept( this ); },
                                  [ this ]( arm64_at::AllocateStack a ) -> void { a->accept( this ); },
                                  [ this ]( arm64_at::DeallocateStack d ) -> void { d->accept( this ); } },
                     instr );
@@ -155,6 +157,28 @@ void Arm64CodeGen::visit_Unary( const arm64_at::Unary ast ) {
         break;
     default :
         throw CodeException( ast->location, "Unsupported unary operator" );
+    }
+}
+
+void Arm64CodeGen::visit_Binary( const arm64_at::Binary ast ) {
+    switch ( ast->op ) {
+    case arm64_at::BinaryOpType::ADD :
+        add_line( "add", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
+        break;
+    case arm64_at::BinaryOpType::SUB :
+        add_line( "sub", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
+        break;
+    case arm64_at::BinaryOpType::MUL :
+        add_line( "mul", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
+        break;
+    case arm64_at::BinaryOpType::DIV :
+        add_line( "sdiv", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
+        break;
+    case arm64_at::BinaryOpType::MOD :
+        add_line( "sdiv", operand( x12 ), operand( ast->src1 ), operand( ast->src2 ) );
+        add_line( "msub", std::format( "{}, {}, {}, {}", operand( ast->dst ), operand( x12 ), operand( ast->src2 ),
+                                       operand( ast->src1 ) ) );
+        break;
     }
 }
 

@@ -31,6 +31,7 @@ std::string PrinterARM64::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
                          [ this ]( arm64_at::Store s ) -> std::string { return s->accept( this ); },
                          [ this ]( arm64_at::Ret r ) -> std::string { return r->accept( this ); },
                          [ this ]( arm64_at::Unary u ) -> std::string { return u->accept( this ); },
+                         [ this ]( arm64_at::Binary b ) -> std::string { return b->accept( this ); },
                          [ this ]( arm64_at::AllocateStack a ) -> std::string { return a->accept( this ); },
                          [ this ]( arm64_at::DeallocateStack d ) -> std::string { return d->accept( this ); } },
             instr );
@@ -73,6 +74,28 @@ std::string PrinterARM64::visit_Unary( const arm64_at::Unary ast ) {
         break;
     }
     buf += std::format( ", {}, {})", operand( ast->dst ), operand( ast->src ) );
+    return buf;
+}
+
+std::string PrinterARM64::visit_Binary( const arm64_at::Binary ast ) {
+    std::string buf = "Binary(";
+    switch ( ast->op ) {
+    case arm64_at::BinaryOpType::ADD :
+        buf += "add";
+        break;
+    case arm64_at::BinaryOpType::SUB :
+        buf += "sub";
+        break;
+    case arm64_at::BinaryOpType::MUL :
+        buf += "mul";
+        break;
+    case arm64_at::BinaryOpType::DIV :
+        buf += "div";
+        break;
+    case arm64_at::BinaryOpType::MOD :
+        buf += "mod";
+    }
+    buf += std::format( ", {}, {}, {})", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
     return buf;
 }
 

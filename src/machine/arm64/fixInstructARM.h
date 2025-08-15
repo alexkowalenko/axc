@@ -12,6 +12,7 @@
 
 #include "arm64_at/base.h"
 #include "arm64_at/visitor.h"
+#include "common.h"
 
 #include <vector>
 
@@ -27,6 +28,7 @@ class FixInstructARM : public arm64_at::Visitor<void> {
     void visit_Load( arm64_at::Load ast ) override;
     void visit_Store( arm64_at::Store ast ) override;
     void visit_Unary( arm64_at::Unary ast ) override;
+    void visit_Binary( arm64_at::Binary ast ) override;
     void visit_AllocateStack( arm64_at::AllocateStack ast ) override;
     void visit_DeallocateStack( arm64_at::DeallocateStack ast ) override;
     void visit_Ret( arm64_at::Ret ast ) override;
@@ -36,8 +38,11 @@ class FixInstructARM : public arm64_at::Visitor<void> {
     void visit_Stack( arm64_at::Stack ast ) override;
 
   private:
+    arm64_at::Operand fix_operand( HasLocation auto b, arm64_at::Operand operand, arm64_at::Register& reg );
+
     std::vector<arm64_at::Instruction> current_instructions;
 
     arm64_at::Register x9;
     arm64_at::Register x10;
+    arm64_at::Register x11;
 };

@@ -31,6 +31,7 @@ class Arm64CodeGen : public CodeGenerator, public arm64_at::Visitor<void> {
     void visit_Store( arm64_at::Store ast ) override;
     void visit_Ret( arm64_at::Ret ast ) override;
     void visit_Unary( arm64_at::Unary ast ) override;
+    void visit_Binary( arm64_at::Binary ast ) override;
     void visit_AllocateStack( arm64_at::AllocateStack ast ) override;
     void visit_DeallocateStack( arm64_at::DeallocateStack ast ) override;
 
@@ -43,4 +44,5 @@ class Arm64CodeGen : public CodeGenerator, public arm64_at::Visitor<void> {
     std::string           operand( const arm64_at::Operand& op );
     std::string           last_string;
     arm64_at::FunctionDef current_function;
+    arm64_at::Register    x12;
 };

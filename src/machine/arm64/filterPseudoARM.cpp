@@ -30,6 +30,7 @@ void FilterPseudoARM::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
                                  [ this ]( arm64_at::Load l ) -> void { l->accept( this ); },
                                  [ this ]( arm64_at::Store s ) -> void { s->accept( this ); },
                                  [ this ]( arm64_at::Unary u ) -> void { u->accept( this ); },
+                                 [ this ]( arm64_at::Binary b ) -> void { b->accept( this ); },
                                  [ this ]( arm64_at::Ret r ) -> void { r->accept( this ); },
                                  [ this ]( arm64_at::AllocateStack a ) -> void { a->accept( this ); },
                                  [ this ]( arm64_at::DeallocateStack d ) -> void { d->accept( this ); } },
@@ -56,6 +57,12 @@ void FilterPseudoARM::visit_Store( arm64_at::Store ast ) {
 
 void FilterPseudoARM::visit_Unary( const arm64_at::Unary ast ) {
     ast->src = operand( ast->src );
+    ast->dst = operand( ast->dst );
+}
+
+void FilterPseudoARM::visit_Binary( arm64_at::Binary ast ) {
+    ast->src1 = operand( ast->src1 );
+    ast->src2 = operand( ast->src2 );
     ast->dst = operand( ast->dst );
 }
 
