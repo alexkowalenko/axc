@@ -41,6 +41,7 @@ void SemanticAnalyser::file_variable_def( ast::VariableDef ast, SymbolTable& tab
     if ( ast->storage == StorageClass::Extern && ast->init ) {
         throw SemanticException( ast->location, "Extern variables can't have initializers" );
     }
+
     if ( ast->init ) {
         if ( !std::holds_alternative<ast::Constant>( *ast->init ) ) {
             throw SemanticException( ast->location, "Global variables must have constant initializers" );
@@ -72,7 +73,8 @@ void SemanticAnalyser::file_variable_def( ast::VariableDef ast, SymbolTable& tab
                                        .storage = ast->storage,
                                        .type = Type::INT,
                                        .current_scope = true,
-                                       .has_init = ast->init.has_value() } );
+                                       .has_init = ast->init.has_value(),
+                                       .global = true } );
     }
 }
 
@@ -81,44 +83,65 @@ void SemanticAnalyser::function_def( ast::FunctionDef ast, SymbolTable& table ) 
     // Clear the labels for each function.
     labels.clear();
 
-    bool global = ast->storage != StorageClass::Static;
+    // Check if the function is defined as a nested function.
+    if ( ast->storage == StorageClass::Static && nested_function ) {
+        throw SemanticException( ast->location, "Static variables can't be declared inside a function" );
+    }
+
+    bool global = ast->storage != StorageClass::Static && ast->block.has_value();
 
     // remove "void" parameters
     ast->params.erase( std::remove( ast->params.begin(), ast->params.end(), "void" ), ast->params.end() );
 
     auto old_dec = table.find( ast->name );
     if ( old_dec ) {
-        spdlog::debug( "Function {} already exists", ast->name );
-        spdlog::debug( "symbol type: {:d} here: {:b}", static_cast<int>( old_dec->type ), old_dec->current_scope );
+        spdlog::debug( "Symbol {} already exists", ast->name );
+        spdlog::debug( "symbol: {:s} current_scope: {}", to_string( *old_dec ), old_dec->current_scope );
 
-        if ( old_dec->type != Type::FUNCTION && old_dec->current_scope ) {
+        if ( old_dec->type != Type::FUNCTION && old_dec->global ) {
             // Another symbol is already defined with the same name, but it is not a function.
             throw SemanticException( ast->location, "Redeclaring {} as a function", ast->name );
         }
 
+        spdlog::debug( "1" );
+        if ( old_dec->storage == StorageClass::None && old_dec->current_scope && old_dec->global ) {
+            throw SemanticException( ast->location, "Duplicate function declaration: {}", ast->name );
+        }
+
+        spdlog::debug( "2" );
         if ( old_dec->type != Type::FUNCTION ) {
             // Function was declared in a another scope, discard symbol and exit this section
             old_dec = std::nullopt;
             goto out;
         }
 
-        if ( old_dec->storage == StorageClass::None && old_dec->current_scope ) {
-            throw SemanticException( ast->location, "Duplicate function declaration: {}", ast->name );
-        }
-
-        if ( old_dec->storage == StorageClass::Static ) {
+        spdlog::debug( "3" );
+        if ( old_dec->storage == StorageClass::Static && old_dec->current_scope ) {
             // If the function is internal, it should not be declared again.
-            throw SemanticException( ast->location, "Duplicate function declaration: {}", ast->name );
+            throw SemanticException( ast->location, "Duplicate function declaration: {}.", ast->name );
         }
 
+        spdlog::debug( "4" );
         if ( ast->block && old_dec->has_init ) {
             // Function defined more than once
             throw SemanticException( ast->location, "Function {} already defined", ast->name );
         }
 
-        if ( old_dec->global && ast->storage == StorageClass::Static ) {
+        spdlog::debug( "5" );
+        if ( ast->storage == StorageClass::Static ) {
             throw SemanticException( ast->location, "Static function {} follows non-static", ast->name );
         }
+
+        spdlog::debug( "6" );
+        if ( old_dec->global && old_dec->current_scope && ast->block ) {
+            throw SemanticException( ast->location, "Extern function {} follows non-extern", ast->name );
+        }
+
+        spdlog::debug( "7" );
+        if ( ast->storage == StorageClass::Static ) {
+            spdlog::debug( "Static function {} follows non-static", ast->name );
+        }
+
         global = old_dec->global;
 
         if ( old_dec->number != ast->params.size() ) {
@@ -160,6 +183,7 @@ out:
 
         // Add symbol with function name to the symbol table.
         s.storage = StorageClass::Static;
+        s.current_scope = true;
         table.put( ast->name, s );
 
         // Create new scope
@@ -170,7 +194,7 @@ out:
             auto unique_name = table.temp_name( param );
             spdlog::debug( "Declaring param: {} as {}", param, unique_name );
             new_table.put( param, Symbol { .name = unique_name,
-                                           .storage = StorageClass::None,
+                                           .storage = StorageClass::Parameter,
                                            .type = Type::INT,
                                            .current_scope = true } );
             param = unique_name;
@@ -181,8 +205,9 @@ out:
     } else {
         // If there is no block, it is a function declaration.
         spdlog::debug( "Declaring function: {} with {} parameters", ast->name, ast->params.size() );
-        s.storage = StorageClass::Extern;
+        s.storage = ast->block ? StorageClass::Extern : StorageClass::None;
         s.current_scope = true;
+        spdlog::debug( "put symbol: {:s} current_scope: {}", to_string( s ), s.current_scope );
         table.put( ast->name, s );
         global_table->put( ast->name, s );
     }
@@ -248,6 +273,12 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
                  ( old_dec->storage == StorageClass::None || old_dec->storage == StorageClass::Static ) ) {
                 throw SemanticException( ast->location, "Conflicting local definitions: {}", ast->name );
             }
+
+            // Conflicts with paramater
+            if ( old_dec->current_scope && old_dec->storage == StorageClass::Parameter ) {
+                throw SemanticException( ast->location, "Conflicting local parameter: {}", ast->name );
+            }
+
             // Already declared, put in local table not global
             Symbol s { .name = ast->name, .storage = StorageClass::Extern, .type = Type::INT, .current_scope = true };
             table.put( ast->name, s );
@@ -287,13 +318,18 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
 
     // No linkage
     if ( auto old_dec = table.find( ast->name ); old_dec ) {
+        spdlog::debug( "Variable {} already defined - {}", ast->name, to_string( *old_dec ) );
         if ( old_dec->type != Type::INT && old_dec->current_scope ) {
             // Another symbol is already defined with the same name, but it is not a variable.
             throw SemanticException( ast->location, "Function {} redeclared as variable.", ast->name );
         }
         // Previous declaration
-        if ( old_dec->current_scope && old_dec->storage != StorageClass::Extern ) {
+        if ( old_dec->current_scope && old_dec->storage == StorageClass::Extern ) {
             throw SemanticException( ast->location, "Conflicting local definitions: {}", ast->name );
+        }
+        if ( old_dec->current_scope &&
+             ( old_dec->storage == StorageClass::Parameter || old_dec->storage == StorageClass::None ) ) {
+            throw SemanticException( ast->location, "Conflicting local parameter: {}", ast->name );
         }
     }
 

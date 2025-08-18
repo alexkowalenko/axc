@@ -27,15 +27,18 @@ enum class StorageClass {
     None = 0,
     Static,
     Extern,
+    Parameter,
 };
 
 constexpr std::string to_string( const StorageClass storage ) {
     switch ( storage ) {
     case StorageClass::None :
-        return "";
+        return "none";
     case StorageClass::Static :
         return "static";
     case StorageClass::Extern :
         return "extern";
+    case StorageClass::Parameter :
+        return "parameter";
     }
 }

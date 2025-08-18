@@ -32,7 +32,10 @@ std::string PrinterAST::visit_Program( const ast::Program ast ) {
 }
 
 std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef ast ) {
-    std::string buf = to_string( ast->storage );
+    std::string buf;
+    if ( ast->storage != StorageClass::None ) {
+        buf = to_string( ast->storage ) + " ";
+    }
     buf += std::format( "{} {}(", to_string( TokenType::INT ), ast->name );
     for ( const auto& p : ast->params ) {
         if ( p == "void" ) {
@@ -49,7 +52,8 @@ std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef ast ) {
     if ( ast->block ) {
         buf += ast->block.value()->accept( this );
     } else {
-        buf += ";"; // Function declaration
+        buf.pop_back(); // Remove trailing space
+        buf += ";";     // Function declaration
     }
     return buf;
 }
@@ -62,7 +66,10 @@ std::string PrinterAST::block_item( const ast::BlockItem ast ) {
 }
 
 std::string PrinterAST::visit_VariableDef( const ast::VariableDef ast ) {
-    std::string buf = to_string( ast->storage );
+    std::string buf;
+    if ( ast->storage != StorageClass::None ) {
+        buf = to_string( ast->storage ) + " ";
+    }
     buf += "int " + ast->name;
     if ( ast->init ) {
         buf += " = " + expr( ast->init.value() );
