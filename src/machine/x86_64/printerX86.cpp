@@ -28,8 +28,11 @@ std::string PrinterX86::print( const x86_at::Program ast ) {
 
 std::string PrinterX86::visit_Program( const x86_at::Program ast ) {
     std::string buf;
-    for ( const auto& function : ast->functions ) {
-        buf += function->accept( this ) + "\n\n";
+    for ( const auto& item : ast->top_level ) {
+        buf += std::visit(
+            overloaded { [ this ]( x86_at::FunctionDef f ) -> std::string { return f->accept( this ); },
+                         [ this ]( x86_at::StaticVariable f ) -> std::string { return f->accept( this ); } },
+            item );
     }
     return buf;
 };
@@ -59,6 +62,10 @@ std::string PrinterX86::visit_FunctionDef( const x86_at::FunctionDef ast ) {
     }
     return buf;
 };
+
+std::string PrinterX86::visit_StaticVariable( x86_at::StaticVariable ast ) {
+    return std::format( "StaticVariable: {} ({}, {})\n", ast->name, ast->global ? "global" : "static", ast->init );
+}
 
 std::string PrinterX86::operand( const x86_at::Operand& op ) {
     return std::visit( overloaded {

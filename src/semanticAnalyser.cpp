@@ -42,10 +42,12 @@ void SemanticAnalyser::file_variable_def( ast::VariableDef ast, SymbolTable& tab
         throw SemanticException( ast->location, "Extern variables can't have initializers" );
     }
 
+    int value = 0;
     if ( ast->init ) {
         if ( !std::holds_alternative<ast::Constant>( *ast->init ) ) {
             throw SemanticException( ast->location, "Global variables must have constant initializers" );
         }
+        value = std::get<ast::Constant>( *ast->init )->value;
     }
 
     if ( auto old_decl = table.find( ast->name ); old_decl ) {
@@ -69,12 +71,14 @@ void SemanticAnalyser::file_variable_def( ast::VariableDef ast, SymbolTable& tab
         }
     } else {
         spdlog::debug( "Declaring file variable: {}", ast->name );
+        auto global = ast->storage != StorageClass::Static;
         table.put( ast->name, Symbol { .name = ast->name,
                                        .storage = ast->storage,
                                        .type = Type::INT,
+                                       .number = value,
                                        .current_scope = true,
                                        .has_init = ast->init.has_value(),
-                                       .global = true } );
+                                       .global = global } );
     }
 }
 
@@ -295,11 +299,13 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
         return;
     }
 
+    int value = 0;
     if ( ast->storage == StorageClass::Static ) {
         if ( ast->init ) {
             if ( !std::holds_alternative<ast::Constant>( *ast->init ) ) {
                 throw SemanticException( ast->location, "static variables must have constant initializers" );
             }
+            value = std::get<ast::Constant>( *ast->init )->value;
         }
         if ( auto old_dec = table.find( ast->name ); old_dec ) {
             if ( old_dec->type != Type::INT ) {
@@ -311,10 +317,21 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
                 throw SemanticException( ast->location, "Conflicting local definitions: {}", ast->name );
             }
         }
-        spdlog::debug( "Declaring static variable: {}", ast->name );
-        table.put(
-            ast->name,
-            Symbol { .name = ast->name, .storage = StorageClass::Static, .type = Type::INT, .current_scope = true } );
+
+        auto unique_name = table.temp_name( ast->name );
+        spdlog::debug( "Declaring static variable: {} as {}", ast->name, unique_name );
+        auto s = Symbol { .name = unique_name,
+                          .storage = StorageClass::Static,
+                          .type = Type::INT,
+                          .number = value,
+                          .current_scope = true };
+        table.put( ast->name, s );
+        s.current_scope = false;
+        global_table->put( unique_name, s );
+        ast->name = unique_name;
+        if ( ast->init ) {
+            expr( ast->init.value(), table );
+        }
         return;
     }
 
@@ -335,9 +352,7 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
         }
     }
 
-    auto original_name = ast->name;
     auto unique_name = table.temp_name( ast->name );
-
     spdlog::debug( "Declaring local variable: {} as {}", ast->name, unique_name );
     table.put(
         ast->name,

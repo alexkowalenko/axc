@@ -21,14 +21,24 @@ tac::Program TacGen::generate( ast::Program ast ) {
     auto program = mk_node<tac::Program_>( ast );
 
     for ( const auto& d : ast->declarations ) {
-        std::visit( overloaded { []( ast::VariableDef ast ) -> void {},
+        std::visit( overloaded { []( ast::VariableDef ) -> void {},
                                  [ this, program ]( ast::FunctionDef ast ) -> void {
                                      if ( auto funct = functionDef( ast ) ) {
-                                         program->functions.push_back( *funct );
+                                         program->top_level.emplace_back( *funct );
                                      }
                                  } },
                     d );
     }
+
+    for ( auto const& [ name, symbol ] : symbol_table ) {
+        if ( symbol.type != Type::FUNCTION && symbol.storage != StorageClass::Extern ) {
+            spdlog::debug( "tac::generate: {} is defined", name, symbol.number );
+            auto static_var =
+                mk_node<tac::StaticVariable_>( ast, name, symbol.storage == StorageClass::None, symbol.number );
+            program->top_level.emplace_back( static_var );
+        }
+    }
+
     return program;
 }
 
@@ -56,6 +66,19 @@ std::optional<tac::FunctionDef> TacGen::functionDef( ast::FunctionDef ast ) {
     instructions.emplace_back( mk_node<tac::Return_>( ast, mk_node<tac::Constant_>( ast, 0 ) ) ); // Return 0
     function->instructions = instructions;
     return function;
+}
+
+std::optional<tac::StaticVariable> TacGen::staticVariable( ast::VariableDef ast ) {
+    if ( ast->storage != StorageClass::Extern ) {
+        int value { 0 };
+        if ( auto s = symbol_table.find( ast->name ); s ) {
+            value = s->number;
+            spdlog::debug( "tac::staticVariable: {} is defined, using {}", ast->name, value );
+        }
+        auto static_var = mk_node<tac::StaticVariable_>( ast, ast->name, ast->storage == StorageClass::None, value );
+        return static_var;
+    }
+    return std::nullopt;
 }
 
 void TacGen::declaration( ast::VariableDef ast, std::vector<tac::Instruction>& instructions ) {

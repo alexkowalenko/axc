@@ -21,10 +21,14 @@ ARMAssemblyGen::ARMAssemblyGen() {
 
 arm64_at::Program ARMAssemblyGen::generate( const tac::Program atac ) {
     auto program = mk_node<arm64_at::Program_>( atac );
-    for ( auto& funct : atac->functions ) {
-        auto function_def = function( funct );
-        // FIX
-        program->function = function_def;
+    for ( auto& item : atac->top_level ) {
+        std::visit( overloaded { [ this, &program ]( tac::FunctionDef funct ) -> void {
+                                    auto function_def = function( funct );
+                                    // FIX
+                                    program->function = function_def;
+                                },
+                                 []( tac::StaticVariable ) -> void {} },
+                    item );
     }
     return program;
 };

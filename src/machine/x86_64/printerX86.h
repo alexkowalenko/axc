@@ -24,6 +24,7 @@ class PrinterX86 : public x86_at::Visitor<std::string> {
 
     std::string visit_Program( x86_at::Program ast ) override;
     std::string visit_FunctionDef( x86_at::FunctionDef ast ) override;
+    std::string visit_StaticVariable( x86_at::StaticVariable ast ) override;
     std::string visit_Mov( x86_at::Mov ast ) override;
     std::string visit_Imm( x86_at::Imm ast ) override;
     std::string visit_Unary( x86_at::Unary ast ) override;

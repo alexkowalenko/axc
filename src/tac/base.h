@@ -49,6 +49,14 @@ class Base {
     Location location;
 };
 
+class FunctionDef_;
+using FunctionDef = std::shared_ptr<FunctionDef_>;
+
+class StaticVariable_;
+using StaticVariable = std::shared_ptr<StaticVariable_>;
+
+using TopLevel = std::variant<FunctionDef, StaticVariable>;
+
 class Return_;
 using Return = std::shared_ptr<Return_>;
 
@@ -76,11 +84,7 @@ using Label = std::shared_ptr<Label_>;
 class FunCall_;
 using FunCall = std::shared_ptr<FunCall_>;
 
-class StaticVariable_;
-using StaticVariable = std::shared_ptr<StaticVariable_>;
-
-using Instruction =
-    std::variant<Return, Unary, Binary, Copy, Jump, JumpIfZero, JumpIfNotZero, Label, FunCall, StaticVariable>;
+using Instruction = std::variant<Return, Unary, Binary, Copy, Jump, JumpIfZero, JumpIfNotZero, Label, FunCall>;
 
 class Constant_;
 using Constant = std::shared_ptr<Constant_>;

@@ -24,7 +24,8 @@ class TacGen {
     tac::Program generate( ast::Program ast );
 
   private:
-    std::optional<tac::FunctionDef> functionDef( ast::FunctionDef ast );
+    std::optional<tac::FunctionDef>    functionDef( ast::FunctionDef ast );
+    std::optional<tac::StaticVariable> staticVariable( ast::VariableDef ast );
 
     void declaration( ast::VariableDef ast, std::vector<tac::Instruction>& instructions );
     void statement( ast::Statement, std::vector<tac::Instruction>& instructions );

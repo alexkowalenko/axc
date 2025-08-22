@@ -14,8 +14,9 @@ if __name__ == "__main__":
         output_dir,
         "x86_at",
         {
-            "Program": [("std::vector<FunctionDef>", "functions", False)],
+            "Program": [("std::vector<TopLevel>", "top_level", False)],
             "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False), ("std::int32_t", "stack_size", False), ("bool", "global", False)],
+            "StaticVariable": [("std::string", "name", False), ("bool", "global", False), ("int", "init", False)],
             # Operations for Instructions
             "Mov": [("Operand", "src", False), ("Operand", "dst", False) ],
             "Unary": [("UnaryOpType", "op", False), ("Operand", "operand", False) ],

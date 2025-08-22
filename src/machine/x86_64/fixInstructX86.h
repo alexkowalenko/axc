@@ -23,6 +23,7 @@ class FixInstructX86 : public x86_at::Visitor<void> {
   public:
     void visit_Program( x86_at::Program ast ) override;
     void visit_FunctionDef( x86_at::FunctionDef ast ) override;
+    void visit_StaticVariable( x86_at::StaticVariable ast ) override {};
 
     void visit_Mov( x86_at::Mov ast ) override;
     void visit_Unary( x86_at::Unary ast ) override {};

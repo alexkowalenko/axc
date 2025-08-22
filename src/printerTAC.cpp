@@ -18,8 +18,12 @@ std::string PrinterTAC::print( const tac::Program ast ) {
 
 std::string PrinterTAC::visit_Program( const tac::Program ast ) {
     std::string buf;
-    for ( const auto& function : ast->functions ) {
-        buf += function->accept( this ) + "\n\n";
+    for ( const auto& item : ast->top_level ) {
+        buf +=
+            std::visit( overloaded { [ this ]( tac::FunctionDef f ) -> std::string { return f->accept( this ); },
+                                     [ this ]( tac::StaticVariable f ) -> std::string { return f->accept( this ); } },
+                        item );
+        buf += '\n';
     }
     return buf;
 }
@@ -173,7 +177,7 @@ std::string PrinterTAC::visit_FunCall( const tac::FunCall ast ) {
 };
 
 std::string PrinterTAC::visit_StaticVariable( tac::StaticVariable ast ) {
-    return std::format( "StaticVariable: {:s}({} {})", ast->name, ast->global ? "global" : "", ast->init );
+    return std::format( "StaticVariable: {:s} {}({})", ast->name, ast->global ? "global" : "", ast->init );
 }
 
 std::string PrinterTAC::visit_Constant( const tac::Constant ast ) {

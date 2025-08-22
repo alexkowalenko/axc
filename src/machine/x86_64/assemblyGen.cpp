@@ -33,13 +33,22 @@ AssemblyGen::AssemblyGen( Option const& option ) : option( option ) {
 
 x86_at::Program AssemblyGen::generate( const tac::Program atac ) {
     auto program = mk_node<x86_at::Program_>( atac );
-    for ( const auto& funct : atac->functions ) {
-        auto fd = functionDef( funct );
-        // FIX: This should be a vector of functions, not a single function
-        program->functions.push_back( fd );
+    for ( const auto& item : atac->top_level ) {
+        std::visit( overloaded { [ this, &program ]( tac::FunctionDef funct ) -> void {
+                                    const auto fd = functionDef( funct );
+                                    program->top_level.push_back( fd );
+                                },
+                                 [ this, &program ]( tac::StaticVariable s ) -> void {
+                                     const auto sv = staticVariable( s );
+                                     program->top_level.push_back( sv );
+                                 } },
+                    item );
     }
-
     return program;
+}
+
+x86_at::StaticVariable AssemblyGen::staticVariable( tac::StaticVariable atac ) {
+    return mk_node<x86_at::StaticVariable_>( atac, atac->name, atac->global, atac->init );
 }
 
 x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
@@ -80,17 +89,10 @@ x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
                                  [ &function ]( tac::Label r ) -> void { label( r, function->instructions ); },
                                  [ &function, this ]( tac::FunCall atac ) -> void {
                                      functionCall( atac, function->instructions );
-                                 },
-                                 [ &function, this ]( tac::StaticVariable atac ) -> void {
-                                     staticVariable( atac, function->instructions );
                                  } },
                     instr );
     }
     return function;
-};
-
-void AssemblyGen::staticVariable( tac::StaticVariable atac, std::vector<x86_at::Instruction>& instructions ) {
-
 };
 
 void AssemblyGen::ret( const tac::Return atac, std::vector<x86_at::Instruction>& instructions ) const {

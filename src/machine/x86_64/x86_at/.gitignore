@@ -19,5 +19,6 @@ register.h
 ret.h
 setcc.h
 stack.h
+staticvariable.h
 unary.h
 visitor.h

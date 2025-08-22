@@ -21,7 +21,8 @@ class AssemblyGen {
 
     x86_at::Program generate( tac::Program atac );
 
-    x86_at::FunctionDef functionDef( tac::FunctionDef atac );
+    x86_at::FunctionDef    functionDef( tac::FunctionDef atac );
+    x86_at::StaticVariable staticVariable( tac::StaticVariable atac );
 
     void ret( tac::Return atac, std::vector<x86_at::Instruction>& instructions ) const;
 
@@ -36,7 +37,6 @@ class AssemblyGen {
     static void                copy( tac::Copy atac, std::vector<x86_at::Instruction>& instructions );
     static void                label( tac::Label atac, std::vector<x86_at::Instruction>& instructions );
     void                       functionCall( tac::FunCall atac, std::vector<x86_at::Instruction>& instructions ) const;
-    void staticVariable( tac::StaticVariable atac, std::vector<x86_at::Instruction>& instructions );
 
     static x86_at::Operand value( tac::Value atac );
     static x86_at::Operand constant( tac::Constant atac );

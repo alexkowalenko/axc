@@ -14,7 +14,7 @@ if __name__ == "__main__":
         output_dir,
         "tac",
         {
-            "Program": [("std::vector<FunctionDef>", "functions", False)],
+            "Program": [("std::vector<TopLevel>", "top_level", False)],
             "FunctionDef": [("std::string", "name", False), ("std::vector<std::string>", "params", False), ("std::vector<Instruction>", "instructions", False),  ("bool", "global", False)],
             "StaticVariable": [("std::string", "name", False), ("bool", "global", False), ("int", "init", False)],
             "Return": [("Value", "value", False) ],

@@ -139,14 +139,16 @@ void X86_64CodeGen::generate( const CodeGenBase program ) {
 void X86_64CodeGen::visit_Program( const x86_at::Program ast ) {
     add_line( comment_prefix + "X86_64 " );
     add_line( std::format( "{}file: {}", comment_prefix, option.input_file ) );
-    for ( auto const& function : ast->functions ) {
-        function->accept( this );
+    for ( auto const& item : ast->top_level ) {
+        std::visit( overloaded { [ this ]( x86_at::FunctionDef f ) -> void { f->accept( this ); },
+                                 [ this ]( x86_at::StaticVariable s ) -> void { s->accept( this ); } },
+                    item );
         add_line( "" );
     }
 }
 
 void X86_64CodeGen::visit_FunctionDef( const x86_at::FunctionDef ast ) {
-    std::string name = function_label( ast->name );
+    std::string name = native_label( ast->name );
     current_function_name = ast->name;
     add_line( "\t.text" );
 
@@ -177,6 +179,25 @@ void X86_64CodeGen::visit_FunctionDef( const x86_at::FunctionDef ast ) {
                     instr );
     }
     add_line( "" );
+}
+
+void X86_64CodeGen::visit_StaticVariable( x86_at::StaticVariable ast ) {
+    auto name = native_label( ast->name );
+    if ( ast->global ) {
+        add_line( std::format( "\t.global {}", name ) );
+    }
+    if ( ast->init == 0 ) {
+        add_line( "\t.bss" );
+    } else {
+        add_line( "\t.data" );
+    }
+    add_line( "\t.balign 4" );
+    add_line( std::format( "{}:", name ) );
+    if ( ast->init == 0 ) {
+        add_line( "\t.zero 4" );
+    } else {
+        add_line( std::format( "\t.long {}", ast->init ) );
+    }
 }
 
 std::string X86_64CodeGen::operand( const x86_at::Operand& op ) {
@@ -246,7 +267,7 @@ void X86_64CodeGen::visit_Push( const x86_at::Push ast ) {
 }
 
 void X86_64CodeGen::visit_Call( const x86_at::Call ast ) {
-    add_line( "call", function_label( ast->function_name ) );
+    add_line( "call", native_label( ast->function_name ) );
 }
 
 void X86_64CodeGen::visit_Binary( const x86_at::Binary ast ) {
@@ -323,7 +344,7 @@ void X86_64CodeGen::visit_Stack( const x86_at::Stack ast ) {
     last_string = std::format( "{}(%rbp)", ast->offset );
 }
 
-std::string X86_64CodeGen::function_label( const std::string_view name ) const {
+std::string X86_64CodeGen::native_label( const std::string_view name ) const {
     std::string n { name };
     if ( option.system == System::MacOS ) {
         n = "_" + n;

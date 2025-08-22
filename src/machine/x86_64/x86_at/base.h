@@ -94,6 +94,14 @@ constexpr std::string to_string( const RegisterSize rs ) {
     }
 }
 
+class FunctionDef_;
+using FunctionDef = std::shared_ptr<FunctionDef_>;
+
+class StaticVariable_;
+using StaticVariable = std::shared_ptr<StaticVariable_>;
+
+using TopLevel = std::variant<FunctionDef, StaticVariable>;
+
 class Mov_;
 using Mov = std::shared_ptr<Mov_>;
 

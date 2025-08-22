@@ -27,6 +27,9 @@ class SymbolTable {
     void                                reset_current_block();
     void                                dump();
 
+    [[nodiscard]] auto begin() const { return table.cbegin(); }
+    [[nodiscard]] auto end() const { return table.cend(); }
+
     std::string temp_name( std::string_view basename = "temp" );
 
   private:
