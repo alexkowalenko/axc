@@ -15,7 +15,6 @@
 #include "ast/includes.h"
 #include "common.h"
 #include "exception.h"
-#include "spdlog/fmt/bundled/chrono.h"
 #include "tac/includes.h"
 
 tac::Program TacGen::generate( ast::Program ast ) {
@@ -46,6 +45,7 @@ std::optional<tac::FunctionDef> TacGen::functionDef( ast::FunctionDef ast ) {
         // Add parameters to the function
         function->params.push_back( param );
     }
+    function->global = ast->storage != StorageClass::Static;
 
     std::vector<tac::Instruction> instructions;
     if ( ast->block ) {

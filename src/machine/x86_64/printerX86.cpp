@@ -35,7 +35,7 @@ std::string PrinterX86::visit_Program( const x86_at::Program ast ) {
 };
 
 std::string PrinterX86::visit_FunctionDef( const x86_at::FunctionDef ast ) {
-    std::string buf = std::format( "Function: {}\n", ast->name );
+    std::string buf = std::format( "Function: {} ({})\n", ast->name, ast->global ? "global" : "static" );
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
         buf +=

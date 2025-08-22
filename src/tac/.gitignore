@@ -10,6 +10,7 @@ jumpifzero.h
 label.h
 program.h
 return.h
+staticvariable.h
 unary.h
 variable.h
 visitor.h

@@ -42,6 +42,7 @@ arm64_at::FunctionDef ARMAssemblyGen::function( tac::FunctionDef atac ) {
                         []( tac::JumpIfNotZero ) -> void {},
                         []( tac::Label ) -> void {},
                         []( tac::FunCall ) -> void {},
+                        []( tac::StaticVariable ) -> void {},
                     },
                     instr );
     }

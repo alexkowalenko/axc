@@ -15,7 +15,7 @@ if __name__ == "__main__":
         "x86_at",
         {
             "Program": [("std::vector<FunctionDef>", "functions", False)],
-            "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False), ("std::int32_t", "stack_size", False)],
+            "FunctionDef": [("std::string", "name", False), ("std::vector<Instruction>", "instructions", False), ("std::int32_t", "stack_size", False), ("bool", "global", False)],
             # Operations for Instructions
             "Mov": [("Operand", "src", False), ("Operand", "dst", False) ],
             "Unary": [("UnaryOpType", "op", False), ("Operand", "operand", False) ],

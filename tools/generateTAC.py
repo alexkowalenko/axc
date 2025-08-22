@@ -15,7 +15,8 @@ if __name__ == "__main__":
         "tac",
         {
             "Program": [("std::vector<FunctionDef>", "functions", False)],
-            "FunctionDef": [("std::string", "name", False), ("std::vector<std::string>", "params", False), ("std::vector<Instruction>", "instructions", False)],
+            "FunctionDef": [("std::string", "name", False), ("std::vector<std::string>", "params", False), ("std::vector<Instruction>", "instructions", False),  ("bool", "global", False)],
+            "StaticVariable": [("std::string", "name", False), ("bool", "global", False), ("int", "init", False)],
             "Return": [("Value", "value", False) ],
             "Unary": [("UnaryOpType", "op", False), ("Value", "src", False), ("Value", "dst", False)],
             "Binary": [("BinaryOpType", "op", False), ("Value", "src1", False), ("Value", "src2", False), ("Value", "dst", False)],

@@ -110,7 +110,7 @@ void SemanticAnalyser::function_def( ast::FunctionDef ast, SymbolTable& table ) 
 
         spdlog::debug( "2" );
         if ( old_dec->type != Type::FUNCTION ) {
-            // Function was declared in a another scope, discard symbol and exit this section
+            // Variable was declared in a another scope, discard symbol and exit this section
             old_dec = std::nullopt;
             goto out;
         }
@@ -255,7 +255,7 @@ void SemanticAnalyser::statement( const ast::StatementItem ast, SymbolTable& tab
 }
 
 void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTable& table ) {
-    spdlog::debug( "block VariableDef: {}", ast->name );
+    spdlog::debug( "block variable def: {}", ast->name );
 
     if ( ast->storage == StorageClass::Extern ) {
         // extern variables can't have initializers
@@ -269,12 +269,14 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
                 throw SemanticException( ast->location, "Function {} redeclared as variable", ast->name );
             }
             // Previous declaration
+            spdlog::debug( "1" );
             if ( old_dec->current_scope &&
                  ( old_dec->storage == StorageClass::None || old_dec->storage == StorageClass::Static ) ) {
                 throw SemanticException( ast->location, "Conflicting local definitions: {}", ast->name );
             }
 
-            // Conflicts with paramater
+            spdlog::debug( "2" );
+            // Conflicts with parameter
             if ( old_dec->current_scope && old_dec->storage == StorageClass::Parameter ) {
                 throw SemanticException( ast->location, "Conflicting local parameter: {}", ast->name );
             }

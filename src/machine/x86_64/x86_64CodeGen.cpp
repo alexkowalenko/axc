@@ -148,8 +148,11 @@ void X86_64CodeGen::visit_Program( const x86_at::Program ast ) {
 void X86_64CodeGen::visit_FunctionDef( const x86_at::FunctionDef ast ) {
     std::string name = function_label( ast->name );
     current_function_name = ast->name;
+    add_line( "\t.text" );
 
-    add_line( ".global", name, ast->location.line );
+    if ( ast->global ) {
+        add_line( ".global", name, ast->location.line );
+    }
     add_line( std::format( "{}:", name ) );
 
     add_line( "pushq", "%rbp" );

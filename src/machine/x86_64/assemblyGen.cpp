@@ -46,6 +46,7 @@ x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
     spdlog::debug( "functionDef: {}", atac->name );
     auto function = mk_node<x86_at::FunctionDef_>( atac );
     function->name = atac->name;
+    function->global = atac->global;
 
     int count = 0;
     int stack_count = 16;
@@ -79,10 +80,17 @@ x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
                                  [ &function ]( tac::Label r ) -> void { label( r, function->instructions ); },
                                  [ &function, this ]( tac::FunCall atac ) -> void {
                                      functionCall( atac, function->instructions );
+                                 },
+                                 [ &function, this ]( tac::StaticVariable atac ) -> void {
+                                     staticVariable( atac, function->instructions );
                                  } },
                     instr );
     }
     return function;
+};
+
+void AssemblyGen::staticVariable( tac::StaticVariable atac, std::vector<x86_at::Instruction>& instructions ) {
+
 };
 
 void AssemblyGen::ret( const tac::Return atac, std::vector<x86_at::Instruction>& instructions ) const {

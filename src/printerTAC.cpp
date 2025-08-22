@@ -25,7 +25,7 @@ std::string PrinterTAC::visit_Program( const tac::Program ast ) {
 }
 
 std::string PrinterTAC::visit_FunctionDef( const tac::FunctionDef ast ) {
-    std::string buf = std::format( "Function: {}\n", ast->name );
+    std::string buf = std::format( "Function: {} ({})\n", ast->name, ast->global ? "global" : "static" );
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
         buf += std::visit( overloaded {
@@ -38,7 +38,7 @@ std::string PrinterTAC::visit_FunctionDef( const tac::FunctionDef ast ) {
                                [ this ]( tac::JumpIfNotZero r ) -> std::string { return indent + r->accept( this ); },
                                [ this ]( tac::Label r ) -> std::string { return r->accept( this ); },
                                [ this ]( tac::FunCall r ) -> std::string { return indent + r->accept( this ); },
-
+                               [ this ]( tac::StaticVariable r ) -> std::string { return indent + r->accept( this ); },
                            },
                            instr );
         buf += "\n";
@@ -171,6 +171,10 @@ std::string PrinterTAC::visit_FunCall( const tac::FunCall ast ) {
     buf += ")";
     return buf;
 };
+
+std::string PrinterTAC::visit_StaticVariable( tac::StaticVariable ast ) {
+    return std::format( "StaticVariable: {:s}({} {})", ast->name, ast->global ? "global" : "", ast->init );
+}
 
 std::string PrinterTAC::visit_Constant( const tac::Constant ast ) {
     return std::format( "Constant({:d})", ast->value );

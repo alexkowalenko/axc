@@ -76,7 +76,11 @@ using Label = std::shared_ptr<Label_>;
 class FunCall_;
 using FunCall = std::shared_ptr<FunCall_>;
 
-using Instruction = std::variant<Return, Unary, Binary, Copy, Jump, JumpIfZero, JumpIfNotZero, Label, FunCall>;
+class StaticVariable_;
+using StaticVariable = std::shared_ptr<StaticVariable_>;
+
+using Instruction =
+    std::variant<Return, Unary, Binary, Copy, Jump, JumpIfZero, JumpIfNotZero, Label, FunCall, StaticVariable>;
 
 class Constant_;
 using Constant = std::shared_ptr<Constant_>;
