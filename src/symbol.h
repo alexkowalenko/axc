@@ -13,6 +13,7 @@
 #include "common.h"
 
 enum class Type { VOID, INT, FUNCTION };
+enum class Initialiser { None, Tentative, Final };
 
 class Symbol {
   public:
@@ -21,7 +22,7 @@ class Symbol {
     Type         type { Type::INT };
     int          number { 0 };
     bool         current_scope { false };
-    bool         has_init { false };
+    Initialiser  initaliser { Initialiser::None };
     bool         global { false };
 };
 

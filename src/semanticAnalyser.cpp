@@ -57,29 +57,35 @@ void SemanticAnalyser::file_variable_def( ast::VariableDef ast, SymbolTable& tab
         if ( ast->storage == StorageClass::Extern ) {
             // If extern then takes the previous defintion
             ast->storage = old_decl->storage;
+            return;
         } else if ( old_decl->storage != StorageClass::None && ast->storage != StorageClass::None ) {
             if ( old_decl->storage != ast->storage ) {
                 throw SemanticException( ast->location,
                                          "Can't declare the same declaration with and without linkage: {}", ast->name );
             }
+            spdlog::debug( "Set tentative value {}", value );
+            old_decl->number = value;
+            old_decl->initaliser = Initialiser::Final;
+            table.put( ast->name, *old_decl );
+            return;
         } else if ( old_decl->storage == StorageClass::Static && ast->storage == StorageClass::None ) {
             throw SemanticException( ast->location, "Can't declare the same declaration with and without linkage: {}",
                                      ast->name );
-        } else if ( old_decl->has_init && ast->init ) {
+        } else if ( old_decl->initaliser == Initialiser::Final && ast->init ) {
             throw SemanticException(
                 ast->location, "Can't declare the same declaration with and without initialisation: {}", ast->name );
         }
-    } else {
-        spdlog::debug( "Declaring file variable: {}", ast->name );
-        auto global = ast->storage != StorageClass::Static;
-        table.put( ast->name, Symbol { .name = ast->name,
-                                       .storage = ast->storage,
-                                       .type = Type::INT,
-                                       .number = value,
-                                       .current_scope = true,
-                                       .has_init = ast->init.has_value(),
-                                       .global = global } );
+        spdlog::debug( "What to do with variable: {}", ast->name );
     }
+    spdlog::debug( "Declaring file variable: {}", ast->name );
+    auto global = ast->storage != StorageClass::Static;
+    table.put( ast->name, Symbol { .name = ast->name,
+                                   .storage = ast->storage,
+                                   .type = Type::INT,
+                                   .number = value,
+                                   .current_scope = true,
+                                   .initaliser = ast->init.has_value() ? Initialiser::Final : Initialiser::Tentative,
+                                   .global = global } );
 }
 
 void SemanticAnalyser::function_def( ast::FunctionDef ast, SymbolTable& table ) {
@@ -126,7 +132,7 @@ void SemanticAnalyser::function_def( ast::FunctionDef ast, SymbolTable& table ) 
         }
 
         spdlog::debug( "4" );
-        if ( ast->block && old_dec->has_init ) {
+        if ( ast->block && old_dec->initaliser == Initialiser::Final ) {
             // Function defined more than once
             throw SemanticException( ast->location, "Function {} already defined", ast->name );
         }

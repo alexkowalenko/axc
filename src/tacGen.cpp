@@ -30,9 +30,10 @@ tac::Program TacGen::generate( ast::Program ast ) {
                     d );
     }
 
+    symbol_table.dump();
     for ( auto const& [ name, symbol ] : symbol_table ) {
         if ( symbol.type != Type::FUNCTION && symbol.storage != StorageClass::Extern ) {
-            spdlog::debug( "tac::generate: {} is defined", name, symbol.number );
+            spdlog::debug( "tac::generate: {} is defined as {}", name, symbol.number );
             auto static_var =
                 mk_node<tac::StaticVariable_>( ast, name, symbol.storage == StorageClass::None, symbol.number );
             program->top_level.emplace_back( static_var );
