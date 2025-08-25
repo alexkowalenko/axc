@@ -45,6 +45,7 @@ class FixInstructX86 : public x86_at::Visitor<void> {
     void visit_Register( x86_at::Register ast ) override {};
     void visit_Pseudo( x86_at::Pseudo ast ) override {};
     void visit_Stack( x86_at::Stack ast ) override {};
+    void visit_Data( x86_at::Data ast ) override {};
 
   private:
     static constexpr int             stack_increment { 4 };

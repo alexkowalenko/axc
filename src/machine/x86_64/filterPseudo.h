@@ -12,12 +12,13 @@
 
 #include <map>
 
+#include "symbolTable.h"
 #include "x86_at/base.h"
 #include "x86_at/visitor.h"
 
 class FilterPseudoX86 : public x86_at::Visitor<void> {
   public:
-    FilterPseudoX86() = default;
+    FilterPseudoX86( SymbolTable& symbol_table );
     ~FilterPseudoX86() override = default;
 
     void filter( x86_at::Program program );
@@ -46,6 +47,7 @@ class FilterPseudoX86 : public x86_at::Visitor<void> {
     void visit_Register( x86_at::Register ast ) override {};
     void visit_Stack( x86_at::Stack ast ) override {};
     void visit_Pseudo( x86_at::Pseudo ast ) override {};
+    void visit_Data( x86_at::Data ast ) override {};
 
   private:
     x86_at::Operand operand( const x86_at::Operand& op );
@@ -54,4 +56,5 @@ class FilterPseudoX86 : public x86_at::Visitor<void> {
     std::map<std::string, int> stack_location_map;
     int                        next_stack_location { 0 };
     static constexpr int       stack_increment { -4 };
+    SymbolTable&               symbol_table;
 };

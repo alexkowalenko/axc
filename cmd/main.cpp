@@ -213,7 +213,7 @@ int main( int argc, char** argv ) {
         }
 
         // Run Code Gen
-        auto codeGenerator = make_CodeGen( options );
+        auto codeGenerator = make_CodeGen( options, symbol_table );
         if ( !codeGenerator ) {
             throw CodeException( Location {}, "Cannot create code generator for machine: {}",
                                  to_string( options.machine ) );

@@ -16,7 +16,7 @@
 
 class Arm64CodeGen : public CodeGenerator, public arm64_at::Visitor<void> {
   public:
-    explicit Arm64CodeGen( Option const& option );
+    Arm64CodeGen( Option const& option, SymbolTable& symbol_table );
     ~Arm64CodeGen() override = default;
 
     void generate( CodeGenBase program ) override;

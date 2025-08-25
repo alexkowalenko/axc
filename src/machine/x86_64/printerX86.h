@@ -45,6 +45,7 @@ class PrinterX86 : public x86_at::Visitor<std::string> {
     std::string visit_Ret( x86_at::Ret ast ) override;
     std::string visit_Pseudo( x86_at::Pseudo ast ) override;
     std::string visit_Stack( x86_at::Stack ast ) override;
+    std::string visit_Data( x86_at::Data ast ) override;
 
     std::string indent { "  " };
 

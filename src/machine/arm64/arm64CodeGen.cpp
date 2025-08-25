@@ -22,7 +22,7 @@
 #include "fixInstructARM.h"
 #include "printerARM64.h"
 
-Arm64CodeGen::Arm64CodeGen( Option const& option ) : CodeGenerator( option ) {
+Arm64CodeGen::Arm64CodeGen( Option const& option, SymbolTable& symbol_table ) : CodeGenerator( option, symbol_table ) {
     comment_prefix = "// ";
     x12 = std::make_shared<arm64_at::Register_>( Location(), arm64_at::RegisterName::X12 );
 }

@@ -83,7 +83,8 @@ std::optional<tac::StaticVariable> TacGen::staticVariable( ast::VariableDef ast 
 
 void TacGen::declaration( ast::VariableDef ast, std::vector<tac::Instruction>& instructions ) {
     spdlog::debug( "tac::declaration: {} {}", ast->name, ast->init ? "init" : "" );
-    if ( ast->init ) {
+    if ( ast->init && !symbol_table.contains( ast->name ) ) {
+        // Can't initialise a static variable
         auto result = expr( *ast->init, instructions );
         auto copy = mk_node<tac::Copy_>( ast, result, mk_node<tac::Variable_>( ast, ast->name ) );
         instructions.emplace_back( copy );
@@ -112,7 +113,7 @@ void TacGen::statement( const ast::Statement ast, std::vector<tac::Instruction>&
                          [ this, &instructions ]( ast::Case c ) -> void { case_stat( c, instructions ); },
                          [ this, &instructions ]( ast::Compound c ) -> void { compound( c, instructions ); },
                          [ this, &instructions ]( ast::Expr e ) -> void { expr( e, instructions ); },
-                         [ this ]( ast::Null ) -> void { ; } },
+                         [ this ]( ast::Null ) -> void {} },
             ast->statement.value() );
     }
 }

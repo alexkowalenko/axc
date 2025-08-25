@@ -15,6 +15,8 @@
 #include "common.h"
 #include "x86_at/includes.h"
 
+FilterPseudoX86::FilterPseudoX86( SymbolTable& symbol_table ) : symbol_table( symbol_table ) {}
+
 void FilterPseudoX86::filter( x86_at::Program program ) {
     program->accept( this );
 }
@@ -83,17 +85,20 @@ void FilterPseudoX86::visit_Push( const x86_at::Push ast ) {
 }
 
 x86_at::Operand FilterPseudoX86::operand( const x86_at::Operand& op ) {
-    if ( std::holds_alternative<x86_at::Pseudo>( op ) ) {
-        auto p = std::get<x86_at::Pseudo>( op );
-        int  location = 0;
-        if ( stack_location_map.contains( p->name ) ) {
-            location = stack_location_map[ p->name ];
+    if ( auto p = std::get_if<x86_at::Pseudo>( &op ); p ) {
+        auto name = ( *p )->name;
+        if ( symbol_table.find( name ) ) {
+            return mk_node<x86_at::Data_>( *p, name );
+        }
+        int location = 0;
+        if ( stack_location_map.contains( name ) ) {
+            location = stack_location_map[ name ];
         } else {
             next_stack_location += stack_increment;
             location = next_stack_location;
-            stack_location_map[ p->name ] = location;
+            stack_location_map[ name ] = location;
         }
-        return mk_node<x86_at::Stack_>( p, location );
+        return mk_node<x86_at::Stack_>( *p, location );
     } else {
         return op;
     }

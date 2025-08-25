@@ -68,12 +68,11 @@ std::string PrinterX86::visit_StaticVariable( x86_at::StaticVariable ast ) {
 }
 
 std::string PrinterX86::operand( const x86_at::Operand& op ) {
-    return std::visit( overloaded {
-                           [ this ]( x86_at::Imm v ) -> std::string { return v->accept( this ); },
-                           [ this ]( x86_at::Register r ) -> std::string { return r->accept( this ); },
-                           [ this ]( x86_at::Pseudo p ) -> std::string { return p->accept( this ); },
-                           [ this ]( x86_at::Stack s ) -> std::string { return s->accept( this ); },
-                       },
+    return std::visit( overloaded { [ this ]( x86_at::Imm v ) -> std::string { return v->accept( this ); },
+                                    [ this ]( x86_at::Register r ) -> std::string { return r->accept( this ); },
+                                    [ this ]( x86_at::Pseudo p ) -> std::string { return p->accept( this ); },
+                                    [ this ]( x86_at::Stack s ) -> std::string { return s->accept( this ); },
+                                    [ this ]( x86_at::Data d ) -> std::string { return d->accept( this ); } },
                        op );
 }
 
@@ -189,6 +188,10 @@ std::string PrinterX86::visit_Pseudo( const x86_at::Pseudo ast ) {
 
 std::string PrinterX86::visit_Stack( const x86_at::Stack ast ) {
     return std::format( "Stack({})", ast->offset );
+}
+
+std::string PrinterX86::visit_Data( const x86_at::Data ast ) {
+    return std::format( "Data({})", ast->name );
 }
 
 std::string PrinterX86::visit_Ret( const x86_at::Ret ast ) {

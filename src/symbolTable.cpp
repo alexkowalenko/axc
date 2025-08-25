@@ -29,6 +29,10 @@ std::optional<Symbol> SymbolTable::find( const std::string& name ) const {
     return std::nullopt;
 }
 
+bool SymbolTable::contains( const std::string& name ) const {
+    return table.contains( name );
+}
+
 void SymbolTable::copy( SymbolTable& other ) {
     table.insert( other.table.begin(), other.table.end() );
 }

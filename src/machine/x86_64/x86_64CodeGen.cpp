@@ -69,7 +69,8 @@ std::string assemble_reg( x86_at::Register r ) {
     }
 }
 
-X86_64CodeGen::X86_64CodeGen( Option const& option ) : CodeGenerator( option ) {
+X86_64CodeGen::X86_64CodeGen( Option const& option, SymbolTable& symbol_table )
+    : CodeGenerator( option, symbol_table ) {
     if ( option.system == System::Linux || option.system == System::FreeBSD ) {
         local_prefix = ".L";
     } else if ( option.system == System::MacOS ) {
@@ -88,7 +89,7 @@ CodeGenBase X86_64CodeGen::run_codegen( tac::Program tac ) {
     std::println( "{:s}", output );
 
     spdlog::info( "Filtered 1: Filter Pseudo" );
-    FilterPseudoX86 filter;
+    FilterPseudoX86 filter( symbol_table );
     filter.filter( assembly );
     output = assemblerPrinter.print( assembly );
     std::println( "Filtered 1:" );
@@ -216,6 +217,10 @@ std::string X86_64CodeGen::operand( const x86_at::Operand& op ) {
                                     [ this ]( x86_at::Stack s ) -> std::string {
                                         s->accept( this );
                                         return last_string;
+                                    },
+                                    [ this ]( x86_at::Data d ) -> std::string {
+                                        d->accept( this );
+                                        return last_string;
                                     } },
                        op );
 }
@@ -342,6 +347,10 @@ void X86_64CodeGen::visit_Pseudo( const x86_at::Pseudo ast ) {
 
 void X86_64CodeGen::visit_Stack( const x86_at::Stack ast ) {
     last_string = std::format( "{}(%rbp)", ast->offset );
+}
+
+void X86_64CodeGen::visit_Data( const x86_at::Data ast ) {
+    last_string = std::format( "{}(%rip)", native_label( ast->name ) );
 }
 
 std::string X86_64CodeGen::native_label( const std::string_view name ) const {

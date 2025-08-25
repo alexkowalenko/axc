@@ -162,5 +162,8 @@ using Pseudo = std::shared_ptr<Pseudo_>;
 class Stack_;
 using Stack = std::shared_ptr<Stack_>;
 
-using Operand = std::variant<Imm, Register, Pseudo, Stack>;
+class Data_;
+using Data = std::shared_ptr<Data_>;
+
+using Operand = std::variant<Imm, Register, Pseudo, Stack, Data>;
 } // namespace x86_at

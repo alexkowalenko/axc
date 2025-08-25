@@ -16,6 +16,14 @@
 #include "x86_at/includes.h"
 #include "x86_common.h"
 
+namespace {
+
+constexpr bool is_Memory( x86_at::Operand const& operand ) {
+    return std::holds_alternative<x86_at::Stack>( operand ) || std::holds_alternative<x86_at::Data>( operand );
+}
+
+} // namespace
+
 FixInstructX86::FixInstructX86() {
     ax = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::AX, x86_at::RegisterSize::Long );
     cl = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::CX, x86_at::RegisterSize::Byte );
@@ -73,8 +81,8 @@ void FixInstructX86::visit_FunctionDef( const x86_at::FunctionDef ast ) {
 }
 
 void FixInstructX86::visit_Mov( const x86_at::Mov ast ) {
-    // MOV instructions can't have stack locations in both operands
-    if ( std::holds_alternative<x86_at::Stack>( ast->src ) && std::holds_alternative<x86_at::Stack>( ast->dst ) ) {
+    // MOV instructions can't have memory locations in both operands
+    if ( is_Memory( ast->src ) && is_Memory( ast->dst ) ) {
         auto src = ast->src;
         auto dst = ast->dst;
 
@@ -108,8 +116,7 @@ void FixInstructX86::visit_Binary( const x86_at::Binary ast ) {
          ast->op == x86_at::BinaryOpType::AND || ast->op == x86_at::BinaryOpType::OR ||
          ast->op == x86_at::BinaryOpType::XOR ) {
         // These instructions can't have stack locations in both operands
-        if ( std::holds_alternative<x86_at::Stack>( ast->operand1 ) &&
-             std::holds_alternative<x86_at::Stack>( ast->operand2 ) ) {
+        if ( is_Memory( ast->operand1 ) && is_Memory( ast->operand2 ) ) {
 
             auto mov1 = mk_node<x86_at::Mov_>( ast, ast->operand1, r10 );
             current_instructions.emplace_back( mov1 );
@@ -124,8 +131,8 @@ void FixInstructX86::visit_Binary( const x86_at::Binary ast ) {
             current_instructions.emplace_back( ast );
         }
     } else if ( ast->op == x86_at::BinaryOpType::MUL ) {
-        // This instruction can't have a stack location in the second argument
-        if ( std::holds_alternative<x86_at::Stack>( ast->operand2 ) ) {
+        // This instruction can't have a memory location in the second argument
+        if ( is_Memory( ast->operand2 ) ) {
 
             auto mov1 = mk_node<x86_at::Mov_>( ast, ast->operand2, r11 );
             current_instructions.emplace_back( mov1 );
@@ -161,8 +168,7 @@ void FixInstructX86::visit_Binary( const x86_at::Binary ast ) {
 
 void FixInstructX86::visit_Cmp( const x86_at::Cmp ast ) {
     // CMP instructions can't have stack locations in both operands
-    if ( std::holds_alternative<x86_at::Stack>( ast->operand1 ) &&
-         std::holds_alternative<x86_at::Stack>( ast->operand2 ) ) {
+    if ( is_Memory( ast->operand1 ) && is_Memory( ast->operand2 ) ) {
         const auto src = ast->operand1;
         const auto dst = ast->operand2;
 

@@ -13,12 +13,12 @@
 #include "machine/arm64/arm64CodeGen.h"
 #include "machine/x86_64/x86_64CodeGen.h"
 
-std::unique_ptr<CodeGenerator> make_CodeGen( Option const& option ) {
+std::unique_ptr<CodeGenerator> make_CodeGen( Option const& option, SymbolTable& symbol_table ) {
     switch ( option.machine ) {
     case Machine::X86_64 :
-        return std::make_unique<X86_64CodeGen>( option );
+        return std::make_unique<X86_64CodeGen>( option, symbol_table );
     case Machine::AArch64 :
-        return std::make_unique<Arm64CodeGen>( option );
+        return std::make_unique<Arm64CodeGen>( option, symbol_table );
     default :
         throw CodeException( "Unsupported machine" );
     }

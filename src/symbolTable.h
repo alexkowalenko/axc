@@ -23,6 +23,7 @@ class SymbolTable {
 
     void put( std::string const& name, const Symbol& value ) { table.insert_or_assign( name, value ); };
     [[nodiscard]] std::optional<Symbol> find( const std::string& name ) const;
+    bool                                contains( const std::string& name ) const;
     void                                copy( SymbolTable& other );
     void                                reset_current_block();
     void                                dump();

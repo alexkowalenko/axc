@@ -11,6 +11,7 @@
 #pragma once
 
 #include "option.h"
+#include "symbolTable.h"
 #include "tac/program.h"
 
 #include <filesystem>
@@ -29,7 +30,8 @@ using CodeGenBase = std::shared_ptr<CodeGenBase_>;
 
 class CodeGenerator {
   public:
-    CodeGenerator( Option const& option ) : option( option ) {};
+    CodeGenerator( Option const& option, SymbolTable& symbol_table )
+        : option( option ), symbol_table( symbol_table ) {};
     virtual ~CodeGenerator() = default;
 
     virtual CodeGenBase run_codegen( tac::Program tac ) = 0;
@@ -50,6 +52,7 @@ class CodeGenerator {
                    std::string const& operand3, int line_number = 0 );
 
     Option const&         option;
+    SymbolTable&          symbol_table;
     std::filesystem::path output;
     std::fstream          file;
     std::stringstream     text;
@@ -57,4 +60,4 @@ class CodeGenerator {
     std::string comment_prefix = "# ";
 };
 
-std::unique_ptr<CodeGenerator> make_CodeGen( Option const& option );
+std::unique_ptr<CodeGenerator> make_CodeGen( Option const& option, SymbolTable& symbol_table );

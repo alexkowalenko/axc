@@ -16,7 +16,7 @@
 
 class X86_64CodeGen : public CodeGenerator, public x86_at::Visitor<void> {
   public:
-    X86_64CodeGen( Option const& option );
+    X86_64CodeGen( Option const& option, SymbolTable& symbol_table );
     ~X86_64CodeGen() override = default;
 
     void generate( CodeGenBase program ) override;
@@ -47,6 +47,7 @@ class X86_64CodeGen : public CodeGenerator, public x86_at::Visitor<void> {
     void visit_Register( x86_at::Register ast ) override;
     void visit_Pseudo( x86_at::Pseudo ast ) override;
     void visit_Stack( x86_at::Stack ast ) override;
+    void visit_Data( x86_at::Data ast ) override;
 
   private:
     std::string operand( const x86_at::Operand& op );

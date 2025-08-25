@@ -3,6 +3,7 @@ binary.h
 call.h
 cmp.h
 cdq.h
+data.h
 deallocatestack.h
 functiondef.h
 idiv.h

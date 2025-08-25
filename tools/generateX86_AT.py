@@ -35,9 +35,10 @@ if __name__ == "__main__":
             "Ret": [("std::optional<Operand>", "value", True)],
             # Operand types
             "Ret": [],
-            # 4 Operand types for Operand
+            # Operand types for Operand
             "Imm": [("std::int32_t", "value", False)],
             "Register": [("RegisterName", "reg", False), ("RegisterSize", "size", False)],
             "Pseudo": [("std::string", "name", False)],
             "Stack": [("std::int32_t", "offset", False)],
+            "Data": [("std::string", "name", False)],
          })
