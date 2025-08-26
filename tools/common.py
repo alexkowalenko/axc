@@ -9,10 +9,11 @@ import os
 import jinja2
 
 template_file = "class_template.ht"
+sum_type_template_file = "sum_template.ht"
 template_visit_file = "visitor_template.ht"
 includes_file = "includes.h"
 
-def define_ast(output_dir, namespace_name, types):
+def define_ast(output_dir, namespace_name, types, sum_types):
     """Generate AST class definitions using specification and jinja2"""
 
     # type_items = sorted(types.items(), key=lambda i: i[0])
@@ -29,6 +30,16 @@ def define_ast(output_dir, namespace_name, types):
         with open(os.path.join(output_dir, "{}.h".format(file_name)), 'w') as f:
             f.write(template.render(base_name=class_name, members=members, namespace=namespace_name))
 
+    with open(sum_type_template_file) as f:
+        template = jinja2.Template(f.read())
+
+    for sum_type_name, members in sum_types.items():
+        print(sum_type_name)
+        print(members)
+        file_name = sum_type_name.lower()
+        with open(os.path.join(output_dir, "{}.h".format(file_name)), 'w') as f:
+            f.write(template.render(base_name=sum_type_name, members=members, namespace=namespace_name))
+
     # open visitor template
     with open(template_visit_file) as f:
         visitor = jinja2.Template(f.read())
@@ -38,6 +49,10 @@ def define_ast(output_dir, namespace_name, types):
 
     # include file
     with open(os.path.join(output_dir, includes_file), 'w') as f:
+        for class_name, members in sum_types.items():
+            file_name = class_name.lower()
+            f.write(f'#include "{file_name}.h"\n')
         for class_name, members in types.items():
             file_name = class_name.lower()
             f.write(f'#include "{file_name}.h"\n')
+

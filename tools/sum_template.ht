@@ -1,0 +1,23 @@
+//
+// AXC - C compiler
+//
+// Copyright © Alex Kowalenko 2025
+//
+
+#pragma once
+
+#include <memory>
+#include <variant>
+
+#include "base.h"
+
+namespace {{ namespace }} {
+
+{% for field in members %}
+class {{ field }}_;
+using {{ field }} = std::shared_ptr<{{ field }}_>;
+{% endfor %}
+
+using {{ base_name }} = std::variant<{% for field in members %}{{ field }}{% if loop.index == members|length %}{% else %}, {% endif %}{% endfor %}>;
+
+}

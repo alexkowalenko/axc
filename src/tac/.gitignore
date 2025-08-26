@@ -4,6 +4,7 @@ copy.h
 funcall.h
 functiondef.h
 includes.h
+instruction.h
 jump.h
 jumpifnotzero.h
 jumpifzero.h
@@ -11,6 +12,8 @@ label.h
 program.h
 return.h
 staticvariable.h
+toplevel.h
 unary.h
 variable.h
+value.h
 visitor.h

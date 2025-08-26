@@ -9,10 +9,12 @@ functiondef.h
 idiv.h
 imm.h
 includes.h
+instruction.h
 jump.h
 jumpcc.h
 label.h
 mov.h
+operand.h
 program.h
 pseudo.h
 push.h
@@ -21,5 +23,6 @@ ret.h
 setcc.h
 stack.h
 staticvariable.h
+toplevel.h
 unary.h
 visitor.h

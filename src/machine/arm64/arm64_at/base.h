@@ -59,44 +59,4 @@ class Base : public CodeGenBase_ {
     Location location;
 };
 
-class Mov_;
-using Mov = std::shared_ptr<Mov_>;
-
-class Load_;
-using Load = std::shared_ptr<Load_>;
-
-class Store_;
-using Store = std::shared_ptr<Store_>;
-
-class Ret_;
-using Ret = std::shared_ptr<Ret_>;
-
-class Unary_;
-using Unary = std::shared_ptr<Unary_>;
-
-class AllocateStack_;
-using AllocateStack = std::shared_ptr<AllocateStack_>;
-
-class DeallocateStack_;
-using DeallocateStack = std::shared_ptr<DeallocateStack_>;
-
-class Binary_;
-using Binary = std::shared_ptr<Binary_>;
-
-using Instruction = std::variant<Mov, Load, Store, Ret, Unary, Binary, AllocateStack, DeallocateStack>;
-
-class Imm_;
-using Imm = std::shared_ptr<Imm_>;
-
-class Register_;
-using Register = std::shared_ptr<Register_>;
-
-class Pseudo_;
-using Pseudo = std::shared_ptr<Pseudo_>;
-
-class Stack_;
-using Stack = std::shared_ptr<Stack_>;
-
-using Operand = std::variant<Imm, Register, Pseudo, Stack>;
-
 } // namespace arm64_at

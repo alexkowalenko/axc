@@ -4,8 +4,10 @@ deallocatestack.h
 functiondef.h
 imm.h
 includes.h
+instruction.h
 load.h
 mov.h
+operand.h
 program.h
 pseudo.h
 register.h

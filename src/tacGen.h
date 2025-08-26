@@ -13,7 +13,7 @@
 #include "ast/base.h"
 #include "ast/visitor.h"
 #include "symbolTable.h"
-#include "tac/base.h"
+#include "tac/includes.h"
 #include "tac/visitor.h"
 
 class TacGen {

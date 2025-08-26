@@ -99,14 +99,4 @@ using Case = std::shared_ptr<Case_>;
 using StatementItem =
     std::variant<Return, Expr, If, Null, Goto, Break, Continue, While, DoWhile, For, Switch, Case, Compound>;
 
-class Statement_;
-using Statement = std::shared_ptr<Statement_>;
-
-class FunctionDef_;
-using FunctionDef = std::shared_ptr<FunctionDef_>;
-
-using BlockItem = std::variant<Statement, VariableDef, FunctionDef>;
-
-using Declaration = std::variant<VariableDef, FunctionDef>;
-
 } // namespace ast

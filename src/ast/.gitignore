@@ -1,5 +1,6 @@
 assign.h
 binaryop.h
+blockitem.h
 break.h
 call.h
 case.h
@@ -7,6 +8,7 @@ compound.h
 constant.h
 continue.h
 conditional.h
+declaration.h
 dowhile.h
 for.h
 functiondef.h

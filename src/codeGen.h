@@ -12,7 +12,7 @@
 
 #include "option.h"
 #include "symbolTable.h"
-#include "tac/program.h"
+#include "tac/includes.h"
 
 #include <filesystem>
 #include <fstream>

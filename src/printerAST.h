@@ -10,10 +10,9 @@
 
 #pragma once
 
-#include "ast/base.h"
-
 #include <string>
 
+#include "ast/includes.h"
 #include "ast/visitor.h"
 
 class PrinterAST : public ast::Visitor<std::string> {
