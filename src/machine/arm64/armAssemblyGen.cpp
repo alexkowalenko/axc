@@ -98,6 +98,22 @@ void ARMAssemblyGen::binary( const tac::Binary atac, std::vector<arm64_at::Instr
     case tac::BinaryOpType::Modulo :
         binary->op = arm64_at::BinaryOpType::MOD;
         break;
+    case tac::BinaryOpType::BitwiseAnd :
+        binary->op = arm64_at::BinaryOpType::AND;
+        break;
+    case tac::BinaryOpType::BitwiseOr :
+        binary->op = arm64_at::BinaryOpType::OR;
+        break;
+    case tac::BinaryOpType::BitwiseXor :
+        binary->op = arm64_at::BinaryOpType::XOR;
+        break;
+    case tac::BinaryOpType::ShiftLeft :
+        binary->op = arm64_at::BinaryOpType::SHL;
+        break;
+    case tac::BinaryOpType::ShiftRight :
+        binary->op = arm64_at::BinaryOpType::SHR;
+        break;
+    default :;
     }
     binary->dst = value( atac->dst );
     binary->src1 = value( atac->src1 );

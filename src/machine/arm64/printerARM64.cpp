@@ -94,6 +94,22 @@ std::string PrinterARM64::visit_Binary( const arm64_at::Binary ast ) {
         break;
     case arm64_at::BinaryOpType::MOD :
         buf += "mod";
+        break;
+    case arm64_at::BinaryOpType::AND :
+        buf += "and";
+        break;
+    case arm64_at::BinaryOpType::OR :
+        buf += "or";
+        break;
+    case arm64_at::BinaryOpType::XOR :
+        buf += "xor";
+        break;
+    case arm64_at::BinaryOpType::SHL :
+        buf += "shl";
+        break;
+    case arm64_at::BinaryOpType::SHR :
+        buf += "shr";
+        break;
     }
     buf += std::format( ", {}, {}, {})", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
     return buf;

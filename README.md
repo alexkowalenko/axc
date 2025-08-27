@@ -63,7 +63,7 @@ architectures, such as AArch64.
 - [X] Output X86_64.
 - [x] Output AArch64.
 - [X] Extra: Bitwise Operators &,|,ˆ,<<,>>
-- [ ] Extra: AArch64.
+- [x] Extra: AArch64.
 
 ## Chapter 4 Logical and Relational Operators
 - [X] Lexer.
@@ -118,4 +118,4 @@ architectures, such as AArch64.
 - [ ] Semantic Analysis.
 - [ ] TAC Intermediate.
 - [ ] Code Generator.
-- [ ] Output: X86_64.
+- [x] Output: X86_64.

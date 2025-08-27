@@ -179,6 +179,21 @@ void Arm64CodeGen::visit_Binary( const arm64_at::Binary ast ) {
         add_line( "msub", std::format( "{}, {}, {}, {}", operand( ast->dst ), operand( x12 ), operand( ast->src2 ),
                                        operand( ast->src1 ) ) );
         break;
+    case arm64_at::BinaryOpType::AND :
+        add_line( "and", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
+        break;
+    case arm64_at::BinaryOpType::OR :
+        add_line( "orr", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
+        break;
+    case arm64_at::BinaryOpType::XOR :
+        add_line( "eor", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
+        break;
+    case arm64_at::BinaryOpType::SHL :
+        add_line( "lsl", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
+        break;
+    case arm64_at::BinaryOpType::SHR :
+        add_line( "lsr", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
+        break;
     }
 }
 

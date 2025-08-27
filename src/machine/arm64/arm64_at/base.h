@@ -17,13 +17,7 @@ namespace arm64_at {
 
 enum class UnaryOpType { NEG, NOT };
 
-enum class BinaryOpType {
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    MOD,
-};
+enum class BinaryOpType { ADD, SUB, MUL, DIV, MOD, AND, OR, XOR, SHL, SHR };
 
 enum class RegisterName {
     X0 = 0,
