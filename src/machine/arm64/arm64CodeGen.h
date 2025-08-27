@@ -34,6 +34,11 @@ class Arm64CodeGen : public CodeGenerator, public arm64_at::Visitor<void> {
     void visit_Binary( arm64_at::Binary ast ) override;
     void visit_AllocateStack( arm64_at::AllocateStack ast ) override;
     void visit_DeallocateStack( arm64_at::DeallocateStack ast ) override;
+    void visit_Branch( arm64_at::Branch ast ) override;
+    void visit_BranchCC( arm64_at::BranchCC ast ) override;
+    void visit_Label( arm64_at::Label ast ) override;
+    void visit_Cmp( arm64_at::Cmp ast ) override;
+    void visit_Cset( arm64_at::Cset ast ) override;
 
     void visit_Imm( arm64_at::Imm ast ) override;
     void visit_Register( arm64_at::Register ast ) override;

@@ -44,7 +44,12 @@ void FixInstructARM::visit_FunctionDef( arm64_at::FunctionDef ast ) {
                                  [ this ]( arm64_at::Unary u ) -> void { return u->accept( this ); },
                                  [ this ]( arm64_at::Binary b ) -> void { return b->accept( this ); },
                                  [ this ]( arm64_at::AllocateStack a ) -> void { return a->accept( this ); },
-                                 [ this ]( arm64_at::DeallocateStack d ) -> void { return d->accept( this ); } },
+                                 [ this ]( arm64_at::DeallocateStack d ) -> void { return d->accept( this ); },
+                                 [ this ]( arm64_at::Branch b ) -> void { current_instructions.emplace_back( b ); },
+                                 [ this ]( arm64_at::BranchCC b ) -> void { current_instructions.emplace_back( b ); },
+                                 [ this ]( arm64_at::Label l ) -> void { current_instructions.emplace_back( l ); },
+                                 [ this ]( arm64_at::Cmp c ) -> void { return c->accept( this ); },
+                                 [ this ]( arm64_at::Cset c ) -> void { return c->accept( this ); } },
                     instr );
     }
     ast->instructions = current_instructions;
@@ -53,6 +58,12 @@ void FixInstructARM::visit_FunctionDef( arm64_at::FunctionDef ast ) {
 void FixInstructARM::visit_Mov( arm64_at::Mov ast ) {
     if ( std::holds_alternative<arm64_at::Stack>( ast->src ) ) {
         current_instructions.emplace_back( mk_node<arm64_at::Load_>( ast, ast->src, ast->dst ) );
+        return;
+    }
+    if ( std::holds_alternative<arm64_at::Stack>( ast->dst ) ) {
+        auto mov = mk_node<arm64_at::Mov_>( ast, ast->src, x9 );
+        current_instructions.emplace_back( mov );
+        current_instructions.emplace_back( mk_node<arm64_at::Store_>( ast, x9, ast->dst ) );
         return;
     }
     current_instructions.emplace_back( ast );
@@ -107,12 +118,13 @@ void FixInstructARM::visit_Binary( arm64_at::Binary ast ) {
     arm64_at::Operand src1 = fix_operand( ast, ast->src1, x9 );
     arm64_at::Operand src2;
     if ( ast->op == arm64_at::BinaryOpType::ADD || ast->op == arm64_at::BinaryOpType::SUB ) {
-        // Only move second operand to register if it's a stack, and use add/sub which supports immediate < 4096 in src2
+        // Only move second operand to register if it's a stack, and use add/sub which supports immediate < 4096 in
+        // src2
         if ( std::holds_alternative<arm64_at::Stack>( ast->src2 ) ) {
             // If stack load into register
             current_instructions.emplace_back( mk_node<arm64_at::Load_>( ast, ast->src2, x10 ) );
             src2 = x10;
-        } else if ( auto imm = std::get<arm64_at::Imm>( ast->src2 ); std::abs( imm->value ) > 4095 ) {
+        } else if ( std::holds_alternative<arm64_at::Imm>( ast->src2 ) ) {
             // If immediate value, move into register
             current_instructions.emplace_back( mk_node<arm64_at::Mov_>( ast, ast->src2, x10 ) );
             src2 = x10;
@@ -149,7 +161,32 @@ void FixInstructARM::visit_Ret( arm64_at::Ret ast ) {
     current_instructions.emplace_back( ast );
 }
 
-void FixInstructARM::visit_Imm( arm64_at::Imm ast ) {}
-void FixInstructARM::visit_Register( arm64_at::Register ast ) {}
-void FixInstructARM::visit_Pseudo( arm64_at::Pseudo ast ) {}
-void FixInstructARM::visit_Stack( arm64_at::Stack ast ) {}
+void FixInstructARM::visit_Cmp( arm64_at::Cmp ast ) {
+    if ( std::holds_alternative<arm64_at::Stack>( ast->operand1 ) ) {
+        current_instructions.emplace_back( mk_node<arm64_at::Load_>( ast, ast->operand1, x9 ) );
+        ast->operand1 = x9;
+    }
+    if ( std::holds_alternative<arm64_at::Stack>( ast->operand2 ) ) {
+        current_instructions.emplace_back( mk_node<arm64_at::Load_>( ast, ast->operand2, x10 ) );
+        ast->operand2 = x10;
+    } else if ( std::holds_alternative<arm64_at::Imm>( ast->operand2 ) ) {
+        // If immediate value, move into register
+        current_instructions.emplace_back( mk_node<arm64_at::Mov_>( ast, ast->operand2, x10 ) );
+        ast->operand2 = x10;
+    }
+    current_instructions.emplace_back( ast );
+}
+
+void FixInstructARM::visit_Cset( arm64_at::Cset ast ) {
+    bool              put_back = false;
+    arm64_at::Operand former = ast->operand;
+    if ( std::holds_alternative<arm64_at::Stack>( ast->operand ) ) {
+        current_instructions.emplace_back( mk_node<arm64_at::Load_>( ast, ast->operand, x9 ) );
+        ast->operand = x9;
+        put_back = true;
+    }
+    current_instructions.emplace_back( ast );
+    if ( put_back ) {
+        current_instructions.emplace_back( mk_node<arm64_at::Store_>( ast, x9, former ) );
+    }
+}

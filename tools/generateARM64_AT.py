@@ -31,6 +31,11 @@ if __name__ == "__main__":
             "Binary": [("BinaryOpType", "op"), ("Operand", "dst"), ("Operand", "src1"), ("Operand", "src2")],
             "AllocateStack": [("std::int32_t", "size")],
             "DeallocateStack": [("std::int32_t", "size")],
+            "Branch": [("std::string", "target")],
+            "BranchCC": [("CondCode", "condition"), ("std::string", "target")],
+            "Label": [("std::string", "name")],
+            "Cmp": [("Operand", "operand1"), ("Operand", "operand2")],
+            "Cset": [("Operand", "operand"), ("CondCode", "cond")],
             "Ret": [],
             # Operand types for Operand
             "Imm": [("std::int32_t", "value")],
@@ -39,6 +44,6 @@ if __name__ == "__main__":
             "Stack": [("std::int32_t", "offset")],
         },
         {
-           "Instruction": ["Mov", "Load", "Store", "Ret", "Unary", "Binary", "AllocateStack", "DeallocateStack"],
+           "Instruction": ["Mov", "Load", "Store", "Ret", "Unary", "Binary", "AllocateStack", "DeallocateStack", "Branch", "BranchCC", "Label", "Cmp", "Cset"],
            "Operand":  ["Imm", "Register", "Pseudo", "Stack"],
         })

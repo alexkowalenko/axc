@@ -30,8 +30,8 @@ analysis pass. This is annoying.
 
 ## Status
 
-Finished up to Chapter 8. Code generated for X86_64. Tested on MacOS and FreeBSD. Would like to support other
-architectures, such as AArch64.
+Finished up to Chapter 10, code generated for X86_64; Chapter 4 for code generated for AArch64. 
+Tested on MacOS and FreeBSD.
 
 ## Chapter 1 Minimal Compiler
 - [X] Infrastructure.
@@ -71,7 +71,7 @@ architectures, such as AArch64.
 - [X] TAC intermediate.
 - [X] Code Generator.
 - [X] Output: X86_64
-- [ ] Output: Aarch64
+- [x] Output: AArch64
 
 ## Chapter 5 Local Variables
 - [x] Lexer.
@@ -111,6 +111,7 @@ architectures, such as AArch64.
 - [x] TAC Intermediate.
 - [x] Code Generator.
 - [x] Output: X86_64.
+- [ ] Output: AArch64.
 
 ## Chapter 10 File Scope Variables and Storage Classes
 - [x] Lexer.
@@ -119,3 +120,8 @@ architectures, such as AArch64.
 - [ ] TAC Intermediate.
 - [ ] Code Generator.
 - [x] Output: X86_64.
+- [ ] Output: AArch64.
+
+## Chapter 11 Long Integers
+
+## Chapter 19 Optimizing TAC Instructions

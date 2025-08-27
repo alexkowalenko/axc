@@ -1,10 +1,15 @@
 allocatestack.h
 binary.h
+branch.h
+branchcc.h
+cmp.h
+cset.h
 deallocatestack.h
 functiondef.h
 imm.h
 includes.h
 instruction.h
+label.h
 load.h
 mov.h
 operand.h

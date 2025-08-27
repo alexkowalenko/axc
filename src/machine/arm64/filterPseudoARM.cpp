@@ -33,7 +33,11 @@ void FilterPseudoARM::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
                                  [ this ]( arm64_at::Binary b ) -> void { b->accept( this ); },
                                  [ this ]( arm64_at::Ret r ) -> void { r->accept( this ); },
                                  [ this ]( arm64_at::AllocateStack a ) -> void { a->accept( this ); },
-                                 [ this ]( arm64_at::DeallocateStack d ) -> void { d->accept( this ); } },
+                                 [ this ]( arm64_at::DeallocateStack d ) -> void { d->accept( this ); },
+                                 [ this ]( arm64_at::Branch ) -> void {}, [ this ]( arm64_at::BranchCC ) -> void {},
+                                 [ this ]( arm64_at::Label ) -> void {},
+                                 [ this ]( arm64_at::Cmp c ) -> void { c->accept( this ); },
+                                 [ this ]( arm64_at::Cset c ) -> void { c->accept( this ); } },
                     instr );
     }
     ast->stack_size = get_number_stack_locations();
@@ -64,6 +68,15 @@ void FilterPseudoARM::visit_Binary( arm64_at::Binary ast ) {
     ast->src1 = operand( ast->src1 );
     ast->src2 = operand( ast->src2 );
     ast->dst = operand( ast->dst );
+}
+
+void FilterPseudoARM::visit_Cmp( arm64_at::Cmp ast ) {
+    ast->operand1 = operand( ast->operand1 );
+    ast->operand2 = operand( ast->operand2 );
+}
+
+void FilterPseudoARM::visit_Cset( arm64_at::Cset ast ) {
+    ast->operand = operand( ast->operand );
 }
 
 arm64_at::Operand FilterPseudoARM::operand( const arm64_at::Operand& op ) {

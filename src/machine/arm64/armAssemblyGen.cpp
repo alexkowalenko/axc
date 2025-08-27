@@ -36,19 +36,20 @@ arm64_at::FunctionDef ARMAssemblyGen::function( tac::FunctionDef atac ) {
     auto funct = mk_node<arm64_at::FunctionDef_>( atac );
     funct->name = atac->name;
     for ( auto instr : atac->instructions ) {
-        std::visit( overloaded {
-                        [ &funct, this ]( tac::Return r ) -> void { ret( r, funct->instructions ); },
-                        [ &funct, this ]( tac::Unary u ) -> void { unary( u, funct->instructions ); },
-                        [ &funct, this ]( tac::Binary b ) -> void { binary( b, funct->instructions ); },
-                        []( tac::Copy ) -> void {},
-                        []( tac::Jump ) -> void {},
-                        []( tac::JumpIfZero ) -> void {},
-                        []( tac::JumpIfNotZero ) -> void {},
-                        []( tac::Label ) -> void {},
-                        []( tac::FunCall ) -> void {},
-                        []( tac::StaticVariable ) -> void {},
-                    },
-                    instr );
+        std::visit(
+            overloaded {
+                [ &funct, this ]( tac::Return r ) -> void { ret( r, funct->instructions ); },
+                [ &funct, this ]( tac::Unary u ) -> void { unary( u, funct->instructions ); },
+                [ &funct, this ]( tac::Binary b ) -> void { binary( b, funct->instructions ); },
+                [ &funct, this ]( tac::Copy c ) -> void { copy( c, funct->instructions ); },
+                [ &funct, this ]( tac::Jump j ) -> void { branch( j, funct->instructions ); },
+                [ &funct, this ]( tac::JumpIfZero j ) -> void { branchIfZero( j, true, funct->instructions ); },
+                [ &funct, this ]( tac::JumpIfNotZero j ) -> void { branchIfZero( j, false, funct->instructions ); },
+                [ &funct, this ]( tac::Label l ) -> void { label( l, funct->instructions ); },
+                []( tac::FunCall ) -> void {},
+                []( tac::StaticVariable ) -> void {},
+            },
+            instr );
     }
     return funct;
 }
@@ -67,10 +68,13 @@ void ARMAssemblyGen::unary( const tac::Unary atac, std::vector<arm64_at::Instruc
     auto unary = mk_node<arm64_at::Unary_>( atac );
     switch ( atac->op ) {
     case tac::UnaryOpType::Complement :
-        unary->op = arm64_at::UnaryOpType::NOT;
+        unary->op = arm64_at::UnaryOpType::BITWISE_NOT;
         break;
     case tac::UnaryOpType::Negate :
         unary->op = arm64_at::UnaryOpType::NEG;
+        break;
+    case tac::UnaryOpType::Not :
+        unary->op = arm64_at::UnaryOpType::LOGICAL_NOT;
         break;
     default :
         break;
@@ -81,6 +85,15 @@ void ARMAssemblyGen::unary( const tac::Unary atac, std::vector<arm64_at::Instruc
 }
 
 void ARMAssemblyGen::binary( const tac::Binary atac, std::vector<arm64_at::Instruction>& instructions ) {
+
+    // Handle relational operations differently
+    if ( atac->op == tac::BinaryOpType::Equal || atac->op == tac::BinaryOpType::NotEqual ||
+         atac->op == tac::BinaryOpType::Less || atac->op == tac::BinaryOpType::LessEqual ||
+         atac->op == tac::BinaryOpType::Greater || atac->op == tac::BinaryOpType::GreaterEqual ) {
+        binary_compare( atac, instructions );
+        return;
+    }
+
     auto binary = mk_node<arm64_at::Binary_>( atac );
     switch ( atac->op ) {
     case tac::BinaryOpType::Add :
@@ -119,6 +132,35 @@ void ARMAssemblyGen::binary( const tac::Binary atac, std::vector<arm64_at::Instr
     binary->src1 = value( atac->src1 );
     binary->src2 = value( atac->src2 );
     instructions.emplace_back( binary );
+}
+
+const std::map<tac::BinaryOpType, arm64_at::CondCode> condCodeMap = {
+    { tac::BinaryOpType::Equal, arm64_at::CondCode::EQ },   { tac::BinaryOpType::NotEqual, arm64_at::CondCode::NE },
+    { tac::BinaryOpType::Less, arm64_at::CondCode::LT },    { tac::BinaryOpType::LessEqual, arm64_at::CondCode::LE },
+    { tac::BinaryOpType::Greater, arm64_at::CondCode::GT }, { tac::BinaryOpType::GreaterEqual, arm64_at::CondCode::GE },
+};
+
+void ARMAssemblyGen::binary_compare( tac::Binary atac, std::vector<arm64_at::Instruction>& instructions ) {
+    auto sub = mk_node<arm64_at::Binary_>( atac, arm64_at::BinaryOpType::SUB, value( atac->dst ), value( atac->src1 ),
+                                           value( atac->src2 ) );
+    instructions.emplace_back( sub );
+    auto cmp = mk_node<arm64_at::Cset_>( atac, value( atac->dst ), condCodeMap.at( atac->op ) );
+    instructions.emplace_back( cmp );
+}
+
+void ARMAssemblyGen::copy( const tac::Copy atac, std::vector<arm64_at::Instruction>& instructions ) {
+    auto mov = mk_node<arm64_at::Mov_>( atac, value( atac->src ), value( atac->dst ) );
+    instructions.emplace_back( mov );
+}
+
+void ARMAssemblyGen::branch( tac::Jump atac, std::vector<arm64_at::Instruction>& instructions ) {
+    auto branch = mk_node<arm64_at::Branch_>( atac, atac->target );
+    instructions.emplace_back( branch );
+}
+
+void ARMAssemblyGen::label( tac::Label atac, std::vector<arm64_at::Instruction>& instructions ) {
+    auto label = mk_node<arm64_at::Label_>( atac, atac->name );
+    instructions.emplace_back( label );
 }
 
 arm64_at::Operand ARMAssemblyGen::value( const tac::Value atac ) {

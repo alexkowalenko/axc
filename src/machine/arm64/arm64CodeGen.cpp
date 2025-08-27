@@ -116,7 +116,12 @@ void Arm64CodeGen::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
                                  [ this ]( arm64_at::Unary u ) -> void { u->accept( this ); },
                                  [ this ]( arm64_at::Binary b ) -> void { b->accept( this ); },
                                  [ this ]( arm64_at::AllocateStack a ) -> void { a->accept( this ); },
-                                 [ this ]( arm64_at::DeallocateStack d ) -> void { d->accept( this ); } },
+                                 [ this ]( arm64_at::DeallocateStack d ) -> void { d->accept( this ); },
+                                 [ this ]( arm64_at::Branch b ) -> void { b->accept( this ); },
+                                 [ this ]( arm64_at::BranchCC b ) -> void { b->accept( this ); },
+                                 [ this ]( arm64_at::Label l ) -> void { l->accept( this ); },
+                                 [ this ]( arm64_at::Cmp c ) -> void { c->accept( this ); },
+                                 [ this ]( arm64_at::Cset c ) -> void { c->accept( this ); } },
                     instr );
     }
 }
@@ -152,8 +157,12 @@ void Arm64CodeGen::visit_Unary( const arm64_at::Unary ast ) {
     case arm64_at::UnaryOpType::NEG :
         add_line( "neg", operand( ast->dst ), operand( ast->src ) );
         break;
-    case arm64_at::UnaryOpType::NOT :
+    case arm64_at::UnaryOpType::BITWISE_NOT :
         add_line( "mvn", operand( ast->dst ), operand( ast->src ) );
+        break;
+    case arm64_at::UnaryOpType::LOGICAL_NOT :
+        add_line( "cmp", operand( ast->src ), "xzr" );
+        add_line( "cset", operand( ast->dst ), "eq" );
         break;
     default :
         throw CodeException( ast->location, "Unsupported unary operator" );
@@ -166,7 +175,7 @@ void Arm64CodeGen::visit_Binary( const arm64_at::Binary ast ) {
         add_line( "add", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
         break;
     case arm64_at::BinaryOpType::SUB :
-        add_line( "sub", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
+        add_line( "subs", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
         break;
     case arm64_at::BinaryOpType::MUL :
         add_line( "mul", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
@@ -211,6 +220,39 @@ void Arm64CodeGen::visit_DeallocateStack( arm64_at::DeallocateStack ast ) {
         size += 16 - ( size % 16 );
     }
     add_line( "add", std::format( "sp, sp, #{}", size ) );
+}
+
+void Arm64CodeGen::visit_Branch( arm64_at::Branch ast ) {
+    add_line( "b", ast->target );
+}
+
+void Arm64CodeGen::visit_BranchCC( arm64_at::BranchCC ast ) {
+    std::string cond_code;
+    switch ( ast->condition ) {
+    case arm64_at::CondCode::EQ :
+        cond_code = "beq";
+        break;
+    case arm64_at::CondCode::NE :
+        cond_code = "bne";
+        break;
+    }
+    add_line( cond_code, ast->target );
+}
+
+void Arm64CodeGen::visit_Label( arm64_at::Label ast ) {
+    add_line( std::format( "{}:", ast->name ) );
+}
+
+void Arm64CodeGen::visit_Cmp( arm64_at::Cmp ast ) {
+    add_line( "cmp", operand( ast->operand1 ), operand( ast->operand2 ) );
+}
+
+std::map<arm64_at::CondCode, std::string> cond_code_map = {
+    { arm64_at::CondCode::EQ, "eq" }, { arm64_at::CondCode::NE, "ne" }, { arm64_at::CondCode::GE, "ge" },
+    { arm64_at::CondCode::LE, "le" }, { arm64_at::CondCode::GT, "gt" }, { arm64_at::CondCode::LT, "lt" } };
+
+void Arm64CodeGen::visit_Cset( arm64_at::Cset ast ) {
+    add_line( "cset", operand( ast->operand ), cond_code_map.at( ast->cond ) );
 }
 
 std::string Arm64CodeGen::operand( const arm64_at::Operand& op ) {

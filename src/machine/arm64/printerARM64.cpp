@@ -33,7 +33,12 @@ std::string PrinterARM64::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
                          [ this ]( arm64_at::Unary u ) -> std::string { return u->accept( this ); },
                          [ this ]( arm64_at::Binary b ) -> std::string { return b->accept( this ); },
                          [ this ]( arm64_at::AllocateStack a ) -> std::string { return a->accept( this ); },
-                         [ this ]( arm64_at::DeallocateStack d ) -> std::string { return d->accept( this ); } },
+                         [ this ]( arm64_at::DeallocateStack d ) -> std::string { return d->accept( this ); },
+                         [ this ]( arm64_at::Branch b ) -> std::string { return b->accept( this ); },
+                         [ this ]( arm64_at::BranchCC b ) -> std::string { return b->accept( this ); },
+                         [ this ]( arm64_at::Label l ) -> std::string { return l->accept( this ); },
+                         [ this ]( arm64_at::Cmp c ) -> std::string { return c->accept( this ); },
+                         [ this ]( arm64_at::Cset c ) -> std::string { return c->accept( this ); } },
             instr );
         buf += "\n";
     }
@@ -69,8 +74,11 @@ std::string PrinterARM64::visit_Unary( const arm64_at::Unary ast ) {
     case arm64_at::UnaryOpType::NEG :
         buf += "neg";
         break;
-    case arm64_at::UnaryOpType::NOT :
-        buf += "not";
+    case arm64_at::UnaryOpType::BITWISE_NOT :
+        buf += "bitwise_not";
+        break;
+    case arm64_at::UnaryOpType::LOGICAL_NOT :
+        buf += "logical_not";
         break;
     }
     buf += std::format( ", {}, {})", operand( ast->dst ), operand( ast->src ) );
@@ -112,6 +120,36 @@ std::string PrinterARM64::visit_Binary( const arm64_at::Binary ast ) {
         break;
     }
     buf += std::format( ", {}, {}, {})", operand( ast->dst ), operand( ast->src1 ), operand( ast->src2 ) );
+    return buf;
+}
+
+std::string PrinterARM64::visit_Branch( arm64_at::Branch ast ) {
+    return std::format( "Branch({})", ast->target );
+}
+
+std::string PrinterARM64::visit_BranchCC( arm64_at::BranchCC ast ) {
+    return std::format( "BranchCC({})", ast->target );
+}
+
+std::string PrinterARM64::visit_Label( arm64_at::Label ast ) {
+    return std::format( "Label({})", ast->name );
+}
+
+std::string PrinterARM64::visit_Cmp( arm64_at::Cmp ast ) {
+    return std::format( "Cmp({}, {})", operand( ast->operand1 ), operand( ast->operand2 ) );
+}
+
+std::string PrinterARM64::visit_Cset( arm64_at::Cset ast ) {
+    std::string buf = "Cset(";
+    switch ( ast->cond ) {
+    case arm64_at::CondCode::EQ :
+        buf += "eq";
+        break;
+    case arm64_at::CondCode::NE :
+        buf += "ne";
+        break;
+    }
+    buf += std::format( ", {})", operand( ast->operand ) );
     return buf;
 }
 
