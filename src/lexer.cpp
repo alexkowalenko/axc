@@ -25,7 +25,8 @@ const std::map<std::string, TokenType> keywords = {
     { "for", TokenType::FOR },       { "while", TokenType::WHILE },
     { "do", TokenType::DO },         { "switch", TokenType::SWITCH },
     { "case", TokenType::CASE },     { "default", TokenType::DEFAULT },
-    { "extern", TokenType::EXTERN }, { "static", TokenType::STATIC } };
+    { "extern", TokenType::EXTERN }, { "static", TokenType::STATIC },
+    { "long", TokenType::LONG } };
 
 Lexer::Lexer( std::istream const& s ) {
     std::stringstream buffer;
@@ -115,6 +116,14 @@ Token Lexer::get_number( const char c ) {
         x = peek();
     }
     if ( std::isalpha( x ) ) {
+        if ( x == 'l' || x == 'L' ) {
+            get();
+            x = peek();
+            if ( x == 'l' || x == 'L' ) {
+                throw LexicalException( get_location(), "Invalid number of `{:c}` in long literal '{:s}'", x );
+            }
+            return { TokenType::LONGLITERAL, get_location(), number };
+        }
         throw LexicalException( get_location(), "Invalid digit {:c} in number '{:s}'", x, number );
     }
     return { TokenType::CONSTANT, get_location(), number };

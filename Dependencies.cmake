@@ -2,7 +2,7 @@
 CPMAddPackage(
         NAME GoogleTest
         GITHUB_REPOSITORY google/googletest
-        GIT_TAG v1.16.0
+        GIT_TAG v1.17.0
         OPTIONS
         "INSTALL_GTEST OFF"
         "BUILD_GMOCK OFF"

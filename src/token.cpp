@@ -101,6 +101,8 @@ const char* to_string( const TokenType l ) {
         return "<identifier>";
     case CONSTANT :
         return "<constant>";
+    case LONGLITERAL :
+        return "<longliteral>";
 
     case Eof :
         return "<eof>";
@@ -130,6 +132,8 @@ const char* to_string( const TokenType l ) {
         return "if";
     case INT :
         return "int";
+    case LONG :
+        return "long";
     case RETURN :
         return "return";
     case STATIC :

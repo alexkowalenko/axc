@@ -11,6 +11,8 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
 endif()
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
     set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++" CACHE STRING "" FORCE)
+    # Set flags for C++ standard library and unwind library, for LLVM installed via Homebrew
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib/unwind -lunwind")
 endif()
 message(STATUS "C++ compiler = ${CMAKE_CXX_COMPILER}")
 

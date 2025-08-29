@@ -1,6 +1,7 @@
 bin/*
 tools/__pycache__
 build/*
+cmake-build-debug/*
 docs/
 .vscode/*
 demo/

@@ -149,7 +149,9 @@ TEST( Lexer, Constant ) { // NOLINT
         { "0", TokenType::CONSTANT, "0" },
         { "13445", TokenType::CONSTANT, "13445" },
         { "28987", TokenType::CONSTANT, "28987" },
-    };
+        { "0L", TokenType::LONGLITERAL, "0" },
+        { "1l", TokenType::LONGLITERAL, "1" },
+        { "12345678901234567890L", TokenType::LONGLITERAL, "12345678901234567890" } };
     test_Lexer( tests );
 }
 
@@ -187,7 +189,8 @@ TEST( Lexer, Keywords ) {
                                            { "case", TokenType::CASE, "case" },
                                            { "default", TokenType::DEFAULT, "default" },
                                            { "extern", TokenType::EXTERN, "extern" },
-                                           { "static", TokenType::STATIC, "static" } };
+                                           { "static", TokenType::STATIC, "static" },
+                                           { "long", TokenType::LONG, "long" } };
     test_Lexer( tests );
 }
 
@@ -204,6 +207,8 @@ void test_Lexer( const std::vector<TestLexer>& tests ) {
                 EXPECT_EQ( tok.value, test.atom );
             } else if ( test.tok == TokenType::IDENTIFIER ) {
                 // std::println("     {} -> {}\n", test.input, tok.value);
+                EXPECT_EQ( tok.value, test.atom );
+            } else if ( test.tok == TokenType::LONGLITERAL ) {
                 EXPECT_EQ( tok.value, test.atom );
             }
         } catch ( Exception& e ) {

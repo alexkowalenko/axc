@@ -56,6 +56,11 @@ void FixInstructARM::visit_FunctionDef( arm64_at::FunctionDef ast ) {
 }
 
 void FixInstructARM::visit_Mov( arm64_at::Mov ast ) {
+    if ( std::holds_alternative<arm64_at::Stack>( ast->dst ) && std::holds_alternative<arm64_at::Stack>( ast->src ) ) {
+        current_instructions.emplace_back( mk_node<arm64_at::Load_>( ast, ast->src, x9 ) );
+        current_instructions.emplace_back( mk_node<arm64_at::Store_>( ast, x9, ast->dst ) );
+        return;
+    }
     if ( std::holds_alternative<arm64_at::Stack>( ast->src ) ) {
         current_instructions.emplace_back( mk_node<arm64_at::Load_>( ast, ast->src, ast->dst ) );
         return;

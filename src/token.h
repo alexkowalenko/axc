@@ -62,6 +62,7 @@ enum class TokenType : std::uint8_t {
 
     IDENTIFIER,
     CONSTANT,
+    LONGLITERAL,
 
     // Keywords
     BREAK,
@@ -75,6 +76,7 @@ enum class TokenType : std::uint8_t {
     GOTO,
     IF,
     INT,
+    LONG,
     RETURN,
     STATIC,
     SWITCH,

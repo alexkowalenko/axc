@@ -123,5 +123,12 @@ Tested on MacOS and FreeBSD.
 - [ ] Output: AArch64.
 
 ## Chapter 11 Long Integers
+- [x] Lexer.
+- [ ] Parser.
+- [ ] Semantic Analysis.
+- [ ] TAC Intermediate.
+- [ ] Code Generator.
+- [ ] Output: X86_64.
+- [ ] Output: AArch64.
 
 ## Chapter 19 Optimizing TAC Instructions
