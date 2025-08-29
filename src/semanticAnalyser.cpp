@@ -18,6 +18,17 @@
 #include "exception.h"
 #include "spdlog/spdlog.h"
 
+std::optional<std::int64_t> get_constant( const ast::Expr ast ) {
+    if ( auto c = std::get_if<ast::Constant>( &ast ); c ) {
+        if ( auto i = std::get_if<ast::ConstantInt>( c ) ) {
+            return ( *i )->value;
+        } else if ( auto l = std::get_if<ast::ConstantLong>( c ) ) {
+            return ( *l )->value;
+        }
+    }
+    return std::nullopt;
+}
+
 void SemanticAnalyser::analyse( const ast::Program ast, SymbolTable& table ) {
     global_table = &table;
     program( ast, table );
@@ -44,10 +55,11 @@ void SemanticAnalyser::file_variable_def( ast::VariableDef ast, SymbolTable& tab
 
     int value = 0;
     if ( ast->init ) {
-        if ( !std::holds_alternative<ast::Constant>( *ast->init ) ) {
+        if ( auto const_value = get_constant( ast->init.value() ); const_value ) {
+            value = *const_value;
+        } else {
             throw SemanticException( ast->location, "Global variables must have constant initializers" );
         }
-        value = std::get<ast::Constant>( *ast->init )->value;
     }
 
     if ( auto old_decl = table.find( ast->name ); old_decl ) {
@@ -308,10 +320,11 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
     int value = 0;
     if ( ast->storage == StorageClass::Static ) {
         if ( ast->init ) {
-            if ( !std::holds_alternative<ast::Constant>( *ast->init ) ) {
+            if ( auto const_value = get_constant( ast->init.value() ); const_value ) {
+                value = const_value.value();
+            } else {
                 throw SemanticException( ast->location, "static variables must have constant initializers" );
             }
-            value = std::get<ast::Constant>( *ast->init )->value;
         }
         if ( auto old_dec = table.find( ast->name ); old_dec ) {
             if ( old_dec->type != Type::INT ) {
@@ -548,6 +561,7 @@ void SemanticAnalyser::expr( const ast::Expr ast, SymbolTable& table ) {
                     [ this, &table ]( ast::Conditional b ) -> void { visit_Conditional( b, table ); },
                     [ this, &table ]( ast::Assign a ) -> void { visit_Assign( a, table ); },
                     [ this, &table ]( ast::Call c ) -> void { visit_Call( c, table ); },
+                    [ this, &table ]( ast::Cast c ) -> void { visit_Cast( c, table ); },
                     [ this, &table ]( ast::Var v ) -> void { visit_Var( v, table ); },
                     [ this ]( ast::Constant c ) -> void { visit_Constant( c ); },
                 },
@@ -632,6 +646,8 @@ void SemanticAnalyser::visit_Call( const ast::Call ast, SymbolTable& table ) {
     // Constant Analysis
     is_constant = false; // Function calls are not constant
 }
+
+void SemanticAnalyser::visit_Cast( ast::Cast ast, SymbolTable& table ) {};
 
 void SemanticAnalyser::visit_Var( const ast::Var ast, const SymbolTable& table ) {
     if ( auto name = table.find( ast->name ) ) {

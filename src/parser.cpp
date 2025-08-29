@@ -57,8 +57,12 @@ constexpr Precedence get_precedence( const TokenType tok ) {
     return precedence_map.contains( tok ) ? precedence_map.at( tok ) : Precedence::Lowest;
 }
 
-constexpr bool isTypeOrStorage( Token const& t ) {
-    return t.tok == TokenType::INT || t.tok == TokenType::STATIC || t.tok == TokenType::EXTERN;
+constexpr bool is_type( Token const& t ) {
+    return t.tok == TokenType::INT || t.tok == TokenType::LONG;
+}
+
+constexpr bool is_type_or_storage( Token const& t ) {
+    return is_type( t ) || t.tok == TokenType::STATIC || t.tok == TokenType::EXTERN;
 }
 
 ast::Program Parser::parse() {
@@ -76,10 +80,10 @@ ast::Program Parser::parse() {
 
 ast::Declaration Parser::declaration() {
     spdlog::debug( "declaration" );
-    ast::Declaration declaration;
-    StorageClass     storage_class = StorageClass::None;
-    auto             token = lexer.peek_token();
-    bool             type = false;
+    ast::Declaration       declaration;
+    StorageClass           storage_class = StorageClass::None;
+    auto                   token = lexer.peek_token();
+    std::vector<TokenType> type_tokens;
     while ( token.tok != TokenType::IDENTIFIER ) {
         spdlog::debug( "declaration: token {}", to_string( token.tok ) );
         switch ( token.tok ) {
@@ -98,12 +102,9 @@ ast::Declaration Parser::declaration() {
             expect_token( TokenType::EXTERN );
             break;
         case TokenType::INT :
-            // Not collecting type information yet.
-            if ( type ) {
-                throw ParseException( lexer.get_location(), "Type already set." );
-            }
-            type = true;
-            expect_token( TokenType::INT );
+        case TokenType::LONG :
+            type_tokens.push_back( token.tok );
+            lexer.get_token();
             break;
         default :
             throw ParseException( lexer.get_location(), "Unexpected token: {}", to_string( token.tok ) );
@@ -112,9 +113,10 @@ ast::Declaration Parser::declaration() {
     }
 
     // Check type found
-    if ( !type ) {
+    if ( type_tokens.empty() ) {
         throw ParseException( lexer.get_location(), "Expected type, got identifier" );
     }
+    auto dec_type = type( type_tokens );
 
     // Get name
     const std::string name = expect_token( TokenType::IDENTIFIER ).value;
@@ -124,10 +126,10 @@ ast::Declaration Parser::declaration() {
     token = lexer.peek_token();
     if ( token.tok == TokenType::L_PAREN ) {
         // Function declaration
-        declaration = functionDef( name, storage_class );
+        declaration = functionDef( name, dec_type, storage_class );
     } else {
         // Variable declaration
-        declaration = variableDef( name, storage_class );
+        declaration = variableDef( name, dec_type, storage_class );
     }
     return declaration;
 }
@@ -147,7 +149,18 @@ void Parser::function_params( ast::FunctionDef f ) {
     }
     // Parameters
     while ( token.tok != TokenType::R_PAREN ) {
-        expect_token( TokenType::INT );
+        std::vector<TokenType> type_tokens;
+        token = lexer.peek_token();
+        while ( is_type( token ) ) {
+            type_tokens.push_back( token.tok );
+            lexer.get_token();
+            token = lexer.peek_token();
+        }
+        if ( type_tokens.empty() ) {
+            throw ParseException( lexer.get_location(), "Expecting parameter type, got identifier" );
+        }
+        auto dec_type = type( type_tokens );
+        f->function_type.parameter_types.push_back( dec_type );
         auto param = expect_token( TokenType::IDENTIFIER );
         f->params.push_back( param.value );
 
@@ -162,11 +175,14 @@ void Parser::function_params( ast::FunctionDef f ) {
     }
 }
 
-ast::FunctionDef Parser::functionDef( std::string const& name, StorageClass storage_class ) {
+ast::FunctionDef Parser::functionDef( std::string const& name, Type type, StorageClass storage_class ) {
     auto funct = make_AST<ast::FunctionDef_>();
 
     funct->name = name;
     funct->storage = storage_class;
+    FunctionType funct_type;
+    funct_type.return_type = type;
+    funct->function_type = funct_type;
 
     // ( void )
     expect_token( TokenType::L_PAREN );
@@ -185,11 +201,12 @@ ast::FunctionDef Parser::functionDef( std::string const& name, StorageClass stor
     return funct;
 }
 
-ast::VariableDef Parser::variableDef( std::string const& name, StorageClass storage_class ) {
+ast::VariableDef Parser::variableDef( std::string const& name, Type type, StorageClass storage_class ) {
     spdlog::debug( "declaration" );
     auto decl = make_AST<ast::VariableDef_>();
     decl->name = name;
     decl->storage = storage_class;
+    decl->var_type = type;
 
     // check for =
     auto token = lexer.peek_token();
@@ -254,7 +271,7 @@ ast::Compound Parser::compound() {
 
     auto token = lexer.peek_token();
     while ( token.tok != TokenType::R_BRACE ) {
-        if ( isTypeOrStorage( token ) ) {
+        if ( is_type_or_storage( token ) ) {
             auto d = declaration();
             if ( std::holds_alternative<ast::FunctionDef>( d ) ) {
                 compound->block_items.emplace_back( std::get<ast::FunctionDef>( d ) );
@@ -355,7 +372,7 @@ ast::For Parser::for_stat() {
     auto token = lexer.peek_token();
     if ( token.tok != TokenType::SEMICOLON ) {
         // Test for storage specifiers
-        if ( isTypeOrStorage( token ) ) {
+        if ( is_type_or_storage( token ) ) {
             // Declaration
             auto d = declaration();
             if ( std::holds_alternative<ast::FunctionDef>( d ) ) {
@@ -421,7 +438,7 @@ ast::Case Parser::case_stat() {
     bool first = true;
     while ( token.tok != TokenType::CASE && token.tok != TokenType::DEFAULT && token.tok != TokenType::R_BRACE ) {
         spdlog::debug( "case: statement {}", to_string( token.tok ) );
-        if ( isTypeOrStorage( token ) ) {
+        if ( is_type_or_storage( token ) ) {
             if ( first ) {
                 throw ParseException( lexer.get_location(), "Declaration not allowed in C17." );
             }
@@ -459,13 +476,14 @@ ast::Null Parser::null() {
 using PrefixParselet = std::function<ast::Expr( Parser* )>;
 const std::map<TokenType, PrefixParselet> prefix_map {
     { TokenType::CONSTANT, []( Parser* p ) -> ast::Expr { return p->constant(); } },
+    { TokenType::LONGLITERAL, []( Parser* p ) -> ast::Expr { return p->constant(); } },
     { TokenType::IDENTIFIER, []( Parser* p ) -> ast::Expr { return p->var(); } },
     { TokenType::DASH, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
     { TokenType::TILDE, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
     { TokenType::EXCLAMATION, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
     { TokenType::INCREMENT, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
     { TokenType::DECREMENT, []( Parser* p ) -> ast::Expr { return p->unaryOp(); } },
-    { TokenType::L_PAREN, []( Parser* p ) -> ast::Expr { return p->group(); } },
+    { TokenType::L_PAREN, []( Parser* p ) -> ast::Expr { return p->l_paren(); } },
 };
 
 using InfixParselet = std::function<ast::Expr( Parser* p, ast::Expr left )>;
@@ -618,20 +636,55 @@ ast::Call Parser::call( ast::Expr left ) {
     return call;
 }
 
+ast::Expr Parser::l_paren() {
+    spdlog::debug( "l_paren()" );
+    lexer.get_token(); // (
+    auto token = lexer.peek_token();
+    if ( is_type( token ) ) {
+        return cast();
+    }
+    return group();
+}
+
 ast::Expr Parser::group() {
     spdlog::debug( "group()" );
-    expect_token( TokenType::L_PAREN );
     auto e = expr( Precedence::Lowest );
     expect_token( TokenType::R_PAREN );
     return e;
 }
 
+ast::Cast Parser::cast() {
+    spdlog::debug( "cast()" );
+    auto                   cast = make_AST<ast::Cast_>();
+    std::vector<TokenType> types;
+    auto                   token = lexer.peek_token();
+    while ( is_type( token ) ) {
+        types.push_back( token.tok );
+        lexer.get_token();
+        token = lexer.peek_token();
+    }
+    expect_token( TokenType::R_PAREN );
+    cast->type = type( types );
+    cast->expr = expr( Precedence::Lowest );
+    return cast;
+}
+
 ast::Constant Parser::constant() {
     spdlog::debug( "constant()" );
-    auto constant = make_AST<ast::Constant_>();
     auto token = lexer.get_token();
     if ( token.tok == TokenType::CONSTANT ) {
-        constant->value = std::stoi( token.value );
+        auto value = std::stoll( token.value );
+        if ( value < std::numeric_limits<std::int32_t>::max() && value > std::numeric_limits<std::int32_t>::min() ) {
+            auto constant = make_AST<ast::ConstantInt_>();
+            constant->value = static_cast<std::int32_t>( value );
+            return constant;
+        }
+        auto constant = make_AST<ast::ConstantLong_>();
+        constant->value = value;
+        return constant;
+    } else if ( token.tok == TokenType::LONGLITERAL ) {
+        auto constant = make_AST<ast::ConstantLong_>();
+        constant->value = std::stoll( token.value );
         return constant;
     }
     throw ParseException( token.location, "Expected constant but found {}", token );
@@ -643,6 +696,28 @@ ast::Var Parser::var() {
     auto var = make_AST<ast::Var_>();
     var->name = token.value;
     return var;
+}
+
+Type Parser::type( std::vector<TokenType> const& tokens ) {
+    if ( tokens.size() == 1 ) {
+        switch ( tokens[ 0 ] ) {
+        case TokenType::VOID :
+            return Type::VOID;
+        case TokenType::INT :
+            return Type::INT;
+        case TokenType::LONG :
+            return Type::LONG;
+        default :
+            throw ParseException( lexer.get_location(), "Expected type but found {}", tokens[ 0 ] );
+        }
+    }
+    if ( tokens.size() == 2 ) {
+        if ( ( tokens[ 0 ] == TokenType::LONG && tokens[ 1 ] == TokenType::INT ) ||
+             ( tokens[ 0 ] == TokenType::INT && tokens[ 1 ] == TokenType::LONG ) ) {
+            return Type::LONG;
+        }
+    }
+    throw ParseException( lexer.get_location(), "Expected type but found {}", tokens );
 }
 
 Token Parser::expect_token( TokenType expected ) {

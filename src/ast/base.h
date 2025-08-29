@@ -12,8 +12,9 @@
 
 #include <cstdint>
 
-#include "../token.h"
 #include "common.h"
+#include "token.h"
+#include "type.h"
 
 #include <variant>
 #include <vector>
@@ -29,8 +30,13 @@ class Base {
     std::string ast_label {};
 };
 
-class Constant_;
-using Constant = std::shared_ptr<Constant_>;
+class ConstantInt_;
+using ConstantInt = std::shared_ptr<ConstantInt_>;
+
+class ConstantLong_;
+using ConstantLong = std::shared_ptr<ConstantLong_>;
+
+using Constant = std::variant<ConstantInt, ConstantLong>;
 
 class UnaryOp_;
 using UnaryOp = std::shared_ptr<UnaryOp_>;
@@ -53,7 +59,10 @@ using Var = std::shared_ptr<Var_>;
 class Call_;
 using Call = std::shared_ptr<Call_>;
 
-using Expr = std::variant<Constant, UnaryOp, BinaryOp, PostOp, Conditional, Var, Assign, Call>;
+class Cast_;
+using Cast = std::shared_ptr<Cast_>;
+
+using Expr = std::variant<Constant, UnaryOp, BinaryOp, PostOp, Conditional, Var, Assign, Call, Cast>;
 
 class VariableDef_;
 using VariableDef = std::shared_ptr<VariableDef_>;

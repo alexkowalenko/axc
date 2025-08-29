@@ -349,6 +349,7 @@ tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructi
             [ &instructions, this ]( ast::Conditional b ) -> tac::Value { return conditional( b, instructions ); },
             [ &instructions, this ]( ast::Assign a ) -> tac::Value { return assign( a, instructions ); },
             [ &instructions, this ]( ast::Call c ) -> tac::Value { return call( c, instructions ); },
+            [ this ]( ast::Cast c ) -> tac::Value { return mk_node<tac::Constant_>( c, 0 ); },
             []( ast::Var v ) -> tac::Value { return mk_node<tac::Variable_>( v, v->name ); },
             [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
         ast );
@@ -680,8 +681,11 @@ tac::Label TacGen::generate_label( const std::shared_ptr<ast::Base> b, std::stri
 }
 
 tac::Constant TacGen::constant( ast::Constant ast ) {
-    spdlog::debug( "tac::constant: {}", ast->value );
-    return mk_node<tac::Constant_>( ast, ast->value );
+    if ( auto int_const = std::get_if<ast::ConstantInt>( &ast ); int_const ) {
+        return mk_node<tac::Constant_>( ( *int_const ), ( *int_const )->value );
+    }
+    auto long_const = std::get_if<ast::ConstantInt>( &ast );
+    return mk_node<tac::Constant_>( ( *long_const ), ( *long_const )->value );
 }
 
 tac::Label TacGen::generate_loop_break( std::shared_ptr<ast::Base> b ) {

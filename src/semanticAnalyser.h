@@ -15,12 +15,14 @@
 #include <stack>
 
 #include "ast/base.h"
-#include "ast/constant.h"
+#include "ast/constantint.h"
 #include "ast/visitor.h"
 #include "symbolTable.h"
 
-template <> struct std::less<ast::Constant> {
-    bool operator()( const ast::Constant& lhs, const ast::Constant& rhs ) const { return lhs->value < rhs->value; }
+template <> struct std::less<ast::ConstantInt> {
+    bool operator()( const ast::ConstantInt& lhs, const ast::ConstantInt& rhs ) const {
+        return lhs->value < rhs->value;
+    }
 };
 
 class SemanticAnalyser {
@@ -57,6 +59,7 @@ class SemanticAnalyser {
     void visit_Conditional( ast::Conditional ast, SymbolTable& table );
     void visit_Assign( ast::Assign ast, SymbolTable& table );
     void visit_Call( ast::Call ast, SymbolTable& table );
+    void visit_Cast( ast::Cast ast, SymbolTable& table );
     void visit_Var( ast::Var ast, const SymbolTable& table );
     void visit_Constant( ast::Constant ast );
 

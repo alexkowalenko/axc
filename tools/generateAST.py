@@ -15,8 +15,8 @@ if __name__ == "__main__":
         "ast",
         {
             "Program": [("std::vector<Declaration>", "declarations")],
-            "FunctionDef": [("std::string", "name"), ("std::vector<std::string>", "params"), ("std::optional<Compound>", "block"), ("StorageClass", "storage")],
-            "VariableDef": [("std::string", "name"), ("std::optional<Expr>", "init"), ("StorageClass", "storage")],
+            "FunctionDef": [("std::string", "name"), ("std::vector<std::string>", "params"), ("FunctionType", "function_type"), ("std::optional<Compound>", "block"), ("StorageClass", "storage")],
+            "VariableDef": [("std::string", "name"), ("std::optional<Expr>", "init"), ("Type", "var_type"), ("StorageClass", "storage")],
             "Statement": [("std::optional<Label>", "label"), ("std::optional<StatementItem>", "statement")],
             "Null": [], # Null statement
             "Return": [("Expr", "expr")],
@@ -37,8 +37,10 @@ if __name__ == "__main__":
             "Conditional": [("Expr", "condition"), ("Expr", "then_expr"), ("Expr", "else_expr")],
             "Assign": [("TokenType", "op"), ("Expr", "left"), ("Expr", "right")],
             "Call": [("std::string", "function_name"), ("std::vector<Expr>", "arguments")],
+            "Cast": [("Type", "type"), ("Expr", "expr")],
             "Var": [("std::string", "name")],
-            "Constant": [("std::int32_t", "value")],
+            "ConstantInt": [("std::int32_t", "value")],
+            "ConstantLong": [("std::int64_t", "value")],
          },
         {
             "BlockItem": ["Statement", "VariableDef", "FunctionDef"],

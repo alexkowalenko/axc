@@ -11,8 +11,8 @@
 #pragma once
 
 #include "common.h"
+#include "type.h"
 
-enum class Type { VOID, INT, FUNCTION };
 enum class Initialiser { None, Tentative, Final };
 
 class Symbol {
@@ -25,16 +25,5 @@ class Symbol {
     Initialiser  initaliser { Initialiser::None };
     bool         global { false };
 };
-
-constexpr std::string to_string( const Type type ) {
-    switch ( type ) {
-    case Type::VOID :
-        return "void";
-    case Type::INT :
-        return "int";
-    case Type::FUNCTION :
-        return "function";
-    }
-}
 
 std::string to_string( Symbol const& s );

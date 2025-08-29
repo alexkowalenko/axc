@@ -13,6 +13,7 @@
 #include <string>
 
 #include "ast/includes.h"
+#include "enumerate.h"
 
 std::string PrinterAST::print( const ast::Program& ast ) {
     return ast->accept( this );
@@ -36,12 +37,12 @@ std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef ast ) {
     if ( ast->storage != StorageClass::None ) {
         buf = to_string( ast->storage ) + " ";
     }
-    buf += std::format( "{} {}(", to_string( TokenType::INT ), ast->name );
-    for ( const auto& p : ast->params ) {
+    buf += std::format( "{} {}(", to_string( ast->function_type.return_type ), ast->name );
+    for ( const auto& [ i, p ] : enumerate( ast->params ) ) {
         if ( p == "void" ) {
             buf += std::string( to_string( TokenType::VOID ) ) + ", ";
         } else {
-            buf += std::string( to_string( TokenType::INT ) ) + " " + p + ", ";
+            buf += std::string( to_string( ast->function_type.parameter_types[ i ] ) ) + " " + p + ", ";
         }
     }
     if ( !ast->params.empty() ) {
@@ -70,7 +71,7 @@ std::string PrinterAST::visit_VariableDef( const ast::VariableDef ast ) {
     if ( ast->storage != StorageClass::None ) {
         buf = to_string( ast->storage ) + " ";
     }
-    buf += "int " + ast->name;
+    buf += to_string( ast->var_type ) + " " + ast->name;
     if ( ast->init ) {
         buf += " = " + expr( ast->init.value() );
     }
@@ -214,8 +215,9 @@ std::string PrinterAST::expr( const ast::Expr ast ) {
                                     [ this ]( ast::Conditional c ) -> std::string { return c->accept( this ); },
                                     [ this ]( ast::Assign a ) -> std::string { return a->accept( this ); },
                                     [ this ]( ast::Call c ) -> std::string { return c->accept( this ); },
+                                    [ this ]( ast::Cast c ) -> std::string { return c->accept( this ); },
                                     [ this ]( ast::Var v ) -> std::string { return v->accept( this ); },
-                                    [ this ]( ast::Constant c ) -> std::string { return c->accept( this ); } },
+                                    [ this ]( ast::Constant c ) -> std::string { return constant( c ); } },
                        ast );
 }
 
@@ -255,10 +257,24 @@ std::string PrinterAST::visit_Call( const ast::Call ast ) {
     return buf;
 }
 
+std::string PrinterAST::visit_Cast( ast::Cast ast ) {
+    return std::format( "({}){}", to_string( ast->type ), expr( ast->expr ) );
+}
+
 std::string PrinterAST::visit_Var( const ast::Var ast ) {
     return ast->name;
 };
 
-std::string PrinterAST::visit_Constant( const ast::Constant ast ) {
+std::string PrinterAST::constant( ast::Constant ast ) {
+    return std::visit( overloaded { [ this ]( ast::ConstantInt i ) -> std::string { return i->accept( this ); },
+                                    [ this ]( ast::ConstantLong l ) -> std::string { return l->accept( this ); } },
+                       ast );
+}
+
+std::string PrinterAST::visit_ConstantInt( ast::ConstantInt ast ) {
     return std::format( "{:d}", ast->value );
+}
+
+std::string PrinterAST::visit_ConstantLong( ast::ConstantLong ast ) {
+    return std::format( "{:d}L", ast->value );
 }

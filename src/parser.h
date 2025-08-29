@@ -59,6 +59,8 @@ class Parser {
     ast::PostOp      postfixOp( ast::Expr left );
     ast::Conditional conditional( ast::Expr left );
     ast::Assign      assign( ast::Expr left );
+    ast::Expr        l_paren();
+    ast::Cast        cast();
     ast::Expr        group();
     ast::Constant    constant();
     ast::Call        call( ast::Expr left );
@@ -69,9 +71,11 @@ class Parser {
 
     ast::Declaration declaration();
     void             function_params( ast::FunctionDef f );
-    ast::FunctionDef functionDef( std::string const& name, StorageClass storage );
-    ast::VariableDef variableDef( std::string const& name, StorageClass storage );
+    ast::FunctionDef functionDef( std::string const& name, Type type, StorageClass storage );
+    ast::VariableDef variableDef( std::string const& name, Type type, StorageClass storage );
     ast::Statement   statement();
+
+    Type type( std::vector<TokenType> const& tokens );
 
     Token expect_token( TokenType expected );
 

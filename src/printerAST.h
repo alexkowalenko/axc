@@ -49,7 +49,10 @@ class PrinterAST : public ast::Visitor<std::string> {
     std::string visit_Conditional( ast::Conditional ast ) override;
     std::string visit_Assign( ast::Assign ast ) override;
     std::string visit_Call( ast::Call ast ) override;
-    std::string visit_Constant( ast::Constant ast ) override;
+    std::string visit_Cast( ast::Cast ast ) override;
+    std::string constant( ast::Constant ast );
+    std::string visit_ConstantInt( ast::ConstantInt ast ) override;
+    std::string visit_ConstantLong( ast::ConstantLong ast ) override;
     std::string visit_Var( ast::Var ast ) override;
 
     std::string indent { "  " };

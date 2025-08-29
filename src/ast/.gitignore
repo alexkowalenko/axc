@@ -4,8 +4,11 @@ blockitem.h
 break.h
 call.h
 case.h
+cast.h
 compound.h
 constant.h
+constantint.h
+constantlong.h
 continue.h
 conditional.h
 declaration.h

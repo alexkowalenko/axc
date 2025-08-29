@@ -11,6 +11,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 template <class... Ts> struct overloaded : Ts... {
     using Ts::operator()...;
