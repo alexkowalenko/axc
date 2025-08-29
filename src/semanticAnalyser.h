@@ -66,6 +66,8 @@ class SemanticAnalyser {
   private:
     static SymbolTable new_scope( SymbolTable& table );
 
+    Type expr_type( ast::Expr ast );
+
     void new_loop_label( std::shared_ptr<ast::Base> b );
     void loop_label( std::shared_ptr<ast::Base> b );
     void new_switch_label( std::shared_ptr<ast::Base> b );
@@ -82,7 +84,7 @@ class SemanticAnalyser {
     std::stack<size_t> last_default;
 
     // Stack of switch case sets to check for duplicate case values
-    std::stack<std::set<ast::Constant>> case_set;
+    std::stack<std::set<std::int64_t>> case_set;
 
     // Stack of Switch ASTs to attach Case AST to
     std::stack<ast::Switch> switch_stack;

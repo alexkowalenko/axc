@@ -28,6 +28,7 @@ class Base {
 
     Location    location;
     std::string ast_label {};
+    Type        base_type { Type::VOID };
 };
 
 class ConstantInt_;

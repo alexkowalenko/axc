@@ -13,10 +13,12 @@
 #include <algorithm>
 #include <set>
 
+#include "spdlog/spdlog.h"
+
 #include "ast/includes.h"
 #include "common.h"
+#include "enumerate.h"
 #include "exception.h"
-#include "spdlog/spdlog.h"
 
 std::optional<std::int64_t> get_constant( const ast::Expr ast ) {
     if ( auto c = std::get_if<ast::Constant>( &ast ); c ) {
@@ -63,7 +65,7 @@ void SemanticAnalyser::file_variable_def( ast::VariableDef ast, SymbolTable& tab
     }
 
     if ( auto old_decl = table.find( ast->name ); old_decl ) {
-        if ( old_decl->type != Type::INT ) {
+        if ( !is_integer( old_decl->type ) ) {
             throw SemanticException( ast->location, "Function redeclared as variable: {}", ast->name );
         }
         if ( ast->storage == StorageClass::Extern ) {
@@ -87,13 +89,17 @@ void SemanticAnalyser::file_variable_def( ast::VariableDef ast, SymbolTable& tab
             throw SemanticException(
                 ast->location, "Can't declare the same declaration with and without initialisation: {}", ast->name );
         }
+        if ( ast->var_type != old_decl->type ) {
+            throw SemanticException( ast->location, "Can't declare the same declaration {} with different type: {} ",
+                                     ast->name, to_string( ast->var_type ) );
+        }
         spdlog::debug( "What to do with variable: {}", ast->name );
     }
     spdlog::debug( "Declaring file variable: {}", ast->name );
     auto global = ast->storage != StorageClass::Static;
     table.put( ast->name, Symbol { .name = ast->name,
                                    .storage = ast->storage,
-                                   .type = Type::INT,
+                                   .type = ast->var_type,
                                    .number = value,
                                    .current_scope = true,
                                    .initaliser = ast->init.has_value() ? Initialiser::Final : Initialiser::Tentative,
@@ -114,6 +120,9 @@ void SemanticAnalyser::function_def( ast::FunctionDef ast, SymbolTable& table ) 
 
     // remove "void" parameters
     ast->params.erase( std::remove( ast->params.begin(), ast->params.end(), "void" ), ast->params.end() );
+    ast->base_type = Type::FUNCTION;
+    FunctionType function_type = { .return_type = ast->function_type.return_type,
+                                   .parameter_types = ast->function_type.parameter_types };
 
     auto old_dec = table.find( ast->name );
     if ( old_dec ) {
@@ -170,11 +179,19 @@ void SemanticAnalyser::function_def( ast::FunctionDef ast, SymbolTable& table ) 
             throw SemanticException( ast->location, "Function {} expects {} arguments, but got {}.", ast->name,
                                      old_dec->number, ast->params.size() );
         }
+        for ( auto [ i, param ] : enumerate( ast->params ) ) {
+            if ( old_dec->function_type.parameter_types[ i ] != function_type.parameter_types[ i ] ) {
+                throw SemanticException( ast->location, "Function {} parameter {} has type {}, but got {}.", ast->name,
+                                         i, to_string( old_dec->function_type.parameter_types[ i ] ),
+                                         to_string( function_type.parameter_types[ i ] ) );
+            }
+        }
     }
 
 out:
     auto s = old_dec.value_or( Symbol { .name = ast->name, .type = Type::FUNCTION } );
     s.global = global;
+    s.function_type = function_type;
 
     // Check if the function is defined as a nested function.
     if ( auto f = global_table->find( ast->name ) ) {
@@ -212,12 +229,12 @@ out:
         auto new_table = new_scope( table );
 
         // Add parameters to the symbol table.
-        for ( auto& param : ast->params ) {
+        for ( auto [ i, param ] : enumerate( ast->params ) ) {
             auto unique_name = table.temp_name( param );
             spdlog::debug( "Declaring param: {} as {}", param, unique_name );
             new_table.put( param, Symbol { .name = unique_name,
                                            .storage = StorageClass::Parameter,
-                                           .type = Type::INT,
+                                           .type = ast->function_type.parameter_types[ i ],
                                            .current_scope = true } );
             param = unique_name;
         }
@@ -286,7 +303,7 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
         }
 
         if ( auto old_dec = table.find( ast->name ); old_dec ) {
-            if ( old_dec->type != Type::INT ) {
+            if ( !is_integer( old_dec->type ) ) {
                 // Another symbol is already defined with the same name, but it is not a variable.
                 throw SemanticException( ast->location, "Function {} redeclared as variable", ast->name );
             }
@@ -303,15 +320,21 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
                 throw SemanticException( ast->location, "Conflicting local parameter: {}", ast->name );
             }
 
+            if ( old_dec->type != ast->var_type ) {
+                throw SemanticException( ast->location, "Conflicting types for variable {}: {} and {}", ast->name,
+                                         to_string( old_dec->type ), to_string( ast->var_type ) );
+            }
+
             // Already declared, put in local table not global
-            Symbol s { .name = ast->name, .storage = StorageClass::Extern, .type = Type::INT, .current_scope = true };
+            Symbol s {
+                .name = ast->name, .storage = StorageClass::Extern, .type = ast->var_type, .current_scope = true };
             table.put( ast->name, s );
             return;
         }
 
         // Add the variable to the symbol table
         spdlog::debug( "Declaring extern variable: {}", ast->name );
-        Symbol s { .name = ast->name, .storage = StorageClass::Extern, .type = Type::INT, .current_scope = true };
+        Symbol s { .name = ast->name, .storage = StorageClass::Extern, .type = ast->var_type, .current_scope = true };
         global_table->put( ast->name, s );
         table.put( ast->name, s );
         return;
@@ -327,7 +350,7 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
             }
         }
         if ( auto old_dec = table.find( ast->name ); old_dec ) {
-            if ( old_dec->type != Type::INT ) {
+            if ( !is_integer( old_dec->type ) ) {
                 // Another symbol is already defined with the same name, but it is not a variable.
                 throw SemanticException( ast->location, "Function {} redeclared as variable.", ast->name );
             }
@@ -341,7 +364,7 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
         spdlog::debug( "Declaring static variable: {} as {}", ast->name, unique_name );
         auto s = Symbol { .name = unique_name,
                           .storage = StorageClass::Static,
-                          .type = Type::INT,
+                          .type = ast->var_type,
                           .number = value,
                           .current_scope = true };
         table.put( ast->name, s );
@@ -357,7 +380,7 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
     // No linkage
     if ( auto old_dec = table.find( ast->name ); old_dec ) {
         spdlog::debug( "Variable {} already defined - {}", ast->name, to_string( *old_dec ) );
-        if ( old_dec->type != Type::INT && old_dec->current_scope ) {
+        if ( !is_integer( old_dec->type ) && old_dec->current_scope ) {
             // Another symbol is already defined with the same name, but it is not a variable.
             throw SemanticException( ast->location, "Function {} redeclared as variable.", ast->name );
         }
@@ -369,13 +392,17 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
              ( old_dec->storage == StorageClass::Parameter || old_dec->storage == StorageClass::None ) ) {
             throw SemanticException( ast->location, "Conflicting local parameter: {}", ast->name );
         }
+        if ( old_dec->type != ast->var_type ) {
+            throw SemanticException( ast->location, "Conflicting types for variable {}: {} and {}", ast->name,
+                                     to_string( old_dec->type ), to_string( ast->var_type ) );
+        }
     }
 
     auto unique_name = table.temp_name( ast->name );
     spdlog::debug( "Declaring local variable: {} as {}", ast->name, unique_name );
     table.put(
         ast->name,
-        Symbol { .name = unique_name, .storage = StorageClass::None, .type = Type::INT, .current_scope = true } );
+        Symbol { .name = unique_name, .storage = StorageClass::None, .type = ast->var_type, .current_scope = true } );
     ast->name = unique_name;
     if ( ast->init ) {
         expr( ast->init.value(), table );
@@ -477,7 +504,7 @@ void SemanticAnalyser::visit_Switch( const ast::Switch ast, SymbolTable& table )
 
     new_switch_label( ast );
     // Reset case set for each switch
-    std::set<ast::Constant> current_case_set;
+    std::set<std::int64_t> current_case_set;
     case_set.push( current_case_set );
 
     // Add the current switch to the switch stack
@@ -516,10 +543,14 @@ void SemanticAnalyser::visit_Case( const ast::Case ast, SymbolTable& table ) {
         // Check for duplicate case values
         // Check only ast::Constant - skip expressions
         if ( auto const_value = std::get_if<ast::Constant>( &ast->value ) ) {
-            if ( case_set.top().contains( *const_value ) ) {
+            auto v = get_constant( *const_value );
+            if ( !v ) {
+                throw SemanticException( ast->location, "Case value must be constant expression" );
+            }
+            if ( case_set.top().contains( *v ) ) {
                 throw SemanticException( ast->location, "Duplicate case value " );
             }
-            case_set.top().insert( *const_value );
+            case_set.top().insert( *v );
         }
     } else {
         // default:
@@ -568,14 +599,36 @@ void SemanticAnalyser::expr( const ast::Expr ast, SymbolTable& table ) {
                 ast );
 }
 
+Type SemanticAnalyser::expr_type( ast::Expr ast ) {
+    return std::visit( overloaded { []( ast::UnaryOp u ) -> Type { return u->base_type; },
+                                    []( ast::BinaryOp b ) -> Type { return b->base_type; },
+                                    []( ast::PostOp b ) -> Type { return b->base_type; },
+                                    []( ast::Conditional b ) -> Type { return b->base_type; },
+                                    []( ast::Assign a ) -> Type { return a->base_type; },
+                                    []( ast::Call c ) -> Type { return c->base_type; },
+                                    []( ast::Cast c ) -> Type { return c->base_type; },
+                                    []( ast::Var v ) -> Type { return v->base_type; },
+                                    []( ast::Constant c ) -> Type {
+                                        return std::holds_alternative<ast::ConstantInt>( c ) ? Type::INT : Type::LONG;
+                                    } },
+
+                       ast );
+};
+
 void SemanticAnalyser::visit_UnaryOp( const ast::UnaryOp ast, SymbolTable& table ) {
+    expr( ast->operand, table );
     if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
         // operand must be a variable
         if ( !std::holds_alternative<ast::Var>( ast->operand ) ) {
             throw SemanticException( ast->location, "Invalid lvalue: for {} ", ast->op );
         }
+        auto var = std::get<ast::Var>( ast->operand );
+        ast->base_type = var->base_type;
+    } else if ( ast->op == TokenType::EXCLAMATION ) {
+        ast->base_type = Type::INT;
+    } else {
+        ast->base_type = expr_type( ast->operand );
     }
-    expr( ast->operand, table );
 
     // Constant Analysis
     if ( ast->op == TokenType::INCREMENT || ast->op == TokenType::DECREMENT ) {
@@ -587,21 +640,41 @@ void SemanticAnalyser::visit_UnaryOp( const ast::UnaryOp ast, SymbolTable& table
     }
 }
 
+constexpr Type get_common_type( const Type a, const Type b ) {
+    if ( a == b ) {
+        return a;
+    }
+    return Type::LONG;
+}
+
 void SemanticAnalyser::visit_BinaryOp( const ast::BinaryOp ast, SymbolTable& table ) {
     expr( ast->left, table );
     bool left_constant = is_constant;
+    auto type_left = expr_type( ast->left );
     expr( ast->right, table );
     bool right_constant = is_constant;
+    auto type_right = expr_type( ast->right );
+
+    if ( ast->op == TokenType::COMPARISON_EQUALS || ast->op == TokenType::COMPARISON_NOT ||
+         ast->op == TokenType::LESS || ast->op == TokenType::LESS_EQUALS || ast->op == TokenType::GREATER ||
+         ast->op == TokenType::GREATER_EQUALS ) {
+        ast->base_type = Type::INT;
+    } else {
+        ast->base_type = get_common_type( type_left, type_right );
+    }
+
     // Constant Analysis
     is_constant = left_constant && right_constant;
 }
 
 void SemanticAnalyser::visit_PostOp( const ast::PostOp ast, SymbolTable& table ) {
     // Check left side for postfix increment/decrement
+    expr( ast->operand, table );
     if ( !std::holds_alternative<ast::Var>( ast->operand ) ) {
         throw SemanticException( ast->location, "Invalid lvalue: for {} ", ast->op );
     }
-    expr( ast->operand, table );
+    ast->base_type = expr_type( ast->operand );
+
     // Constant Analysis - postfix operators are not constant
     is_constant = false;
 }
@@ -610,8 +683,11 @@ void SemanticAnalyser::visit_Conditional( const ast::Conditional ast, SymbolTabl
     expr( ast->condition, table );
     expr( ast->then_expr, table );
     bool left_constant = is_constant;
+    auto type_left = expr_type( ast->then_expr );
     expr( ast->else_expr, table );
     bool right_constant = is_constant;
+    auto type_right = expr_type( ast->else_expr );
+    ast->base_type = get_common_type( type_left, type_right );
     // Constant Analysis
     is_constant = left_constant && right_constant;
 }
@@ -620,8 +696,12 @@ void SemanticAnalyser::visit_Assign( const ast::Assign ast, SymbolTable& table )
     if ( !std::holds_alternative<ast::Var>( ast->left ) ) {
         throw SemanticException( ast->location, "Invalid lvalue: for {}", ast->op );
     }
+    if ( std::holds_alternative<ast::Cast>( ast->right ) ) {
+        throw SemanticException( ast->location, "Invalid lvalue: for right hand side of {}", ast->op );
+    }
     expr( ast->left, table );
     expr( ast->right, table );
+    ast->base_type = expr_type( ast->right );
     // Constant Analysis
     is_constant = false; // Assignment is never constant
 }
@@ -630,8 +710,7 @@ void SemanticAnalyser::visit_Call( const ast::Call ast, SymbolTable& table ) {
     spdlog::debug( "Call: {}", ast->function_name );
     // Check if the function is declared
     auto symbol = table.find( ast->function_name );
-    if ( !symbol || symbol->type != Type::FUNCTION ) {
-        table.dump();
+    if ( !symbol || is_integer( symbol->type ) ) {
         throw SemanticException( ast->location, "Function {} not declared", ast->function_name );
     }
 
@@ -639,6 +718,7 @@ void SemanticAnalyser::visit_Call( const ast::Call ast, SymbolTable& table ) {
         throw SemanticException( ast->location, "Function {} expects {} arguments, but got {}", ast->function_name,
                                  symbol->number, ast->arguments.size() );
     }
+    ast->base_type = symbol->type;
 
     for ( const auto& arg : ast->arguments ) {
         expr( arg, table );
@@ -647,7 +727,9 @@ void SemanticAnalyser::visit_Call( const ast::Call ast, SymbolTable& table ) {
     is_constant = false; // Function calls are not constant
 }
 
-void SemanticAnalyser::visit_Cast( ast::Cast ast, SymbolTable& table ) {};
+void SemanticAnalyser::visit_Cast( ast::Cast ast, SymbolTable& table ) {
+    ast->base_type = ast->type;
+};
 
 void SemanticAnalyser::visit_Var( const ast::Var ast, const SymbolTable& table ) {
     if ( auto name = table.find( ast->name ) ) {
@@ -658,6 +740,7 @@ void SemanticAnalyser::visit_Var( const ast::Var ast, const SymbolTable& table )
 
         spdlog::debug( "Found var: {} for {}", name->name, ast->name );
         ast->name = name->name; // Change the name to the temporary.
+        ast->base_type = name->type;
 
         // Constant Analysis
         is_constant = false;
@@ -667,9 +750,12 @@ void SemanticAnalyser::visit_Var( const ast::Var ast, const SymbolTable& table )
     throw SemanticException( ast->location, "variable: {} not declared", ast->name );
 }
 
-void SemanticAnalyser::visit_Constant( ast::Constant ) {
+void SemanticAnalyser::visit_Constant( ast::Constant ast ) {
     // Constant Analysis
     is_constant = true;
+    std::visit( overloaded { []( ast::ConstantInt i ) { i->base_type = Type::INT; },
+                             []( ast::ConstantLong l ) { l->base_type = Type::LONG; } },
+                ast );
 }
 
 SymbolTable SemanticAnalyser::new_scope( SymbolTable& table ) {

@@ -32,3 +32,7 @@ constexpr std::string to_string( const Type type ) {
         return "function";
     }
 }
+
+constexpr bool is_integer( const Type type ) {
+    return type == Type::INT || type == Type::LONG;
+}

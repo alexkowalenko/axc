@@ -228,19 +228,19 @@ int main( int argc, char** argv ) {
         codeGenerator->generate_output_file( assembly );
 
     } catch ( const LexicalException& e ) {
-        std::println( "Lexical error: {}", e.get_message() );
+        std::cerr << std::format( "Lexical error: {}", e.get_message() ) << '\n';
         return EXIT_FAILURE;
     } catch ( const ParseException& e ) {
-        std::println( "Parse error: {}", e.get_message() );
+        std::cerr << std::format( "Parse error: {}", e.get_message() ) << '\n';
         return EXIT_FAILURE;
     } catch ( const SemanticException& e ) {
-        std::println( "Semantic error: {}", e.get_message() );
+        std::cerr << std::format( "Semantic error: {}", e.get_message() ) << '\n';
         return EXIT_FAILURE;
     } catch ( const CodeException& e ) {
-        std::println( "Code Generation: {}", e.get_message() );
+        std::cerr << std::format( "Code Generation: {}", e.get_message() ) << '\n';
         return EXIT_FAILURE;
     } catch ( const std::exception& err ) {
-        std::println( "Exception: {}", err.what() );
+        std::cerr << std::format( "Exception: {}", err.what() ) << '\n';
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;

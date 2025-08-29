@@ -125,7 +125,7 @@ Tested on MacOS and FreeBSD.
 ## Chapter 11 Long Integers
 - [x] Lexer.
 - [x] Parser.
-- [ ] Semantic Analysis.
+- [x] Semantic Analysis.
 - [ ] TAC Intermediate.
 - [ ] Code Generator.
 - [ ] Output: X86_64.

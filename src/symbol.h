@@ -20,6 +20,7 @@ class Symbol {
     std::string  name;
     StorageClass storage { StorageClass::None };
     Type         type { Type::INT };
+    FunctionType function_type;
     int          number { 0 };
     bool         current_scope { false };
     Initialiser  initaliser { Initialiser::None };
