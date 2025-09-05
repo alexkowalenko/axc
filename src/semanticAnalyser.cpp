@@ -392,7 +392,7 @@ void SemanticAnalyser::block_variable_def( const ast::VariableDef ast, SymbolTab
              ( old_dec->storage == StorageClass::Parameter || old_dec->storage == StorageClass::None ) ) {
             throw SemanticException( ast->location, "Conflicting local parameter: {}", ast->name );
         }
-        if ( old_dec->type != ast->var_type ) {
+        if ( old_dec->type != Type::FUNCTION && old_dec->type != ast->var_type ) {
             throw SemanticException( ast->location, "Conflicting types for variable {}: {} and {}", ast->name,
                                      to_string( old_dec->type ), to_string( ast->var_type ) );
         }
@@ -501,6 +501,7 @@ void SemanticAnalyser::visit_For( const ast::For ast, SymbolTable& table ) {
 void SemanticAnalyser::visit_Switch( const ast::Switch ast, SymbolTable& table ) {
     last_break = TokenType::SWITCH;
     expr( ast->condition, table );
+    ast->base_type = expr_type( ast->condition );
 
     new_switch_label( ast );
     // Reset case set for each switch

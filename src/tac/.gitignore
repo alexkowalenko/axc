@@ -1,5 +1,6 @@
 binary.h
-constant.h
+constantint.h
+constantlong.h
 copy.h
 funcall.h
 functiondef.h
@@ -11,8 +12,10 @@ jumpifzero.h
 label.h
 program.h
 return.h
+signextend.h
 staticvariable.h
 toplevel.h
+truncate.h
 unary.h
 variable.h
 value.h

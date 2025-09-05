@@ -33,7 +33,7 @@ class ARMAssemblyGen {
     void                       label( tac::Label atac, std::vector<arm64_at::Instruction>& instructions );
 
     arm64_at::Operand        value( tac::Value atac );
-    arm64_at::Operand        constant( tac::Constant atac );
+    arm64_at::Operand        constant( std::int64_t value );
     static arm64_at::Operand pseudo( tac::Variable atac );
 
     arm64_at::Register x0;

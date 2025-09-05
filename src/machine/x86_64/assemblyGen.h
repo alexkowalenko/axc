@@ -39,7 +39,7 @@ class AssemblyGen {
     void                       functionCall( tac::FunCall atac, std::vector<x86_at::Instruction>& instructions ) const;
 
     static x86_at::Operand value( tac::Value atac );
-    static x86_at::Operand constant( tac::Constant atac );
+    static x86_at::Operand constant( std::int64_t value );
     static x86_at::Operand pseudo( tac::Variable atac );
 
   private:

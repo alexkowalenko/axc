@@ -15,11 +15,17 @@ target_link_libraries(axc_comp PRIVATE
         axc::arm64
 )
 
-install(TARGETS axc_comp DESTINATION bin)
+install(TARGETS axc_comp
+        COMPONENT axc
+        DESTINATION bin)
+
 install(FILES axc.py
+        COMPONENT axc
         DESTINATION bin
         PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
 install(FILES axc.py
+        COMPONENT axc
         DESTINATION bin
         RENAME axc_arm64.py
         PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

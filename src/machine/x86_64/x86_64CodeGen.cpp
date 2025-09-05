@@ -141,9 +141,7 @@ void X86_64CodeGen::visit_Program( const x86_at::Program ast ) {
     add_line( comment_prefix + "X86_64 " );
     add_line( std::format( "{}file: {}", comment_prefix, option.input_file ) );
     for ( auto const& item : ast->top_level ) {
-        std::visit( overloaded { [ this ]( x86_at::FunctionDef f ) -> void { f->accept( this ); },
-                                 [ this ]( x86_at::StaticVariable s ) -> void { s->accept( this ); } },
-                    item );
+        std::visit( [ this ]( auto&& f ) -> void { f->accept( this ); }, item );
         add_line( "" );
     }
 }
@@ -162,22 +160,7 @@ void X86_64CodeGen::visit_FunctionDef( const x86_at::FunctionDef ast ) {
     add_line( "movq", "%rsp, %rbp" );
 
     for ( auto const& instr : ast->instructions ) {
-        std::visit( overloaded { [ this ]( x86_at::Mov v ) -> void { v->accept( this ); },
-                                 [ this ]( x86_at::Unary u ) -> void { u->accept( this ); },
-                                 [ this ]( x86_at::Binary b ) -> void { b->accept( this ); },
-                                 [ this ]( x86_at::Cmp b ) -> void { b->accept( this ); },
-                                 [ this ]( x86_at::AllocateStack a ) -> void { a->accept( this ); },
-                                 [ this ]( x86_at::DeallocateStack a ) -> void { a->accept( this ); },
-                                 [ this ]( x86_at::Push p ) -> void { p->accept( this ); },
-                                 [ this ]( x86_at::Call c ) -> void { c->accept( this ); },
-                                 [ this ]( x86_at::Idiv i ) -> void { i->accept( this ); },
-                                 [ this ]( x86_at::Cdq c ) -> void { c->accept( this ); },
-                                 [ this ]( x86_at::Jump c ) -> void { c->accept( this ); },
-                                 [ this ]( x86_at::JumpCC c ) -> void { c->accept( this ); },
-                                 [ this ]( x86_at::SetCC c ) -> void { c->accept( this ); },
-                                 [ this ]( x86_at::Label c ) -> void { c->accept( this ); },
-                                 [ this ]( x86_at::Ret r ) -> void { r->accept( this ); } },
-                    instr );
+        std::visit( [ this ]( auto&& v ) -> void { v->accept( this ); }, instr );
     }
     add_line( "" );
 }
@@ -202,27 +185,12 @@ void X86_64CodeGen::visit_StaticVariable( x86_at::StaticVariable ast ) {
 }
 
 std::string X86_64CodeGen::operand( const x86_at::Operand& op ) {
-    return std::visit( overloaded { [ this ]( x86_at::Imm v ) -> std::string {
-                                       v->accept( this );
-                                       return last_string;
-                                   },
-                                    [ this ]( x86_at::Register r ) -> std::string {
-                                        r->accept( this );
-                                        return last_string;
-                                    },
-                                    [ this ]( x86_at::Pseudo p ) -> std::string {
-                                        p->accept( this );
-                                        return last_string;
-                                    },
-                                    [ this ]( x86_at::Stack s ) -> std::string {
-                                        s->accept( this );
-                                        return last_string;
-                                    },
-                                    [ this ]( x86_at::Data d ) -> std::string {
-                                        d->accept( this );
-                                        return last_string;
-                                    } },
-                       op );
+    return std::visit(
+        [ this ]( auto&& v ) -> std::string {
+            v->accept( this );
+            return last_string;
+        },
+        op );
 }
 
 void X86_64CodeGen::visit_Mov( const x86_at::Mov ast ) {

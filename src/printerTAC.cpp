@@ -19,10 +19,7 @@ std::string PrinterTAC::print( const tac::Program ast ) {
 std::string PrinterTAC::visit_Program( const tac::Program ast ) {
     std::string buf;
     for ( const auto& item : ast->top_level ) {
-        buf +=
-            std::visit( overloaded { [ this ]( tac::FunctionDef f ) -> std::string { return f->accept( this ); },
-                                     [ this ]( tac::StaticVariable f ) -> std::string { return f->accept( this ); } },
-                        item );
+        buf += std::visit( [ this ]( auto&& f ) -> std::string { return f->accept( this ); }, item );
         buf += '\n';
     }
     return buf;
@@ -32,28 +29,10 @@ std::string PrinterTAC::visit_FunctionDef( const tac::FunctionDef ast ) {
     std::string buf = std::format( "Function: {} ({})\n", ast->name, ast->global ? "global" : "static" );
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
-        buf += std::visit( overloaded {
-                               [ this ]( tac::Return r ) -> std::string { return indent + r->accept( this ); },
-                               [ this ]( tac::Unary r ) -> std::string { return indent + r->accept( this ); },
-                               [ this ]( tac::Binary r ) -> std::string { return indent + r->accept( this ); },
-                               [ this ]( tac::Copy r ) -> std::string { return indent + r->accept( this ); },
-                               [ this ]( tac::Jump r ) -> std::string { return indent + r->accept( this ); },
-                               [ this ]( tac::JumpIfZero r ) -> std::string { return indent + r->accept( this ); },
-                               [ this ]( tac::JumpIfNotZero r ) -> std::string { return indent + r->accept( this ); },
-                               [ this ]( tac::Label r ) -> std::string { return r->accept( this ); },
-                               [ this ]( tac::FunCall r ) -> std::string { return indent + r->accept( this ); },
-                               [ this ]( tac::StaticVariable r ) -> std::string { return indent + r->accept( this ); },
-                           },
-                           instr );
+        buf += std::visit( [ this ]( auto&& f ) -> std::string { return f->accept( this ); }, instr );
         buf += "\n";
     }
     return buf;
-}
-
-std::string PrinterTAC::value( const tac::Value ast ) {
-    return std::visit( overloaded { [ this ]( tac::Constant c ) -> std::string { return c->accept( this ); },
-                                    [ this ]( tac::Variable v ) -> std::string { return v->accept( this ); } },
-                       ast );
 }
 
 std::string PrinterTAC::visit_Return( const tac::Return ast ) {
@@ -176,14 +155,31 @@ std::string PrinterTAC::visit_FunCall( const tac::FunCall ast ) {
     return buf;
 };
 
-std::string PrinterTAC::visit_StaticVariable( tac::StaticVariable ast ) {
-    return std::format( "StaticVariable: {:s} {}({})", ast->name, ast->global ? "global" : "", ast->init );
+std::string PrinterTAC::visit_SignExtend( const tac::SignExtend ast ) {
+    return std::format( "SignExtend {:s} -> {:s}", value( ast->src ), value( ast->dst ) );
 }
 
-std::string PrinterTAC::visit_Constant( const tac::Constant ast ) {
+std::string PrinterTAC::visit_Truncate( const tac::Truncate ast ) {
+    return std::format( "Truncate {:s} -> {:s}", value( ast->src ), value( ast->dst ) );
+}
+
+std::string PrinterTAC::visit_StaticVariable( tac::StaticVariable ast ) {
+    return std::format( "StaticVariable: {:s} {}({} {})", ast->name, to_string( ast->type ),
+                        ast->global ? "global" : "", ast->init );
+}
+
+std::string PrinterTAC::value( const tac::Value ast ) {
+    return std::visit( [ this ]( auto&& c ) -> std::string { return c->accept( this ); }, ast );
+}
+
+std::string PrinterTAC::visit_ConstantInt( const tac::ConstantInt ast ) {
     return std::format( "Constant({:d})", ast->value );
 }
 
+std::string PrinterTAC::visit_ConstantLong( const tac::ConstantLong ast ) {
+    return std::format( "Constant({:d}L)", ast->value );
+}
+
 std::string PrinterTAC::visit_Variable( const tac::Variable ast ) {
-    return std::format( "Variable({})", ast->name );
+    return std::format( "Variable({}:{})", ast->name, to_string( ast->type ) );
 }

@@ -25,21 +25,7 @@ std::string PrinterARM64::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
     std::string buf = std::format( "Function({})\n", ast->name );
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
-        buf += std::visit(
-            overloaded { [ this ]( arm64_at::Mov v ) -> std::string { return v->accept( this ); },
-                         [ this ]( arm64_at::Load l ) -> std::string { return l->accept( this ); },
-                         [ this ]( arm64_at::Store s ) -> std::string { return s->accept( this ); },
-                         [ this ]( arm64_at::Ret r ) -> std::string { return r->accept( this ); },
-                         [ this ]( arm64_at::Unary u ) -> std::string { return u->accept( this ); },
-                         [ this ]( arm64_at::Binary b ) -> std::string { return b->accept( this ); },
-                         [ this ]( arm64_at::AllocateStack a ) -> std::string { return a->accept( this ); },
-                         [ this ]( arm64_at::DeallocateStack d ) -> std::string { return d->accept( this ); },
-                         [ this ]( arm64_at::Branch b ) -> std::string { return b->accept( this ); },
-                         [ this ]( arm64_at::BranchCC b ) -> std::string { return b->accept( this ); },
-                         [ this ]( arm64_at::Label l ) -> std::string { return l->accept( this ); },
-                         [ this ]( arm64_at::Cmp c ) -> std::string { return c->accept( this ); },
-                         [ this ]( arm64_at::Cset c ) -> std::string { return c->accept( this ); } },
-            instr );
+        buf += std::visit( [ this ]( auto&& v ) -> std::string { return v->accept( this ); }, instr );
         buf += "\n";
     }
     return buf;
@@ -154,11 +140,7 @@ std::string PrinterARM64::visit_Cset( arm64_at::Cset ast ) {
 }
 
 std::string PrinterARM64::operand( const arm64_at::Operand& op ) {
-    return std::visit( overloaded { [ this ]( arm64_at::Imm v ) -> std::string { return v->accept( this ); },
-                                    [ this ]( arm64_at::Register r ) -> std::string { return r->accept( this ); },
-                                    [ this ]( arm64_at::Pseudo p ) -> std::string { return p->accept( this ); },
-                                    [ this ]( arm64_at::Stack s ) -> std::string { return s->accept( this ); } },
-                       op );
+    return std::visit( [ this ]( auto&& v ) -> std::string { return v->accept( this ); }, op );
 }
 
 std::string PrinterARM64::visit_Imm( const arm64_at::Imm ast ) {

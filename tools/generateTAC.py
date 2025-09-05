@@ -16,7 +16,7 @@ if __name__ == "__main__":
         {
             "Program": [("std::vector<TopLevel>", "top_level")],
             "FunctionDef": [("std::string", "name"), ("std::vector<std::string>", "params"), ("std::vector<Instruction>", "instructions"),  ("bool", "global")],
-            "StaticVariable": [("std::string", "name"), ("bool", "global"), ("int", "init")],
+            "StaticVariable": [("std::string", "name"), ("bool", "global"), ("Type", "type"), ("int", "init")],
             "Return": [("Value", "value") ],
             "Unary": [("UnaryOpType", "op"), ("Value", "src"), ("Value", "dst")],
             "Binary": [("BinaryOpType", "op"), ("Value", "src1"), ("Value", "src2"), ("Value", "dst")],
@@ -26,11 +26,14 @@ if __name__ == "__main__":
             "JumpIfNotZero": [("Value", "condition"), ("std::string", "target")],
             "Label": [("std::string", "name")],
             "FunCall": [("std::string", "function_name"), ("std::vector<Value>", "arguments"), ("Value", "dst"), ("bool", "external")],
-            "Constant": [("std::int32_t", "value")],
-            "Variable": [("std::string", "name")],
+            "SignExtend": [("Value", "src"), ("Value", "dst")],
+            "Truncate": [("Value", "src"), ("Value", "dst")],
+            "ConstantInt": [("std::int32_t", "value")],
+            "ConstantLong": [("std::int64_t", "value")],
+            "Variable": [("std::string", "name"), ("Type", "type")],
          },
         {
             "TopLevel": ["FunctionDef", "StaticVariable"],
-            "Instruction":  ["Return", "Unary", "Binary", "Copy", "Jump", "JumpIfZero", "JumpIfNotZero", "Label", "FunCall"],
-            "Value": ["Constant", "Variable"],
+            "Instruction":  ["Return", "Unary", "Binary", "Copy", "Jump", "JumpIfZero", "JumpIfNotZero", "Label", "FunCall", "SignExtend", "Truncate"],
+            "Value": ["ConstantInt", "ConstantLong", "Variable"],
         })

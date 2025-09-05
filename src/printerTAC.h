@@ -32,9 +32,12 @@ class PrinterTAC : public tac::Visitor<std::string> {
     std::string visit_JumpIfNotZero( tac::JumpIfNotZero ast ) override;
     std::string visit_Label( tac::Label ast ) override;
     std::string visit_FunCall( tac::FunCall ast ) override;
+    std::string visit_SignExtend( tac::SignExtend ast ) override;
+    std::string visit_Truncate( tac::Truncate ast ) override;
     std::string visit_StaticVariable( tac::StaticVariable ast ) override;
 
-    std::string visit_Constant( tac::Constant ast ) override;
+    std::string visit_ConstantInt( tac::ConstantInt ast ) override;
+    std::string visit_ConstantLong( tac::ConstantLong ast ) override;
     std::string visit_Variable( tac::Variable ast ) override;
 
     std::string indent { "  " };

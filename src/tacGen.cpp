@@ -17,6 +17,16 @@
 #include "exception.h"
 #include "tac/includes.h"
 
+tac::Value create_constant( HasLocation auto b, Type type, int value ) {
+    switch ( type ) {
+    case Type::INT :
+        return mk_node<tac::ConstantInt_>( b, value );
+    case Type::LONG :
+    default :
+        return mk_node<tac::ConstantLong_>( b, value );
+    }
+}
+
 tac::Program TacGen::generate( ast::Program ast ) {
     auto program = mk_node<tac::Program_>( ast );
 
@@ -34,8 +44,8 @@ tac::Program TacGen::generate( ast::Program ast ) {
     for ( auto const& [ name, symbol ] : symbol_table ) {
         if ( symbol.type != Type::FUNCTION && symbol.storage != StorageClass::Extern ) {
             spdlog::debug( "tac::generate: {} is defined as {}", name, symbol.number );
-            auto static_var =
-                mk_node<tac::StaticVariable_>( ast, name, symbol.storage == StorageClass::None, symbol.number );
+            auto static_var = mk_node<tac::StaticVariable_>( ast, name, symbol.storage == StorageClass::None,
+                                                             symbol.type, symbol.number );
             program->top_level.emplace_back( static_var );
         }
     }
@@ -64,7 +74,7 @@ std::optional<tac::FunctionDef> TacGen::functionDef( ast::FunctionDef ast ) {
     }
 
     // Add a return at the end of the function
-    instructions.emplace_back( mk_node<tac::Return_>( ast, mk_node<tac::Constant_>( ast, 0 ) ) ); // Return 0
+    instructions.emplace_back( mk_node<tac::Return_>( ast, mk_node<tac::ConstantInt_>( ast, 0 ) ) ); // Return 0
     function->instructions = instructions;
     return function;
 }
@@ -76,7 +86,8 @@ std::optional<tac::StaticVariable> TacGen::staticVariable( ast::VariableDef ast 
             value = s->number;
             spdlog::debug( "tac::staticVariable: {} is defined, using {}", ast->name, value );
         }
-        auto static_var = mk_node<tac::StaticVariable_>( ast, ast->name, ast->storage == StorageClass::None, value );
+        auto static_var =
+            mk_node<tac::StaticVariable_>( ast, ast->name, ast->storage == StorageClass::None, ast->var_type, value );
         return static_var;
     }
     return std::nullopt;
@@ -87,7 +98,8 @@ void TacGen::declaration( ast::VariableDef ast, std::vector<tac::Instruction>& i
     if ( ast->init && !symbol_table.contains( ast->name ) ) {
         // Can't initialise a static variable
         auto result = expr( *ast->init, instructions );
-        auto copy = mk_node<tac::Copy_>( ast, result, mk_node<tac::Variable_>( ast, ast->name ) );
+        auto copy = mk_node<tac::Copy_>( ast, result, mk_node<tac::Variable_>( ast, ast->name, ast->var_type ) );
+        instructions.emplace_back( copy );
         instructions.emplace_back( copy );
     }
 }
@@ -293,7 +305,7 @@ void TacGen::switch_stat( const ast::Switch ast, std::vector<tac::Instruction>& 
             auto r = expr( case_item->value, instructions );
 
             // BinOp(EQ, c, r)
-            auto result = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+            auto result = temp_var( ast->base_type );
             auto case_cmp = mk_node<tac::Binary_>( ast, tac::BinaryOpType::Equal, c, r, result );
             instructions.emplace_back( case_cmp );
 
@@ -349,8 +361,8 @@ tac::Value TacGen::expr( ast::Expr ast, std::vector<tac::Instruction>& instructi
             [ &instructions, this ]( ast::Conditional b ) -> tac::Value { return conditional( b, instructions ); },
             [ &instructions, this ]( ast::Assign a ) -> tac::Value { return assign( a, instructions ); },
             [ &instructions, this ]( ast::Call c ) -> tac::Value { return call( c, instructions ); },
-            [ this ]( ast::Cast c ) -> tac::Value { return mk_node<tac::Constant_>( c, 0 ); },
-            []( ast::Var v ) -> tac::Value { return mk_node<tac::Variable_>( v, v->name ); },
+            [ &instructions, this ]( ast::Cast c ) -> tac::Value { return cast( c, instructions ); },
+            []( ast::Var v ) -> tac::Value { return mk_node<tac::Variable_>( v, v->name, v->base_type ); },
             [ this ]( ast::Constant c ) -> tac::Value { return constant( c ); } },
         ast );
 }
@@ -372,8 +384,8 @@ tac::Value TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instr
             throw SemanticException( ast->location, "Internal: increment operator invalid: {}", to_string( ast->op ) );
         }
         b->src1 = expr( ast->operand, instructions );
-        b->src2 = mk_node<tac::Constant_>( ast, 1 );
-        auto temp = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+        b->src2 = create_constant( ast, ast->base_type, 1 );
+        auto temp = temp_var( ast->base_type );
         b->dst = temp;
         instructions.emplace_back( b );
 
@@ -398,7 +410,7 @@ tac::Value TacGen::unary( ast::UnaryOp ast, std::vector<tac::Instruction>& instr
         break;
     }
     u->src = expr( ast->operand, instructions );
-    auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+    auto dst = temp_var( ast->base_type );
     u->dst = dst;
     instructions.emplace_back( u );
     return u->dst;
@@ -464,7 +476,7 @@ tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& ins
     }
     b->src1 = expr( ast->left, instructions );
     b->src2 = expr( ast->right, instructions );
-    auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+    auto dst = temp_var( ast->base_type );
     b->dst = dst;
     instructions.emplace_back( b );
     return b->dst;
@@ -473,7 +485,7 @@ tac::Value TacGen::binary( ast::BinaryOp ast, std::vector<tac::Instruction>& ins
 tac::Value TacGen::post( ast::PostOp ast, std::vector<tac::Instruction>& instructions ) {
     // Copy(left, orig)
     auto left = expr( ast->operand, instructions );
-    auto orig = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+    auto orig = temp_var( ast->base_type );
     auto copy = mk_node<tac::Copy_>( ast, left, orig );
     instructions.emplace_back( copy );
 
@@ -490,8 +502,8 @@ tac::Value TacGen::post( ast::PostOp ast, std::vector<tac::Instruction>& instruc
         throw SemanticException( ast->location, "Internal: increment operator invalid: {}", to_string( ast->op ) );
     }
     b->src1 = left;
-    b->src2 = mk_node<tac::Constant_>( ast, 1 );
-    auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+    b->src2 = create_constant( ast, ast->base_type, 1 );
+    auto dst = temp_var( ast->base_type );
     b->dst = dst;
     instructions.emplace_back( b );
 
@@ -508,9 +520,9 @@ tac::Value TacGen::logical( ast::BinaryOp ast, std::vector<tac::Instruction>& in
     auto false_label = generate_label( ast, "logicalfalse" ); // For AND
     auto true_label = generate_label( ast, "logicaltrue" );   // For OR
     auto end_label = generate_label( ast, "logicalend" );
-    auto result = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
-    auto one = mk_node<tac::Constant_>( ast, 1 );
-    auto zero = mk_node<tac::Constant_>( ast, 0 );
+    auto result = temp_var( ast->base_type );
+    auto one = mk_node<tac::ConstantInt_>( ast, 1 );
+    auto zero = mk_node<tac::ConstantInt_>( ast, 0 );
 
     // v1
     auto v = expr( ast->left, instructions );
@@ -569,7 +581,7 @@ tac::Value TacGen::conditional( ast::Conditional ast, std::vector<tac::Instructi
     spdlog::debug( "tac::conditional" );
     auto end_label = generate_label( ast, "ternend" );
     auto e2_label = generate_label( ast, "terne2" );
-    auto result = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+    auto result = temp_var( Type::INT );
 
     // Instructs for condition
     auto c = expr( ast->condition, instructions );
@@ -645,7 +657,7 @@ tac::Value TacGen::assign( ast::Assign ast, std::vector<tac::Instruction>& instr
     }
     b->src1 = expr( ast->left, instructions );
     b->src2 = expr( ast->right, instructions );
-    auto temp = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+    auto temp = temp_var( ast->base_type );
     b->dst = temp;
     instructions.emplace_back( b );
 
@@ -660,7 +672,7 @@ tac::Value TacGen::call( const ast::Call ast, std::vector<tac::Instruction>& ins
         args.push_back( expr( arg, instructions ) );
     }
 
-    auto dst = mk_node<tac::Variable_>( ast, symbol_table.temp_name() );
+    auto dst = temp_var( ast->base_type );
     auto func = mk_node<tac::FunCall_>( ast, ast->function_name, args, dst, false );
     if ( auto f = symbol_table.find( ast->function_name ) ) {
         if ( f.value().storage == StorageClass::Extern ) {
@@ -676,17 +688,42 @@ tac::Value TacGen::call( const ast::Call ast, std::vector<tac::Instruction>& ins
     return dst;
 }
 
+tac::Value TacGen::cast( const ast::Cast ast, std::vector<tac::Instruction>& instructions ) {
+    spdlog::debug( "tac::cast: {}", to_string( ast->type ) );
+    auto src = expr( ast->expr, instructions );
+    if ( ast->base_type == ast->type ) {
+        // Same type
+        return src;
+    }
+    if ( ast->type == Type::LONG ) {
+        // int -> long
+        auto dst = temp_var( Type::LONG );
+        auto sign_ext = mk_node<tac::SignExtend_>( ast, src, dst );
+        instructions.emplace_back( sign_ext );
+        return dst;
+    } else {
+        auto dst = temp_var( Type::INT );
+        auto trunc = mk_node<tac::Truncate_>( ast, src, dst );
+        instructions.emplace_back( trunc );
+        return dst;
+    }
+}
+
 tac::Label TacGen::generate_label( const std::shared_ptr<ast::Base> b, std::string_view name ) {
     return mk_node<tac::Label_>( b, std::format( "{:s}.{:d}", name, label_count++ ) );
 }
 
-tac::Constant TacGen::constant( ast::Constant ast ) {
+tac::Value TacGen::constant( ast::Constant ast ) {
     if ( auto int_const = std::get_if<ast::ConstantInt>( &ast ); int_const ) {
-        return mk_node<tac::Constant_>( ( *int_const ), ( *int_const )->value );
+        return mk_node<tac::ConstantInt_>( ( *int_const ), ( *int_const )->value );
     }
-    auto long_const = std::get_if<ast::ConstantInt>( &ast );
-    return mk_node<tac::Constant_>( ( *long_const ), ( *long_const )->value );
+    auto long_const = std::get_if<ast::ConstantLong>( &ast );
+    return mk_node<tac::ConstantLong_>( ( *long_const ), ( *long_const )->value );
 }
+
+tac::Value TacGen::temp_var( Type type ) {
+    return std::make_shared<tac::Variable_>( Location(), symbol_table.temp_name(), type );
+};
 
 tac::Label TacGen::generate_loop_break( std::shared_ptr<ast::Base> b ) {
     return mk_node<tac::Label_>( b, std::format( "break_{:s}", b->ast_label ) );

@@ -39,9 +39,7 @@ void FixInstructX86::filter( x86_at::Program program ) {
 
 void FixInstructX86::visit_Program( const x86_at::Program ast ) {
     for ( auto const& funct : ast->top_level ) {
-        std::visit( overloaded { [ this ]( x86_at::FunctionDef f ) -> void { f->accept( this ); },
-                                 [ this ]( x86_at::StaticVariable f ) -> void { f->accept( this ); } },
-                    funct );
+        std::visit( [ this ]( auto&& f ) -> void { f->accept( this ); }, funct );
     }
 }
 

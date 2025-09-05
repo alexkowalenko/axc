@@ -117,8 +117,8 @@ Tested on MacOS and FreeBSD.
 - [x] Lexer.
 - [x] Parser.
 - [ ] Semantic Analysis.
-- [ ] TAC Intermediate.
-- [ ] Code Generator.
+- [x] TAC Intermediate.
+- [x] Code Generator.
 - [x] Output: X86_64.
 - [ ] Output: AArch64.
 
@@ -126,7 +126,7 @@ Tested on MacOS and FreeBSD.
 - [x] Lexer.
 - [x] Parser.
 - [x] Semantic Analysis.
-- [ ] TAC Intermediate.
+- [x] TAC Intermediate.
 - [ ] Code Generator.
 - [ ] Output: X86_64.
 - [ ] Output: AArch64.

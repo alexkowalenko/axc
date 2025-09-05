@@ -29,10 +29,7 @@ std::string PrinterX86::print( const x86_at::Program ast ) {
 std::string PrinterX86::visit_Program( const x86_at::Program ast ) {
     std::string buf;
     for ( const auto& item : ast->top_level ) {
-        buf += std::visit(
-            overloaded { [ this ]( x86_at::FunctionDef f ) -> std::string { return f->accept( this ); },
-                         [ this ]( x86_at::StaticVariable f ) -> std::string { return f->accept( this ); } },
-            item );
+        buf += std::visit( [ this ]( auto&& f ) -> std::string { return f->accept( this ); }, item );
     }
     return buf;
 };
@@ -41,23 +38,7 @@ std::string PrinterX86::visit_FunctionDef( const x86_at::FunctionDef ast ) {
     std::string buf = std::format( "Function: {} ({})\n", ast->name, ast->global ? "global" : "static" );
     for ( auto const& instr : ast->instructions ) {
         buf += indent;
-        buf +=
-            std::visit( overloaded { [ this ]( x86_at::Mov v ) -> std::string { return v->accept( this ); },
-                                     [ this ]( x86_at::Unary u ) -> std::string { return u->accept( this ); },
-                                     [ this ]( x86_at::Binary b ) -> std::string { return b->accept( this ); },
-                                     [ this ]( x86_at::Cmp b ) -> std::string { return b->accept( this ); },
-                                     [ this ]( x86_at::AllocateStack a ) -> std::string { return a->accept( this ); },
-                                     [ this ]( x86_at::DeallocateStack a ) -> std::string { return a->accept( this ); },
-                                     [ this ]( x86_at::Push p ) -> std::string { return p->accept( this ); },
-                                     [ this ]( x86_at::Call c ) -> std::string { return c->accept( this ); },
-                                     [ this ]( x86_at::Idiv i ) -> std::string { return i->accept( this ); },
-                                     [ this ]( x86_at::Cdq c ) -> std::string { return c->accept( this ); },
-                                     [ this ]( x86_at::Jump c ) -> std::string { return c->accept( this ); },
-                                     [ this ]( x86_at::JumpCC c ) -> std::string { return c->accept( this ); },
-                                     [ this ]( x86_at::SetCC c ) -> std::string { return c->accept( this ); },
-                                     [ this ]( x86_at::Label c ) -> std::string { return c->accept( this ); },
-                                     [ this ]( x86_at::Ret r ) -> std::string { return r->accept( this ); } },
-                        instr );
+        buf += std::visit( [ this ]( auto&& v ) -> std::string { return v->accept( this ); }, instr );
         buf += "\n";
     }
     return buf;
@@ -68,12 +49,7 @@ std::string PrinterX86::visit_StaticVariable( x86_at::StaticVariable ast ) {
 }
 
 std::string PrinterX86::operand( const x86_at::Operand& op ) {
-    return std::visit( overloaded { [ this ]( x86_at::Imm v ) -> std::string { return v->accept( this ); },
-                                    [ this ]( x86_at::Register r ) -> std::string { return r->accept( this ); },
-                                    [ this ]( x86_at::Pseudo p ) -> std::string { return p->accept( this ); },
-                                    [ this ]( x86_at::Stack s ) -> std::string { return s->accept( this ); },
-                                    [ this ]( x86_at::Data d ) -> std::string { return d->accept( this ); } },
-                       op );
+    return std::visit( [ this ]( auto&& v ) -> std::string { return v->accept( this ); }, op );
 }
 
 std::string PrinterX86::visit_Mov( const x86_at::Mov ast ) {

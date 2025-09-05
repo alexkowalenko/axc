@@ -50,8 +50,10 @@ class TacGen {
     tac::Value logical( ast::BinaryOp ast, std::vector<tac::Instruction>& instructions );
     tac::Value assign( ast::Assign ast, std::vector<tac::Instruction>& instructions );
     tac::Value call( ast::Call ast, std::vector<tac::Instruction>& instructions );
+    tac::Value cast( ast::Cast ast, std::vector<tac::Instruction>& instructions );
 
-    static tac::Constant constant( ast::Constant ast );
+    static tac::Value constant( ast::Constant ast );
+    tac::Value        temp_var( Type type );
 
     tac::Label        generate_label( std::shared_ptr<ast::Base> b, std::string_view name );
     static tac::Label generate_loop_break( std::shared_ptr<ast::Base> b );

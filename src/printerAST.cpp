@@ -22,10 +22,7 @@ std::string PrinterAST::print( const ast::Program& ast ) {
 std::string PrinterAST::visit_Program( const ast::Program ast ) {
     std::string buf;
     for ( const auto& d : ast->declarations ) {
-        buf +=
-            std::visit( overloaded { [ this ]( ast::VariableDef ast ) -> std::string { return ast->accept( this ); },
-                                     [ this ]( ast::FunctionDef ast ) -> std::string { return ast->accept( this ); } },
-                        d );
+        buf += std::visit( [ this ]( auto&& ast ) -> std::string { return ast->accept( this ); }, d );
         buf += new_line;
         buf += new_line;
     }
@@ -60,10 +57,7 @@ std::string PrinterAST::visit_FunctionDef( const ast::FunctionDef ast ) {
 }
 
 std::string PrinterAST::block_item( const ast::BlockItem ast ) {
-    return std::visit( overloaded { [ this ]( ast::VariableDef ast ) -> std::string { return ast->accept( this ); },
-                                    [ this ]( ast::FunctionDef ast ) -> std::string { return ast->accept( this ); },
-                                    [ this ]( ast::Statement ast ) -> std::string { return ast->accept( this ); } },
-                       ast );
+    return std::visit( [ this ]( auto&& ast ) -> std::string { return ast->accept( this ); }, ast );
 }
 
 std::string PrinterAST::visit_VariableDef( const ast::VariableDef ast ) {
@@ -266,9 +260,7 @@ std::string PrinterAST::visit_Var( const ast::Var ast ) {
 };
 
 std::string PrinterAST::constant( ast::Constant ast ) {
-    return std::visit( overloaded { [ this ]( ast::ConstantInt i ) -> std::string { return i->accept( this ); },
-                                    [ this ]( ast::ConstantLong l ) -> std::string { return l->accept( this ); } },
-                       ast );
+    return std::visit( [ this ]( auto&& i ) -> std::string { return i->accept( this ); }, ast );
 }
 
 std::string PrinterAST::visit_ConstantInt( ast::ConstantInt ast ) {

@@ -47,6 +47,8 @@ arm64_at::FunctionDef ARMAssemblyGen::function( tac::FunctionDef atac ) {
                 [ &funct, this ]( tac::JumpIfNotZero j ) -> void { branchIfZero( j, false, funct->instructions ); },
                 [ &funct, this ]( tac::Label l ) -> void { label( l, funct->instructions ); },
                 []( tac::FunCall ) -> void {},
+                []( tac::SignExtend e ) -> void {},
+                []( tac::Truncate ) -> void {},
                 []( tac::StaticVariable ) -> void {},
             },
             instr );
@@ -164,16 +166,18 @@ void ARMAssemblyGen::label( tac::Label atac, std::vector<arm64_at::Instruction>&
 }
 
 arm64_at::Operand ARMAssemblyGen::value( const tac::Value atac ) {
-    return std::visit( overloaded { [ this ]( tac::Constant c ) -> arm64_at::Operand { return constant( c ); },
-                                    []( tac::Variable v ) -> arm64_at::Operand { return pseudo( v ); } },
-                       atac );
+    return std::visit(
+        overloaded { [ this ]( tac::ConstantInt c ) -> arm64_at::Operand { return constant( c->value ); },
+                     [ this ]( tac::ConstantLong c ) -> arm64_at::Operand { return constant( c->value ); },
+                     []( tac::Variable v ) -> arm64_at::Operand { return pseudo( v ); } },
+        atac );
 }
 
-arm64_at::Operand ARMAssemblyGen::constant( const tac::Constant atac ) {
-    if ( atac->value == 0 ) {
+arm64_at::Operand ARMAssemblyGen::constant( const std::int64_t value ) {
+    if ( value == 0 ) {
         return xzr; // Use zero register for constant 0
     }
-    return mk_node<arm64_at::Imm_>( atac, atac->value );
+    return std::make_shared<arm64_at::Imm_>( Location(), value );
 }
 
 arm64_at::Operand ARMAssemblyGen::pseudo( tac::Variable atac ) {

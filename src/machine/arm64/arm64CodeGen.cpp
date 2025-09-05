@@ -108,21 +108,7 @@ void Arm64CodeGen::visit_FunctionDef( const arm64_at::FunctionDef ast ) {
     add_line( "str", "lr, [sp,#-16]!" ); // Save link register
 
     for ( auto const& instr : ast->instructions ) {
-
-        std::visit( overloaded { [ this ]( arm64_at::Mov v ) -> void { v->accept( this ); },
-                                 [ this ]( arm64_at::Load l ) -> void { l->accept( this ); },
-                                 [ this ]( arm64_at::Store s ) -> void { s->accept( this ); },
-                                 [ this ]( arm64_at::Ret r ) -> void { r->accept( this ); },
-                                 [ this ]( arm64_at::Unary u ) -> void { u->accept( this ); },
-                                 [ this ]( arm64_at::Binary b ) -> void { b->accept( this ); },
-                                 [ this ]( arm64_at::AllocateStack a ) -> void { a->accept( this ); },
-                                 [ this ]( arm64_at::DeallocateStack d ) -> void { d->accept( this ); },
-                                 [ this ]( arm64_at::Branch b ) -> void { b->accept( this ); },
-                                 [ this ]( arm64_at::BranchCC b ) -> void { b->accept( this ); },
-                                 [ this ]( arm64_at::Label l ) -> void { l->accept( this ); },
-                                 [ this ]( arm64_at::Cmp c ) -> void { c->accept( this ); },
-                                 [ this ]( arm64_at::Cset c ) -> void { c->accept( this ); } },
-                    instr );
+        std::visit( [ this ]( auto&& v ) -> void { v->accept( this ); }, instr );
     }
 }
 

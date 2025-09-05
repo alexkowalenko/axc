@@ -87,6 +87,7 @@ x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
                                      jumpIfZero<tac::JumpIfNotZero>( r, false, function->instructions );
                                  },
                                  [ &function ]( tac::Label r ) -> void { label( r, function->instructions ); },
+                                 []( tac::SignExtend e ) -> void {}, []( tac::Truncate ) -> void {},
                                  [ &function, this ]( tac::FunCall atac ) -> void {
                                      functionCall( atac, function->instructions );
                                  } },
@@ -321,13 +322,14 @@ void AssemblyGen::functionCall( const tac::FunCall atac, std::vector<x86_at::Ins
 }
 
 x86_at::Operand AssemblyGen::value( tac::Value atac ) {
-    return std::visit( overloaded { []( tac::Constant c ) -> x86_at::Operand { return constant( c ); },
+    return std::visit( overloaded { []( tac::ConstantInt c ) -> x86_at::Operand { return constant( c->value ); },
+                                    []( tac::ConstantLong c ) -> x86_at::Operand { return constant( c->value ); },
                                     []( tac::Variable v ) -> x86_at::Operand { return pseudo( v ); } },
                        atac );
 }
 
-x86_at::Operand AssemblyGen::constant( tac::Constant atac ) {
-    return mk_node<x86_at::Imm_>( atac, atac->value );
+x86_at::Operand AssemblyGen::constant( std::int64_t value ) {
+    return std::make_shared<x86_at::Imm_>( Location(), value );
 };
 
 x86_at::Operand AssemblyGen::pseudo( tac::Variable atac ) {

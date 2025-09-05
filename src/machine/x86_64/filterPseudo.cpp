@@ -23,31 +23,14 @@ void FilterPseudoX86::filter( x86_at::Program program ) {
 
 void FilterPseudoX86::visit_Program( const x86_at::Program ast ) {
     for ( auto const& funct : ast->top_level ) {
-        std::visit( overloaded { [ this ]( x86_at::FunctionDef f ) -> void { f->accept( this ); },
-                                 [ this ]( x86_at::StaticVariable f ) -> void { f->accept( this ); } },
-                    funct );
+        std::visit( [ this ]( auto&& f ) -> void { f->accept( this ); }, funct );
     }
 }
 
 void FilterPseudoX86::visit_FunctionDef( const x86_at::FunctionDef ast ) {
     reset_stack_info();
     for ( auto const& instr : ast->instructions ) {
-        std::visit( overloaded { [ this ]( x86_at::Mov v ) -> void { v->accept( this ); },
-                                 [ this ]( x86_at::Unary u ) -> void { u->accept( this ); },
-                                 [ this ]( x86_at::Cmp b ) -> void { b->accept( this ); },
-                                 [ this ]( x86_at::Binary b ) -> void { b->accept( this ); },
-                                 [ this ]( x86_at::AllocateStack a ) -> void { a->accept( this ); },
-                                 [ this ]( x86_at::DeallocateStack a ) -> void { a->accept( this ); },
-                                 [ this ]( x86_at::Push p ) -> void { p->accept( this ); },
-                                 [ this ]( x86_at::Call c ) -> void { c->accept( this ); },
-                                 [ this ]( x86_at::Idiv i ) -> void { i->accept( this ); },
-                                 [ this ]( x86_at::Cdq c ) -> void { c->accept( this ); },
-                                 [ this ]( x86_at::Jump c ) -> void { c->accept( this ); },
-                                 [ this ]( x86_at::JumpCC c ) -> void { c->accept( this ); },
-                                 [ this ]( x86_at::SetCC c ) -> void { c->accept( this ); },
-                                 [ this ]( x86_at::Label c ) -> void { c->accept( this ); },
-                                 [ this ]( x86_at::Ret r ) -> void { r->accept( this ); } },
-                    instr );
+        std::visit( [ this ]( auto&& v ) -> void { v->accept( this ); }, instr );
     }
     ast->stack_size = get_number_stack_locations();
     spdlog::debug( "Function {} has {} stack locations", ast->name, ast->stack_size );

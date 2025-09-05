@@ -12,7 +12,8 @@
 #include <variant>
 #include <vector>
 
-#include "../token.h"
+#include "token.h"
+#include "type.h"
 
 #pragma once
 
