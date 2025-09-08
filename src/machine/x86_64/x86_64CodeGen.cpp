@@ -30,6 +30,21 @@ std::string to_lower( const std::string& s ) {
     return buf;
 }
 
+constexpr char instruction_suffix( const AssemblyType t ) {
+    switch ( t ) {
+    case AssemblyType::Longword :
+        return 'l';
+    case AssemblyType::Quadword :
+        return 'q';
+    default :
+        return 'l';
+    }
+}
+
+constexpr std::string instruction( std::string const& i, AssemblyType t ) {
+    return i + instruction_suffix( t );
+}
+
 std::string assemble_reg( x86_at::Register r ) {
     std::string name = to_lower( to_string( r->reg ) );
     switch ( r->reg ) {
@@ -55,6 +70,9 @@ std::string assemble_reg( x86_at::Register r ) {
         case x86_at::RegisterSize::Qword :
             return "r" + name; // RDI, RSI
         }
+    }
+    case x86_at::RegisterName::SP : {
+        return "rsp"; // RSP
     }
     default :
         // Rx
@@ -147,6 +165,7 @@ void X86_64CodeGen::visit_Program( const x86_at::Program ast ) {
 }
 
 void X86_64CodeGen::visit_FunctionDef( const x86_at::FunctionDef ast ) {
+    current_function = ast;
     std::string name = native_label( ast->name );
     current_function_name = ast->name;
     add_line( "\t.text" );
@@ -175,12 +194,16 @@ void X86_64CodeGen::visit_StaticVariable( x86_at::StaticVariable ast ) {
     } else {
         add_line( "\t.data" );
     }
-    add_line( "\t.balign 4" );
+    add_line( std::format( "\t.balign {}", ast->alignment ) );
     add_line( std::format( "{}:", name ) );
     if ( ast->init == 0 ) {
-        add_line( "\t.zero 4" );
+        add_line( std::format( "\t.zero {}", ast->alignment ) );
     } else {
-        add_line( std::format( "\t.long {}", ast->init ) );
+        if ( ast->alignment == 8 ) {
+            add_line( std::format( "\t.quad {}", ast->init ) );
+        } else {
+            add_line( std::format( "\t.long {}", ast->init ) );
+        }
     }
 }
 
@@ -194,10 +217,20 @@ std::string X86_64CodeGen::operand( const x86_at::Operand& op ) {
 }
 
 void X86_64CodeGen::visit_Mov( const x86_at::Mov ast ) {
-    add_line( "movl", operand( ast->src ), operand( ast->dst ) );
+    add_line( instruction( "mov", ast->type ), operand( ast->src ), operand( ast->dst ) );
+}
+
+void X86_64CodeGen::visit_Movsx( x86_at::Movsx ast ) {
+    add_line( "movslq", operand( ast->src ), operand( ast->dst ) );
 }
 
 void X86_64CodeGen::visit_Ret( const x86_at::Ret ast ) {
+    // Deallocate stack variables
+    if ( current_function->stack_size > 0 ) {
+        int size = current_function->stack_size;
+        size = size = ( ( size + 15 ) & ~15 ); // Align to 16 bytes
+        add_line( "addq", std::format( "${}, %rsp", size ) );
+    }
     add_line( "movq", "%rbp, %rsp", ast->location.line );
     add_line( "popq", "%rbp" );
     add_line( "ret", "" );
@@ -206,10 +239,10 @@ void X86_64CodeGen::visit_Ret( const x86_at::Ret ast ) {
 void X86_64CodeGen::visit_Unary( const x86_at::Unary ast ) {
     switch ( ast->op ) {
     case x86_at::UnaryOpType::NEG :
-        add_line( "negl", operand( ast->operand ) );
+        add_line( instruction( "neg", ast->type ), operand( ast->operand ) );
         break;
     case x86_at::UnaryOpType::NOT :
-        add_line( "notl", operand( ast->operand ) );
+        add_line( instruction( "not", ast->type ), operand( ast->operand ) );
         break;
     default :
         throw CodeException( ast->location, "Unsupported unary operator" );
@@ -246,39 +279,39 @@ void X86_64CodeGen::visit_Call( const x86_at::Call ast ) {
 void X86_64CodeGen::visit_Binary( const x86_at::Binary ast ) {
     switch ( ast->op ) {
     case x86_at::BinaryOpType::ADD :
-        add_line( "addl", operand( ast->operand1 ), operand( ast->operand2 ) );
+        add_line( instruction( "add", ast->type ), operand( ast->operand1 ), operand( ast->operand2 ) );
         break;
     case x86_at::BinaryOpType::SUB :
-        add_line( "subl", operand( ast->operand1 ), operand( ast->operand2 ) );
+        add_line( instruction( "sub", ast->type ), operand( ast->operand1 ), operand( ast->operand2 ) );
         break;
     case x86_at::BinaryOpType::MUL :
-        add_line( "imull", operand( ast->operand1 ), operand( ast->operand2 ) );
+        add_line( instruction( "imul", ast->type ), operand( ast->operand1 ), operand( ast->operand2 ) );
         break;
     case x86_at::BinaryOpType::AND :
-        add_line( "andl", operand( ast->operand1 ), operand( ast->operand2 ) );
+        add_line( instruction( "and", ast->type ), operand( ast->operand1 ), operand( ast->operand2 ) );
         break;
     case x86_at::BinaryOpType::OR :
-        add_line( "orl", operand( ast->operand1 ), operand( ast->operand2 ) );
+        add_line( instruction( "or", ast->type ), operand( ast->operand1 ), operand( ast->operand2 ) );
         break;
     case x86_at::BinaryOpType::XOR :
-        add_line( "xorl", operand( ast->operand1 ), operand( ast->operand2 ) );
+        add_line( instruction( "xor", ast->type ), operand( ast->operand1 ), operand( ast->operand2 ) );
         break;
     case x86_at::BinaryOpType::SHL :
-        add_line( "shll", operand( ast->operand1 ), operand( ast->operand2 ) );
+        add_line( instruction( "shl", ast->type ), operand( ast->operand1 ), operand( ast->operand2 ) );
         break;
     case x86_at::BinaryOpType::SHR :
-        add_line( "sarl", operand( ast->operand1 ), operand( ast->operand2 ) );
+        add_line( instruction( "sar", ast->type ), operand( ast->operand1 ), operand( ast->operand2 ) );
         break;
     default :
     }
 }
 
 void X86_64CodeGen::visit_Idiv( const x86_at::Idiv ast ) {
-    add_line( "idivl", operand( ast->src ) );
+    add_line( instruction( "idiv", ast->type ), operand( ast->src ) );
 }
 
 void X86_64CodeGen::visit_Cmp( const x86_at::Cmp ast ) {
-    add_line( "cmpl", operand( ast->operand1 ), operand( ast->operand2 ) );
+    add_line( instruction( "cmp", ast->type ), operand( ast->operand1 ), operand( ast->operand2 ) );
 }
 
 void X86_64CodeGen::visit_Jump( const x86_at::Jump ast ) {
@@ -298,7 +331,11 @@ void X86_64CodeGen::visit_Label( const x86_at::Label ast ) {
 }
 
 void X86_64CodeGen::visit_Cdq( const x86_at::Cdq ast ) {
-    add_line( "cdq", "" );
+    if ( ast->type == AssemblyType::Longword ) {
+        add_line( "cdq", "" );
+    } else {
+        add_line( "cqo", "" );
+    }
 }
 
 void X86_64CodeGen::visit_Imm( const x86_at::Imm ast ) {

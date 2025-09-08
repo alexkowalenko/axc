@@ -32,11 +32,16 @@ void FilterPseudoX86::visit_FunctionDef( const x86_at::FunctionDef ast ) {
     for ( auto const& instr : ast->instructions ) {
         std::visit( [ this ]( auto&& v ) -> void { v->accept( this ); }, instr );
     }
-    ast->stack_size = get_number_stack_locations();
+    ast->stack_size = next_stack_location;
     spdlog::debug( "Function {} has {} stack locations", ast->name, ast->stack_size );
 }
 
 void FilterPseudoX86::visit_Mov( const x86_at::Mov ast ) {
+    ast->src = operand( ast->src );
+    ast->dst = operand( ast->dst );
+}
+
+void FilterPseudoX86::visit_Movsx( x86_at::Movsx ast ) {
     ast->src = operand( ast->src );
     ast->dst = operand( ast->dst );
 }
@@ -77,18 +82,14 @@ x86_at::Operand FilterPseudoX86::operand( const x86_at::Operand& op ) {
         if ( stack_location_map.contains( name ) ) {
             location = stack_location_map[ name ];
         } else {
-            next_stack_location += stack_increment;
+            next_stack_location += ( *p )->type == AssemblyType::Quadword ? -8 : -4;
             location = next_stack_location;
             stack_location_map[ name ] = location;
         }
-        return mk_node<x86_at::Stack_>( *p, location );
+        return mk_node<x86_at::Stack_>( *p, location, ( *p )->type );
     } else {
         return op;
     }
-}
-
-int FilterPseudoX86::get_number_stack_locations() const {
-    return std::abs( next_stack_location / stack_increment );
 }
 
 void FilterPseudoX86::reset_stack_info() {

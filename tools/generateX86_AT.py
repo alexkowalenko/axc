@@ -16,14 +16,15 @@ if __name__ == "__main__":
         {
             "Program": [("std::vector<TopLevel>", "top_level")],
             "FunctionDef": [("std::string", "name"), ("std::vector<Instruction>", "instructions"), ("std::int32_t", "stack_size"), ("bool", "global")],
-            "StaticVariable": [("std::string", "name"), ("bool", "global"), ("int", "init")],
+            "StaticVariable": [("std::string", "name"), ("bool", "global"), ("int", "alignment"), ("int", "init")],
             # Operations for Instructions
-            "Mov": [("Operand", "src"), ("Operand", "dst") ],
-            "Unary": [("UnaryOpType", "op"), ("Operand", "operand") ],
-            "Binary": [("BinaryOpType", "op"), ("Operand", "operand1"), ("Operand", "operand2") ],
-            "Cmp": [("Operand", "operand1"), ("Operand", "operand2")],
-            "Idiv": [("Operand", "src") ],
-            "Cdq": [],
+            "Mov": [("AssemblyType", "type"), ("Operand", "src"), ("Operand", "dst") ],
+            "Movsx": [("Operand", "src"), ("Operand", "dst") ],
+            "Unary": [("UnaryOpType", "op"), ("AssemblyType", "type"), ("Operand", "operand") ],
+            "Binary": [("BinaryOpType", "op"), ("AssemblyType", "type"), ("Operand", "operand1"), ("Operand", "operand2") ],
+            "Cmp": [("AssemblyType", "type"), ("Operand", "operand1"), ("Operand", "operand2")],
+            "Idiv": [("AssemblyType", "type"), ("Operand", "src") ],
+            "Cdq": [("AssemblyType", "type"),],
             "Jump": [("std::string", "target")],
             "JumpCC": [("CondCode", "cond"), ("std::string", "target")],
             "SetCC": [("CondCode", "cond"), ("Operand", "operand")],
@@ -38,12 +39,12 @@ if __name__ == "__main__":
             # Operand types for Operand
             "Imm": [("std::int32_t", "value")],
             "Register": [("RegisterName", "reg"), ("RegisterSize", "size")],
-            "Pseudo": [("std::string", "name")],
-            "Stack": [("std::int32_t", "offset")],
+            "Pseudo": [("std::string", "name"), ("AssemblyType", "type")],
+            "Stack": [("std::int32_t", "offset"), ("AssemblyType", "type")],
             "Data": [("std::string", "name")],
          },
         {
             "TopLevel": ["FunctionDef", "StaticVariable"],
-            "Instruction": ["Mov", "Unary", "Binary", "Cmp", "Idiv", "Cdq", "Jump", "JumpCC", "SetCC", "Label", "AllocateStack","DeallocateStack", "Push", "Call", "Ret"],
+            "Instruction": ["Mov", "Movsx", "Unary", "Binary", "Cmp", "Idiv", "Cdq", "Jump", "JumpCC", "SetCC", "Label", "AllocateStack","DeallocateStack", "Push", "Call", "Ret"],
             "Operand": ["Imm", "Register", "Pseudo", "Stack", "Data"],
         })

@@ -43,3 +43,18 @@ constexpr std::string to_string( const StorageClass storage ) {
         return "parameter";
     }
 }
+
+enum class AssemblyType {
+    Longword,
+    Quadword,
+};
+
+constexpr std::string to_string( const AssemblyType type ) {
+    switch ( type ) {
+    case AssemblyType::Longword :
+        return "longword";
+    case AssemblyType::Quadword :
+        return "quadword";
+    }
+    return "unknown";
+}

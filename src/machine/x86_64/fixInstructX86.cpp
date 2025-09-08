@@ -22,6 +22,15 @@ constexpr bool is_Memory( x86_at::Operand const& operand ) {
     return std::holds_alternative<x86_at::Stack>( operand ) || std::holds_alternative<x86_at::Data>( operand );
 }
 
+constexpr bool is_large_immediate( x86_at::Operand const& operand ) {
+    if ( !std::holds_alternative<x86_at::Imm>( operand ) ) {
+        return false;
+    }
+    auto imm = std::get<x86_at::Imm>( operand );
+    return imm->value < std::numeric_limits<std::int32_t>::min() ||
+           imm->value > std::numeric_limits<std::int32_t>::max();
+}
+
 } // namespace
 
 FixInstructX86::FixInstructX86() {
@@ -31,6 +40,7 @@ FixInstructX86::FixInstructX86() {
     dx = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::DX, x86_at::RegisterSize::Long );
     r10 = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::R10, x86_at::RegisterSize::Long );
     r11 = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::R11, x86_at::RegisterSize::Long );
+    sp = std::make_shared<x86_at::Register_>( Location(), x86_at::RegisterName::SP, x86_at::RegisterSize::Qword );
 }
 
 void FixInstructX86::filter( x86_at::Program program ) {
@@ -49,16 +59,17 @@ void FixInstructX86::visit_FunctionDef( const x86_at::FunctionDef ast ) {
     spdlog::debug( "Function: {} - stacksize: {} ", ast->name, ast->stack_size );
     // Add Allocate Stack Instruction
     if ( ast->stack_size != 0 ) {
-        auto allocate = mk_node<x86_at::AllocateStack_>( ast );
-        allocate->size = stack_increment * ast->stack_size;
-        allocate->size = ( ( allocate->size + 15 ) & ~15 ); // Align to 16 bytes
-        spdlog::debug( "Adding AllocateStack instruction: {}", allocate->size );
-        current_instructions.emplace_back( allocate );
+        int size = ast->stack_size;
+        size = ( ( size + 15 ) & ~15 ); // Align to 16 bytes
+        auto imm = mk_node<x86_at::Imm_>( ast, size );
+        auto allocate = mk_node<x86_at::Binary_>( ast, x86_at::BinaryOpType::SUB, AssemblyType::Quadword, imm, sp );
+        spdlog::debug( "Adding AllocateStack instruction: {}", size );
+        ast->instructions.insert( ast->instructions.begin(), allocate );
     }
 
-    // Look for MOV instructions
     for ( auto const& instr : ast->instructions ) {
         std::visit( overloaded { [ this ]( x86_at::Mov v ) -> void { v->accept( this ); },
+                                 [ this ]( x86_at::Movsx v ) -> void { v->accept( this ); },
                                  [ this ]( x86_at::Unary u ) -> void { current_instructions.push_back( u ); },
                                  [ this ]( x86_at::Binary b ) -> void { b->accept( this ); },
                                  [ this ]( x86_at::Cmp b ) -> void { b->accept( this ); },
@@ -79,14 +90,16 @@ void FixInstructX86::visit_FunctionDef( const x86_at::FunctionDef ast ) {
 }
 
 void FixInstructX86::visit_Mov( const x86_at::Mov ast ) {
+
     // MOV instructions can't have memory locations in both operands
     if ( is_Memory( ast->src ) && is_Memory( ast->dst ) ) {
+        auto type = ast->type;
         auto src = ast->src;
         auto dst = ast->dst;
 
-        auto mov1 = mk_node<x86_at::Mov_>( ast, src, r10 );
+        auto mov1 = mk_node<x86_at::Mov_>( ast, type, src, r10 );
         current_instructions.emplace_back( mov1 );
-        auto mov2 = mk_node<x86_at::Mov_>( ast, r10, dst );
+        auto mov2 = mk_node<x86_at::Mov_>( ast, type, r10, dst );
         current_instructions.emplace_back( mov2 );
     } else {
         // Other MOV instructions
@@ -94,14 +107,40 @@ void FixInstructX86::visit_Mov( const x86_at::Mov ast ) {
     }
 }
 
+void FixInstructX86::visit_Movsx( x86_at::Movsx ast ) {
+
+    // Can't have immediate as src
+    auto src = ast->src;
+    if ( std::holds_alternative<x86_at::Imm>( src ) ) {
+        auto mov = mk_node<x86_at::Mov_>( ast, AssemblyType::Longword, ast->src, r10 );
+        current_instructions.emplace_back( mov );
+        src = r10;
+    }
+    // Can't have memory as dst
+    auto dst = ast->dst;
+    if ( std::holds_alternative<x86_at::Stack>( dst ) ) {
+        dst = r11;
+    }
+
+    auto mov = mk_node<x86_at::Movsx_>( ast, src, dst );
+    current_instructions.emplace_back( mov );
+
+    if ( std::holds_alternative<x86_at::Stack>( ast->dst ) ) {
+        auto mov2 = mk_node<x86_at::Mov_>( ast, AssemblyType::Quadword, r11, ast->dst );
+        current_instructions.emplace_back( mov2 );
+    }
+    return;
+}
+
 void FixInstructX86::visit_Idiv( const x86_at::Idiv ast ) {
     // Can't have an Immediate as a source
     if ( std::holds_alternative<x86_at::Imm>( ast->src ) ) {
+        auto type = ast->type;
 
-        auto mov1 = mk_node<x86_at::Mov_>( ast, ast->src, r10 );
+        auto mov1 = mk_node<x86_at::Mov_>( ast, type, ast->src, r10 );
         current_instructions.emplace_back( mov1 );
 
-        auto idiv = mk_node<x86_at::Idiv_>( ast, r10 );
+        auto idiv = mk_node<x86_at::Idiv_>( ast, type, r10 );
         current_instructions.emplace_back( idiv );
     } else {
         // Other Idiv instructions
@@ -110,20 +149,39 @@ void FixInstructX86::visit_Idiv( const x86_at::Idiv ast ) {
 }
 
 void FixInstructX86::visit_Binary( const x86_at::Binary ast ) {
+    auto type = ast->type;
     if ( ast->op == x86_at::BinaryOpType::ADD || ast->op == x86_at::BinaryOpType::SUB ||
          ast->op == x86_at::BinaryOpType::AND || ast->op == x86_at::BinaryOpType::OR ||
          ast->op == x86_at::BinaryOpType::XOR ) {
         // These instructions can't have stack locations in both operands
         if ( is_Memory( ast->operand1 ) && is_Memory( ast->operand2 ) ) {
 
-            auto mov1 = mk_node<x86_at::Mov_>( ast, ast->operand1, r10 );
+            auto mov1 = mk_node<x86_at::Mov_>( ast, type, ast->operand1, r10 );
             current_instructions.emplace_back( mov1 );
 
-            auto binary = mk_node<x86_at::Binary_>( ast, ast->op, r10, ast->operand2 );
+            auto binary = mk_node<x86_at::Binary_>( ast, ast->op, type, r10, ast->operand2 );
             current_instructions.emplace_back( binary );
 
             // There is any extra rule that the second operand can't be a constant (pg. 88),
             // not implemented here.
+        } else if ( ast->type == AssemblyType::Quadword ) {
+            if ( is_large_immediate( ast->operand1 ) ) {
+                auto mov1 = mk_node<x86_at::Mov_>( ast, type, ast->operand1, r10 );
+                current_instructions.emplace_back( mov1 );
+
+                auto binary = mk_node<x86_at::Binary_>( ast, ast->op, type, r10, ast->operand2 );
+                current_instructions.emplace_back( binary );
+                return;
+            }
+
+            if ( is_large_immediate( ast->operand1 ) ) {
+                auto mov1 = mk_node<x86_at::Mov_>( ast, type, ast->operand1, r10 );
+                current_instructions.emplace_back( mov1 );
+
+                auto binary = mk_node<x86_at::Binary_>( ast, ast->op, type, r10, ast->operand2 );
+                current_instructions.emplace_back( binary );
+                return;
+            }
         } else {
             // Other Add/Sub instructions
             current_instructions.emplace_back( ast );
@@ -132,31 +190,48 @@ void FixInstructX86::visit_Binary( const x86_at::Binary ast ) {
         // This instruction can't have a memory location in the second argument
         if ( is_Memory( ast->operand2 ) ) {
 
-            auto mov1 = mk_node<x86_at::Mov_>( ast, ast->operand2, r11 );
+            auto mov1 = mk_node<x86_at::Mov_>( ast, type, ast->operand2, r11 );
             current_instructions.emplace_back( mov1 );
 
-            auto binary = mk_node<x86_at::Binary_>( ast, ast->op, ast->operand1, r11 );
+            auto binary = mk_node<x86_at::Binary_>( ast, ast->op, type, ast->operand1, r11 );
             current_instructions.emplace_back( binary );
 
-            auto mov2 = mk_node<x86_at::Mov_>( ast, r11, ast->operand2 );
+            auto mov2 = mk_node<x86_at::Mov_>( ast, type, r11, ast->operand2 );
             current_instructions.emplace_back( mov2 );
-        } else {
+            return;
+        } else if ( ast->type == AssemblyType::Quadword ) {
+            if ( is_large_immediate( ast->operand1 ) ) {
+                auto mov1 = mk_node<x86_at::Mov_>( ast, type, ast->operand1, r10 );
+                current_instructions.emplace_back( mov1 );
+
+                auto binary = mk_node<x86_at::Binary_>( ast, ast->op, type, r10, ast->operand2 );
+                current_instructions.emplace_back( binary );
+                return;
+            }
+            if ( is_large_immediate( ast->operand1 ) ) {
+                auto mov1 = mk_node<x86_at::Mov_>( ast, type, ast->operand1, r10 );
+                current_instructions.emplace_back( mov1 );
+
+                auto binary = mk_node<x86_at::Binary_>( ast, ast->op, type, r10, ast->operand2 );
+                current_instructions.emplace_back( binary );
+                return;
+            }
             // Other Mul instructions
             current_instructions.emplace_back( ast );
         }
     } else if ( ast->op == x86_at::BinaryOpType::SHL || ast->op == x86_at::BinaryOpType::SHR ) {
         // These instruction encoding only allows a register shift count (cl) when the destination is a register.
 
-        auto mov1 = mk_node<x86_at::Mov_>( ast, ast->operand2, ax );
+        auto mov1 = mk_node<x86_at::Mov_>( ast, type, ast->operand2, ax );
         current_instructions.emplace_back( mov1 );
 
-        auto mov2 = mk_node<x86_at::Mov_>( ast, ast->operand1, cx );
+        auto mov2 = mk_node<x86_at::Mov_>( ast, type, ast->operand1, cx );
         current_instructions.emplace_back( mov2 );
 
-        auto binary = mk_node<x86_at::Binary_>( ast, ast->op, cl, ax );
+        auto binary = mk_node<x86_at::Binary_>( ast, ast->op, type, cl, ax );
         current_instructions.emplace_back( binary );
 
-        mov2 = mk_node<x86_at::Mov_>( ast, ax, ast->operand2 );
+        mov2 = mk_node<x86_at::Mov_>( ast, type, ax, ast->operand2 );
         current_instructions.emplace_back( mov2 );
     } else {
         // Other Binary instructions
@@ -165,14 +240,15 @@ void FixInstructX86::visit_Binary( const x86_at::Binary ast ) {
 }
 
 void FixInstructX86::visit_Cmp( const x86_at::Cmp ast ) {
+    auto type = ast->type;
     // CMP instructions can't have stack locations in both operands
     if ( is_Memory( ast->operand1 ) && is_Memory( ast->operand2 ) ) {
         const auto src = ast->operand1;
         const auto dst = ast->operand2;
 
-        auto c1 = mk_node<x86_at::Mov_>( ast, src, r10 );
+        auto c1 = mk_node<x86_at::Mov_>( ast, type, src, r10 );
         current_instructions.emplace_back( c1 );
-        auto c2 = mk_node<x86_at::Cmp_>( ast, r10, dst );
+        auto c2 = mk_node<x86_at::Cmp_>( ast, type, r10, dst );
         current_instructions.emplace_back( c2 );
         return;
     }
@@ -180,10 +256,10 @@ void FixInstructX86::visit_Cmp( const x86_at::Cmp ast ) {
         // Second operand can't be a constant
 
         // movl operand2, %r11d
-        auto mov1 = mk_node<x86_at::Mov_>( ast, ast->operand2, r11 );
+        auto mov1 = mk_node<x86_at::Mov_>( ast, type, ast->operand2, r11 );
         current_instructions.emplace_back( mov1 );
         // cmpl operand1, %r11d
-        auto mov2 = mk_node<x86_at::Cmp_>( ast, ast->operand1, r11 );
+        auto mov2 = mk_node<x86_at::Cmp_>( ast, type, ast->operand1, r11 );
         current_instructions.emplace_back( mov2 );
     } else {
         // Other MOV instructions

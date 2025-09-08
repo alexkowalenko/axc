@@ -42,17 +42,7 @@ enum class BinaryOpType {
 
 enum class CondCode { E, NE, G, GE, L, LE };
 
-enum class RegisterName {
-    AX,
-    CX,
-    DX,
-    DI,
-    SI,
-    R8,
-    R9,
-    R10,
-    R11,
-};
+enum class RegisterName { AX, CX, DX, DI, SI, R8, R9, R10, R11, SP };
 
 constexpr std::string to_string( const RegisterName rn ) {
     switch ( rn ) {
@@ -74,6 +64,8 @@ constexpr std::string to_string( const RegisterName rn ) {
         return "R10";
     case RegisterName::R11 :
         return "R11";
+    case RegisterName::SP :
+        return "SP";
     }
 }
 

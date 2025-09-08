@@ -18,6 +18,17 @@ std::string to_string( Symbol const& s ) {
                         s.global );
 }
 
+AssemblyType to_assembly_type( Type const& t ) {
+    switch ( t ) {
+    case Type::INT :
+        return AssemblyType::Longword;
+    case Type::LONG :
+        return AssemblyType::Quadword;
+    default :
+        return AssemblyType::Longword;
+    }
+}
+
 std::string SymbolTable::temp_name( std::string_view basename ) {
     return std::format( "{}.{}", basename, temp_counter++ );
 }

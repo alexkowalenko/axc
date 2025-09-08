@@ -22,12 +22,13 @@ class FilterPseudoX86 : public x86_at::Visitor<void> {
     ~FilterPseudoX86() override = default;
 
     void filter( x86_at::Program program );
-    int  get_number_stack_locations() const;
+    // int  get_number_stack_locations() const;
 
     void visit_Program( x86_at::Program ast ) override;
     void visit_FunctionDef( x86_at::FunctionDef ast ) override;
     void visit_StaticVariable( x86_at::StaticVariable ast ) override {};
     void visit_Mov( x86_at::Mov ast ) override;
+    void visit_Movsx( x86_at::Movsx ast ) override;
     void visit_Unary( x86_at::Unary ast ) override;
     void visit_Binary( x86_at::Binary ast ) override;
     void visit_Idiv( x86_at::Idiv ast ) override;
@@ -55,6 +56,5 @@ class FilterPseudoX86 : public x86_at::Visitor<void> {
 
     std::map<std::string, int> stack_location_map;
     int                        next_stack_location { 0 };
-    static constexpr int       stack_increment { -4 };
     SymbolTable&               symbol_table;
 };

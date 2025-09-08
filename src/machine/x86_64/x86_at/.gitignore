@@ -14,6 +14,7 @@ jump.h
 jumpcc.h
 label.h
 mov.h
+movsx.h
 operand.h
 program.h
 pseudo.h

@@ -48,7 +48,8 @@ x86_at::Program AssemblyGen::generate( const tac::Program atac ) {
 }
 
 x86_at::StaticVariable AssemblyGen::staticVariable( tac::StaticVariable atac ) {
-    return mk_node<x86_at::StaticVariable_>( atac, atac->name, atac->global, atac->init );
+    int alignment = atac->type == Type::LONG ? 8 : 4;
+    return mk_node<x86_at::StaticVariable_>( atac, atac->name, atac->global, alignment, atac->init );
 }
 
 x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
@@ -60,13 +61,15 @@ x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
     int count = 0;
     int stack_count = 16;
     for ( const auto& param : atac->params ) {
-        auto p = mk_node<x86_at::Pseudo_>( atac, param );
+        // type ?
+        auto type = AssemblyType::Longword;
+        auto p = mk_node<x86_at::Pseudo_>( atac, param, type );
         if ( count < frame_registers.size() ) {
-            auto mov = mk_node<x86_at::Mov_>( atac, frame_registers[ count ], p );
+            auto mov = mk_node<x86_at::Mov_>( atac, type, frame_registers[ count ], p );
             function->instructions.emplace_back( mov );
         } else {
-            auto stack_param = mk_node<x86_at::Stack_>( atac, stack_count );
-            auto mov = mk_node<x86_at::Mov_>( atac, stack_param, p );
+            auto stack_param = mk_node<x86_at::Stack_>( atac, stack_count, type );
+            auto mov = mk_node<x86_at::Mov_>( atac, type, stack_param, p );
             function->instructions.emplace_back( mov );
             stack_count += 8; // Increment stack by 8 bytes for each parameter
         }
@@ -75,30 +78,32 @@ x86_at::FunctionDef AssemblyGen::functionDef( const tac::FunctionDef atac ) {
     spdlog::debug( "Arg Count: {}, Stack count: {}", atac->params.size(), stack_count );
 
     for ( auto instr : atac->instructions ) {
-        std::visit( overloaded { [ &function, this ]( tac::Return r ) -> void { ret( r, function->instructions ); },
-                                 [ &function, this ]( tac::Unary r ) -> void { unary( r, function->instructions ); },
-                                 [ &function, this ]( tac::Binary r ) -> void { binary( r, function->instructions ); },
-                                 [ &function ]( tac::Copy r ) -> void { copy( r, function->instructions ); },
-                                 [ &function ]( tac::Jump r ) -> void { jump( r, function->instructions ); },
-                                 [ &function, this ]( tac::JumpIfZero r ) -> void {
-                                     jumpIfZero<tac::JumpIfZero>( r, true, function->instructions );
-                                 },
-                                 [ &function, this ]( tac::JumpIfNotZero r ) -> void {
-                                     jumpIfZero<tac::JumpIfNotZero>( r, false, function->instructions );
-                                 },
-                                 [ &function ]( tac::Label r ) -> void { label( r, function->instructions ); },
-                                 []( tac::SignExtend e ) -> void {}, []( tac::Truncate ) -> void {},
-                                 [ &function, this ]( tac::FunCall atac ) -> void {
-                                     functionCall( atac, function->instructions );
-                                 } },
-                    instr );
+        std::visit(
+            overloaded {
+                [ &function, this ]( tac::Return r ) -> void { ret( r, function->instructions ); },
+                [ &function, this ]( tac::Unary r ) -> void { unary( r, function->instructions ); },
+                [ &function, this ]( tac::Binary r ) -> void { binary( r, function->instructions ); },
+                [ &function, this ]( tac::Copy r ) -> void { copy( r, function->instructions ); },
+                [ &function ]( tac::Jump r ) -> void { jump( r, function->instructions ); },
+                [ &function, this ]( tac::JumpIfZero r ) -> void {
+                    jumpIfZero<tac::JumpIfZero>( r, true, function->instructions );
+                },
+                [ &function, this ]( tac::JumpIfNotZero r ) -> void {
+                    jumpIfZero<tac::JumpIfNotZero>( r, false, function->instructions );
+                },
+                [ &function ]( tac::Label r ) -> void { label( r, function->instructions ); },
+                [ &function, this ]( tac::SignExtend e ) -> void { sign_extend( e, function->instructions ); },
+                [ &function, this ]( tac::Truncate t ) -> void { truncate( t, function->instructions ); },
+                [ &function, this ]( tac::FunCall atac ) -> void { functionCall( atac, function->instructions ); } },
+            instr );
     }
     return function;
 };
 
 void AssemblyGen::ret( const tac::Return atac, std::vector<x86_at::Instruction>& instructions ) const {
     // Mov(value, %eax)
-    auto mov = mk_node<x86_at::Mov_>( atac, value( atac->value ), ax );
+    auto type = operand_type( atac->value );
+    auto mov = mk_node<x86_at::Mov_>( atac, type, value( atac->value ), ax );
     instructions.emplace_back( mov );
     // Ret
     auto ret = mk_node<x86_at::Ret_>( atac );
@@ -112,9 +117,12 @@ void AssemblyGen::unary( const tac::Unary atac, std::vector<x86_at::Instruction>
         return;
     }
 
-    auto mov = mk_node<x86_at::Mov_>( atac, value( atac->src ), value( atac->dst ) );
+    auto unary_type = operand_type( atac->src );
+
+    auto mov = mk_node<x86_at::Mov_>( atac, unary_type, value( atac->src ), value( atac->dst ) );
     instructions.emplace_back( mov );
     auto unary = mk_node<x86_at::Unary_>( atac );
+    unary->type = unary_type;
     switch ( atac->op ) {
     case tac::UnaryOpType::Complement :
         unary->op = x86_at::UnaryOpType::NOT;
@@ -130,11 +138,12 @@ void AssemblyGen::unary( const tac::Unary atac, std::vector<x86_at::Instruction>
 };
 
 void AssemblyGen::unary_not( const tac::Unary atac, std::vector<x86_at::Instruction>& instructions ) const {
+    auto type = operand_type( atac->src );
     // Cmp(Imm(0), src)
-    auto cmp = mk_node<x86_at::Cmp_>( atac, zero, value( atac->src ) );
+    auto cmp = mk_node<x86_at::Cmp_>( atac, type, zero, value( atac->src ) );
     instructions.emplace_back( cmp );
     // Mov(Imm(0), dst)
-    auto mov = mk_node<x86_at::Mov_>( atac, zero, value( atac->dst ) );
+    auto mov = mk_node<x86_at::Mov_>( atac, type, zero, value( atac->dst ) );
     instructions.emplace_back( mov );
     // SetCC(E, dst)
     auto sete = mk_node<x86_at::SetCC_>( atac, x86_at::CondCode::E, value( atac->dst ) );
@@ -156,9 +165,11 @@ void AssemblyGen::binary( const tac::Binary atac, std::vector<x86_at::Instructio
         return;
     }
 
-    auto mov = mk_node<x86_at::Mov_>( atac, value( atac->src1 ), value( atac->dst ) );
+    auto type = operand_type( atac->src1 );
+    auto mov = mk_node<x86_at::Mov_>( atac, type, value( atac->src1 ), value( atac->dst ) );
     instructions.emplace_back( mov );
     auto binary = mk_node<x86_at::Binary_>( atac );
+    binary->type = type;
     switch ( atac->op ) {
     case tac::BinaryOpType::Add :
         binary->op = x86_at::BinaryOpType::ADD;
@@ -194,18 +205,20 @@ void AssemblyGen::binary( const tac::Binary atac, std::vector<x86_at::Instructio
 void AssemblyGen::idiv( const tac::Binary atac, std::vector<x86_at::Instruction>& instructions ) {
 
     // Mov(src1, Reg(AX))
-    auto mov = mk_node<x86_at::Mov_>( atac, value( atac->src1 ), ax );
+    auto type = operand_type( atac->src1 );
+    auto mov = mk_node<x86_at::Mov_>( atac, type, value( atac->src1 ), ax );
     instructions.emplace_back( mov );
 
     // Cdq
-    instructions.emplace_back( mk_node<x86_at::Cdq_>( atac ) );
+    instructions.emplace_back( mk_node<x86_at::Cdq_>( atac, type ) );
 
     // Idiv(src2)
-    auto idiv = mk_node<x86_at::Idiv_>( atac, value( atac->src2 ) );
+    auto idiv = mk_node<x86_at::Idiv_>( atac, type, value( atac->src2 ) );
     instructions.emplace_back( idiv );
 
     // Mov(Reg(AX), dst)
     mov = mk_node<x86_at::Mov_>( atac );
+    mov->type = type;
     if ( atac->op == tac::BinaryOpType::Divide ) {
         mov->src = ax;
     } else {
@@ -224,14 +237,24 @@ const std::map<tac::BinaryOpType, x86_at::CondCode> condCodeMap = {
 
 void AssemblyGen::binary_relation( const tac::Binary atac, std::vector<x86_at::Instruction>& instructions ) const {
     // Cmp(Imm(0), src)
-    auto cmp = mk_node<x86_at::Cmp_>( atac, value( atac->src2 ), value( atac->src1 ) );
+    auto type = operand_type( atac->src1 );
+    auto cmp = mk_node<x86_at::Cmp_>( atac, type, value( atac->src2 ), value( atac->src1 ) );
     instructions.emplace_back( cmp );
     // Mov(Imm(0), dst)
-    auto mov = mk_node<x86_at::Mov_>( atac, zero, value( atac->dst ) );
+    auto mov = mk_node<x86_at::Mov_>( atac, type, zero, value( atac->dst ) );
     instructions.emplace_back( mov );
     // SetCC(condCode, dst)
     auto setcc = mk_node<x86_at::SetCC_>( atac, condCodeMap.at( atac->op ), value( atac->dst ) );
     instructions.emplace_back( setcc );
+}
+
+void AssemblyGen::sign_extend( tac::SignExtend atac, std::vector<x86_at::Instruction>& instructions ) const {
+    auto movsx = mk_node<x86_at::Movsx_>( atac, value( atac->src ), value( atac->dst ) );
+    instructions.emplace_back( movsx );
+}
+
+void AssemblyGen::truncate( tac::Truncate atac, std::vector<x86_at::Instruction>& instructions ) const {
+    auto mov = mk_node<x86_at::Mov_>( atac, AssemblyType::Longword, value( atac->src ), value( atac->dst ) );
 }
 
 void AssemblyGen::jump( const tac::Jump atac, std::vector<x86_at::Instruction>& instructions ) {
@@ -240,7 +263,8 @@ void AssemblyGen::jump( const tac::Jump atac, std::vector<x86_at::Instruction>& 
 }
 
 void AssemblyGen::copy( const tac::Copy atac, std::vector<x86_at::Instruction>& instructions ) {
-    auto mov = mk_node<x86_at::Mov_>( atac, value( atac->src ), value( atac->dst ) );
+    auto type = operand_type( atac->src );
+    auto mov = mk_node<x86_at::Mov_>( atac, type, value( atac->src ), value( atac->dst ) );
     instructions.emplace_back( mov );
 }
 
@@ -274,7 +298,8 @@ void AssemblyGen::functionCall( const tac::FunCall atac, std::vector<x86_at::Ins
     for ( const auto& arg : atac->arguments ) {
         if ( count < frame_registers.size() ) {
             // Use registers for the first 6 arguments
-            auto mov = mk_node<x86_at::Mov_>( atac, value( arg ), frame_registers[ count ] );
+            auto type = operand_type( arg );
+            auto mov = mk_node<x86_at::Mov_>( atac, type, value( arg ), frame_registers[ count ] );
             instructions.emplace_back( mov );
         } else {
             break;
@@ -293,7 +318,7 @@ void AssemblyGen::functionCall( const tac::FunCall atac, std::vector<x86_at::Ins
                 instructions.emplace_back( push );
             } else {
                 // Otherwise, move it to AX, then push it
-                auto mov = mk_node<x86_at::Mov_>( atac, v, ax );
+                auto mov = mk_node<x86_at::Mov_>( atac, AssemblyType::Longword, v, ax );
                 instructions.emplace_back( mov );
                 auto push = mk_node<x86_at::Push_>( atac, ax );
                 instructions.emplace_back( push );
@@ -317,7 +342,8 @@ void AssemblyGen::functionCall( const tac::FunCall atac, std::vector<x86_at::Ins
     }
 
     auto dst = value( atac->dst );
-    auto mov = mk_node<x86_at::Mov_>( atac, ax, dst );
+    auto dst_type = operand_type( atac->dst );
+    auto mov = mk_node<x86_at::Mov_>( atac, dst_type, ax, dst );
     instructions.emplace_back( mov );
 }
 
@@ -333,5 +359,12 @@ x86_at::Operand AssemblyGen::constant( std::int64_t value ) {
 };
 
 x86_at::Operand AssemblyGen::pseudo( tac::Variable atac ) {
-    return mk_node<x86_at::Pseudo_>( atac, atac->name );
+    return mk_node<x86_at::Pseudo_>( atac, atac->name, to_assembly_type( atac->type ) );
+}
+AssemblyType AssemblyGen::operand_type( tac::Value atac ) const {
+    return std::visit(
+        overloaded { []( tac::ConstantInt ) -> AssemblyType { return AssemblyType::Longword; },
+                     []( tac::ConstantLong ) -> AssemblyType { return AssemblyType::Quadword; },
+                     [ this ]( tac::Variable v ) -> AssemblyType { return to_assembly_type( v->type ); } },
+        atac );
 }

@@ -27,4 +27,5 @@ class Symbol {
     bool         global { false };
 };
 
-std::string to_string( Symbol const& s );
+std::string  to_string( Symbol const& s );
+AssemblyType to_assembly_type( Type const& t );

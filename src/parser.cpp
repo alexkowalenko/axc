@@ -672,9 +672,10 @@ ast::Cast Parser::cast() {
 ast::Constant Parser::constant() {
     spdlog::debug( "constant()" );
     auto token = lexer.get_token();
+    spdlog::debug( "constant(): {}", token.value );
     if ( token.tok == TokenType::CONSTANT ) {
         auto value = std::stoll( token.value );
-        if ( value < std::numeric_limits<std::int32_t>::max() && value > std::numeric_limits<std::int32_t>::min() ) {
+        if ( value <= std::numeric_limits<std::int32_t>::max() && value > std::numeric_limits<std::int32_t>::min() ) {
             auto constant = make_AST<ast::ConstantInt_>();
             constant->value = static_cast<std::int32_t>( value );
             return constant;

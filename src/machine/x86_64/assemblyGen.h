@@ -21,6 +21,7 @@ class AssemblyGen {
 
     x86_at::Program generate( tac::Program atac );
 
+  private:
     x86_at::FunctionDef    functionDef( tac::FunctionDef atac );
     x86_at::StaticVariable staticVariable( tac::StaticVariable atac );
 
@@ -32,9 +33,11 @@ class AssemblyGen {
     void        binary( tac::Binary atac, std::vector<x86_at::Instruction>& instructions );
     void        idiv( tac::Binary atac, std::vector<x86_at::Instruction>& instructions );
     void        binary_relation( tac::Binary atac, std::vector<x86_at::Instruction>& instructions ) const;
+    void        sign_extend( tac::SignExtend atac, std::vector<x86_at::Instruction>& instructions ) const;
+    void        truncate( tac::Truncate atac, std::vector<x86_at::Instruction>& instructions ) const;
     static void jump( tac::Jump atac, std::vector<x86_at::Instruction>& instructions );
     template <typename T> void jumpIfZero( T atac, bool zerop, std::vector<x86_at::Instruction>& instructions );
-    static void                copy( tac::Copy atac, std::vector<x86_at::Instruction>& instructions );
+    void                       copy( tac::Copy atac, std::vector<x86_at::Instruction>& instructions );
     static void                label( tac::Label atac, std::vector<x86_at::Instruction>& instructions );
     void                       functionCall( tac::FunCall atac, std::vector<x86_at::Instruction>& instructions ) const;
 
@@ -42,7 +45,8 @@ class AssemblyGen {
     static x86_at::Operand constant( std::int64_t value );
     static x86_at::Operand pseudo( tac::Variable atac );
 
-  private:
+    AssemblyType operand_type( tac::Value atac ) const;
+
     Option const& option;
 
     x86_at::Imm zero;
@@ -60,7 +64,8 @@ class AssemblyGen {
 
 template <typename T>
 void AssemblyGen::jumpIfZero( const T atac, bool zerop, std::vector<x86_at::Instruction>& instructions ) {
-    auto cmp = std::make_shared<x86_at::Cmp_>( atac->location, zero, value( atac->condition ) );
+    auto type = operand_type( atac->condition );
+    auto cmp = std::make_shared<x86_at::Cmp_>( atac->location, type, zero, value( atac->condition ) );
     instructions.push_back( cmp );
     if ( zerop ) {
         auto j = std::make_shared<x86_at::JumpCC_>( atac->location, x86_at::CondCode::E, atac->target );

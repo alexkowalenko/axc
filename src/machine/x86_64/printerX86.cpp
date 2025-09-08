@@ -53,8 +53,12 @@ std::string PrinterX86::operand( const x86_at::Operand& op ) {
 }
 
 std::string PrinterX86::visit_Mov( const x86_at::Mov ast ) {
-    return std::format( "MOV({}, {})", operand( ast->src ), operand( ast->dst ) );
+    return std::format( "MOV({}: {}, {})", to_string( ast->type ), operand( ast->src ), operand( ast->dst ) );
 };
+
+std::string PrinterX86::visit_Movsx( x86_at::Movsx ast ) {
+    return std::format( "MOVSX({}, {})", operand( ast->src ), operand( ast->dst ) );
+}
 
 std::string PrinterX86::visit_Imm( const x86_at::Imm ast ) {
     return std::format( "#{}", ast->value );

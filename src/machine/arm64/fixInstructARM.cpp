@@ -105,6 +105,8 @@ void FixInstructARM::visit_Unary( arm64_at::Unary ast ) {
     // If destination stack store into register
     if ( std::holds_alternative<arm64_at::Stack>( ast->dst ) ) {
         dst = x10;
+    } else {
+        dst = ast->dst;
     }
 
     // Perform the operation with modified src, dst

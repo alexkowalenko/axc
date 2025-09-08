@@ -28,6 +28,7 @@ class X86_64CodeGen : public CodeGenerator, public x86_at::Visitor<void> {
     void visit_FunctionDef( x86_at::FunctionDef ast ) override;
     void visit_StaticVariable( x86_at::StaticVariable ast ) override;
     void visit_Mov( x86_at::Mov ast ) override;
+    void visit_Movsx( x86_at::Movsx ast ) override;
     void visit_Unary( x86_at::Unary ast ) override;
     void visit_AllocateStack( x86_at::AllocateStack ast ) override;
     void visit_DeallocateStack( x86_at::DeallocateStack ast ) override;
@@ -57,5 +58,6 @@ class X86_64CodeGen : public CodeGenerator, public x86_at::Visitor<void> {
     std::string local_prefix;
     std::string last_string;
 
-    std::string current_function_name;
+    std::string         current_function_name;
+    x86_at::FunctionDef current_function;
 };
